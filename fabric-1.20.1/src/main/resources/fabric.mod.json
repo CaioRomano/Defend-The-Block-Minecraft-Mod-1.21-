@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "defendtheblock",
+  "version": "${version}",
+  "name": "Defend The Block",
+  "description": "Coloque o Nexus e sobreviva: toda noite uma invasao de mobs hostis vem destrui-lo. Torretas de flecha, mobs com habilidades e ondas cada vez maiores.",
+  "authors": [
+    "CaioRomano"
+  ],
+  "contact": {
+    "sources": "https://github.com/CaioRomano/Defend-The-Block-Minecraft-Mod-1.21-"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/defendtheblock/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.defendtheblock.DefendTheBlock"
+    ],
+    "client": [
+      "com.defendtheblock.client.DefendTheBlockClient"
+    ]
+  },
+  "mixins": [
+    "defendtheblock.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": "~1.20.1",
+    "java": ">=17"
+  }
+}

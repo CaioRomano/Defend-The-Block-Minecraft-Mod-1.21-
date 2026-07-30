@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " C ",
+    "IRI",
+    "III"
+  ],
+  "key": {
+    "C": { "item": "minecraft:crossbow" },
+    "R": { "item": "minecraft:redstone_block" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "result": { "id": "defendtheblock:arrow_turret", "count": 1 }
+}
