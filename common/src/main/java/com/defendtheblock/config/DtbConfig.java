@@ -45,29 +45,39 @@ public final class DtbConfig {
     /**
      * Raio, <b>em chunks</b>, da area mantida carregada em volta do Nexus.
      *
-     * <p>0 = so o chunk do Nexus, 1 = ele mais os adjacentes (3x3, o padrao),
-     * 2 = 5x5, e assim por diante.
+     * <p>0 = so o chunk do Nexus, 1 = 3x3, 3 = 7x7 (o padrao). O padrao cobre
+     * exatamente a area de spawn e de atracao, para que a invasao rode inteira
+     * mesmo sem jogador por perto.
      */
-    public int forcedChunkRadius = 1;
+    public int forcedChunkRadius = 3;
 
     // ----------------------------------------------------------- invasoes
-    /** Multiplicador global da quantidade de mobs por invasao. */
+    /** Multiplicador global do ritmo de spawn da invasao. */
     public double mobMultiplier = 1.0D;
-    /** Raio (blocos) em volta do Nexus onde os mobs sao spawnados. */
-    public int spawnRadius = 44;
-    /** Raio minimo de spawn, para os mobs nao nascerem em cima do jogador. */
-    public int minSpawnRadius = 22;
     /**
-     * Raio no qual qualquer mob hostil que nascer no mundo (spawn natural ou
-     * spawner) e atraido pelo Nexus e ganha as habilidades de invasor.
+     * Distancia minima de spawn, <b>em chunks</b>, contada a partir do chunk do
+     * Nexus. Com 2, nenhum invasor nasce nos 2 chunks colados no Nexus.
      */
-    public int attractionRadius = 120;
+    public int spawnChunkRadiusMin = 2;
+    /** Distancia maxima de spawn, em chunks, a partir do chunk do Nexus. */
+    public int spawnChunkRadiusMax = 3;
+    /**
+     * Raio, <b>em chunks</b>, no qual qualquer mob hostil que nascer (spawn
+     * natural, spawner ou ovo) e atraido pelo Nexus e ganha as habilidades de
+     * invasor. Endermen sao a unica excecao.
+     */
+    public int attractionChunkRadius = 3;
     /** Ticks entre cada lote de spawn na invasao 1. Diminui a cada invasao. */
     public int baseSpawnInterval = 100;
     /** Menor intervalo de spawn possivel, em ticks. */
     public int minSpawnInterval = 20;
-    /** Numero maximo de invasores vivos ao mesmo tempo. */
-    public int maxConcurrentInvaders = 90;
+    /**
+     * Teto de invasores vivos ao mesmo tempo.
+     *
+     * <p>A invasao nao tem mais um numero fixo de mobs: ela spawna sem parar ate
+     * amanhecer, entao este valor e o que segura a carga do servidor.
+     */
+    public int maxConcurrentInvaders = 60;
 
     // ------------------------------------------------- chances de habilidade
     // Sempre abaixo dos mobs "normais": a soma das habilidades especiais de um

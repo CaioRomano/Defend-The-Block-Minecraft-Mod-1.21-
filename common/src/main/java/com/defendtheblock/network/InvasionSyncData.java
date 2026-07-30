@@ -21,14 +21,14 @@ public final class InvasionSyncData {
     public final int wavesCompleted;
     public final int currentWave;
     public final boolean waveActive;
-    public final int mobsRemaining;
-    public final int mobsTotal;
+    public final int mobsAlive;
+    public final int mobsSpawned;
     public final double multiplier;
     public final boolean gameOver;
 
     public InvasionSyncData(boolean hasNexus, int nexusX, int nexusY, int nexusZ, int nexusHealth,
                             int nexusMaxHealth, int wavesCompleted, int currentWave, boolean waveActive,
-                            int mobsRemaining, int mobsTotal, double multiplier, boolean gameOver) {
+                            int mobsAlive, int mobsSpawned, double multiplier, boolean gameOver) {
         this.hasNexus = hasNexus;
         this.nexusX = nexusX;
         this.nexusY = nexusY;
@@ -38,8 +38,8 @@ public final class InvasionSyncData {
         this.wavesCompleted = wavesCompleted;
         this.currentWave = currentWave;
         this.waveActive = waveActive;
-        this.mobsRemaining = mobsRemaining;
-        this.mobsTotal = mobsTotal;
+        this.mobsAlive = mobsAlive;
+        this.mobsSpawned = mobsSpawned;
         this.multiplier = multiplier;
         this.gameOver = gameOver;
     }
@@ -56,8 +56,8 @@ public final class InvasionSyncData {
                 data.getWavesCompleted(),
                 data.getCurrentWave(),
                 data.isWaveActive(),
-                data.getMobsRemaining(),
-                data.getMobsTotal(),
+                data.getMobsAlive(),
+                data.getMobsSpawned(),
                 data.getMultiplier(),
                 data.isGameOver());
     }
@@ -76,8 +76,8 @@ public final class InvasionSyncData {
         buf.writeVarInt(wavesCompleted);
         buf.writeVarInt(currentWave);
         buf.writeBoolean(waveActive);
-        buf.writeVarInt(mobsRemaining);
-        buf.writeVarInt(mobsTotal);
+        buf.writeVarInt(mobsAlive);
+        buf.writeVarInt(mobsSpawned);
         buf.writeDouble(multiplier);
         buf.writeBoolean(gameOver);
     }

@@ -71,7 +71,7 @@ public final class InvasionHud {
                     textX, textY, TEXT_COLOR);
             textY += LINE_HEIGHT;
             context.drawTextWithShadow(font,
-                    Text.translatable("hud.defendtheblock.mobs", data.mobsRemaining, data.mobsTotal),
+                    Text.translatable("hud.defendtheblock.mobs", data.mobsAlive, data.mobsSpawned),
                     textX, textY, 0xFFFF7A6B);
         } else {
             Text idle = data.gameOver

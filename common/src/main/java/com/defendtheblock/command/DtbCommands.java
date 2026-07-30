@@ -46,8 +46,8 @@ public final class DtbCommands {
         source.sendFeedback(() -> Text.translatable("commands.defendtheblock.status",
                 pos.toShortString(),
                 data.isWaveActive() ? data.getCurrentWave() : data.getWavesCompleted(),
-                data.getMobsRemaining(),
-                data.getMobsTotal(),
+                data.getMobsAlive(),
+                data.getMobsSpawned(),
                 String.format("%.2f", data.getMultiplier())), false);
         source.sendFeedback(() -> Text.translatable("hud.defendtheblock.nexus_health",
                 data.getNexusHealth(), data.getNexusMaxHealth()), false);

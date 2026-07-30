@@ -8,6 +8,7 @@ import com.defendtheblock.entity.invader.InvaderGoals;
 import com.defendtheblock.network.InvasionSyncData;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.particle.ParticleTypes;
@@ -19,6 +20,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
@@ -37,11 +39,6 @@ public final class InvasionManager {
     private static final int NIGHT_END = 23000;
     private static final int SYNC_INTERVAL = 10;
     private static final int PRUNE_INTERVAL = 20;
-
-    /** Cache da fila de spawn da onda atual (barato de reconstruir se cair). */
-    private static int cachedWave = -1;
-    private static double cachedMultiplier = -1.0D;
-    private static List<EntityType<? extends MobEntity>> cachedOrder = List.of();
 
     private InvasionManager() {
     }
@@ -72,9 +69,11 @@ public final class InvasionManager {
             if (!night && timeOfDay < NIGHT_START) {
                 // Amanheceu: a horda que sobrou se desfaz e a noite conta como vencida.
                 endWave(server, data, true);
-            } else {
+            } else if (night) {
                 tickWave(world, data);
             }
+            // No fim da noite (apos NIGHT_END) a onda segue viva, mas para de
+            // spawnar: quem ja nasceu termina a briga, ninguem novo aparece.
         } else if (night && day != data.getLastWaveDay()) {
             data.setLastWaveDay(day);
             startWave(server, data, data.getWavesCompleted() + 1);
@@ -84,10 +83,9 @@ public final class InvasionManager {
     // ---------------------------------------------------------------- ondas
 
     public static void startWave(MinecraftServer server, InvasionData data, int wave) {
-        int total = WaveComposition.totalMobs(wave, data.getMultiplier());
-        data.startWave(wave, total);
+        data.startWave(wave);
 
-        Text message = Text.translatable("message.defendtheblock.wave_start", wave, total)
+        Text message = Text.translatable("message.defendtheblock.wave_start", wave)
                 .formatted(Formatting.RED);
         server.getPlayerManager().broadcast(message, false);
 
@@ -108,13 +106,11 @@ public final class InvasionManager {
         }
     }
 
+    /**
+     * A invasao nao tem mais um numero fechado de mobs: ela spawna em lotes ate
+     * amanhecer, limitada apenas pelo teto de invasores vivos.
+     */
     private static void tickWave(ServerWorld world, InvasionData data) {
-        MinecraftServer server = world.getServer();
-        if (data.getMobsSpawned() >= data.getMobsTotal() && data.getActiveInvaders().isEmpty()) {
-            endWave(server, data, true);
-            return;
-        }
-
         int timer = data.getSpawnTimer();
         if (timer > 0) {
             data.setSpawnTimer(timer - 1);
@@ -126,30 +122,18 @@ public final class InvasionManager {
         // A cada invasao o intervalo entre lotes encolhe e o lote cresce:
         // e o "ratespawn" aumentando noite apos noite.
         int interval = Math.max(config.minSpawnInterval, config.baseSpawnInterval - wave * 6);
-        int batch = 1 + wave / 3;
+        int batch = (int) Math.max(1L, Math.round((1 + wave / 3.0D) * data.getMultiplier()));
         data.setSpawnTimer(interval);
 
-        List<EntityType<? extends MobEntity>> order = spawnOrder(wave, data.getMultiplier());
         for (int i = 0; i < batch; i++) {
-            if (data.getMobsSpawned() >= data.getMobsTotal()
-                    || data.getMobsSpawned() >= order.size()
-                    || data.getActiveInvaders().size() >= config.maxConcurrentInvaders) {
+            if (data.getActiveInvaders().size() >= config.maxConcurrentInvaders) {
                 break;
             }
-            EntityType<? extends MobEntity> type = order.get(data.getMobsSpawned());
+            EntityType<? extends MobEntity> type = WaveComposition.pick(wave, world.getRandom());
             if (!spawnInvader(world, data, type, wave)) {
                 break;
             }
         }
-    }
-
-    private static List<EntityType<? extends MobEntity>> spawnOrder(int wave, double multiplier) {
-        if (wave != cachedWave || multiplier != cachedMultiplier) {
-            cachedWave = wave;
-            cachedMultiplier = multiplier;
-            cachedOrder = WaveComposition.spawnOrder(wave, multiplier);
-        }
-        return cachedOrder;
     }
 
     // ---------------------------------------------------------------- spawn
@@ -182,21 +166,31 @@ public final class InvasionManager {
         return true;
     }
 
-    /** Um lugar valido no anel de spawn em volta do Nexus. */
+    /**
+     * Um lugar valido no anel de spawn, medido <b>em chunks</b> a partir do
+     * chunk do Nexus: nada nasce a menos de {@code spawnChunkRadiusMin} chunks,
+     * nada alem de {@code spawnChunkRadiusMax}. A distancia e de Chebyshev
+     * (quadrada), que e como o jogo enxerga vizinhanca de chunk.
+     */
     private static BlockPos findSpawnPos(ServerWorld world, BlockPos nexus) {
         DtbConfig config = DtbConfig.get();
-        int min = Math.max(4, config.minSpawnRadius);
-        int max = Math.max(min + 4, config.spawnRadius);
+        int min = Math.max(0, config.spawnChunkRadiusMin);
+        int max = Math.max(min, config.spawnChunkRadiusMax);
+        ChunkPos origin = new ChunkPos(nexus);
 
-        for (int attempt = 0; attempt < 24; attempt++) {
-            double angle = world.getRandom().nextDouble() * Math.PI * 2.0D;
-            double radius = min + world.getRandom().nextDouble() * (max - min);
-            int x = nexus.getX() + (int) Math.round(Math.cos(angle) * radius);
-            int z = nexus.getZ() + (int) Math.round(Math.sin(angle) * radius);
-
-            if (!world.getChunkManager().isChunkLoaded(x >> 4, z >> 4)) {
+        for (int attempt = 0; attempt < 32; attempt++) {
+            int dx = world.getRandom().nextInt(max * 2 + 1) - max;
+            int dz = world.getRandom().nextInt(max * 2 + 1) - max;
+            if (Math.max(Math.abs(dx), Math.abs(dz)) < min) {
                 continue;
             }
+
+            ChunkPos chunk = new ChunkPos(origin.x + dx, origin.z + dz);
+            if (!world.getChunkManager().isChunkLoaded(chunk.x, chunk.z)) {
+                continue;
+            }
+            int x = chunk.getStartX() + world.getRandom().nextInt(16);
+            int z = chunk.getStartZ() + world.getRandom().nextInt(16);
             int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
             if (y <= world.getBottomY() + 1) {
                 continue;
@@ -253,13 +247,20 @@ public final class InvasionManager {
         if (!(mob instanceof Monster) || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return;
         }
+        // Enderman e a unica excecao: ele nunca e recrutado pela invasao.
+        if (mob instanceof EndermanEntity) {
+            return;
+        }
 
         InvasionData data = NexusManager.getData(world);
         if (!data.hasNexus() || data.isGameOver()) {
             return;
         }
-        double radius = DtbConfig.get().attractionRadius;
-        if (mob.getBlockPos().getSquaredDistance(data.getNexusPos()) > radius * radius) {
+
+        ChunkPos nexusChunk = new ChunkPos(data.getNexusPos());
+        ChunkPos mobChunk = new ChunkPos(mob.getBlockPos());
+        int chunkDistance = Math.max(Math.abs(mobChunk.x - nexusChunk.x), Math.abs(mobChunk.z - nexusChunk.z));
+        if (chunkDistance > DtbConfig.get().attractionChunkRadius) {
             return;
         }
         // Mobs atraidos nao entram na contagem oficial da onda.

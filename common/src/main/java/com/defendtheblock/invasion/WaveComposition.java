@@ -2,109 +2,91 @@ package com.defendtheblock.invasion;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Decide quem aparece em cada invasao.
+ * Sorteia <b>que tipo</b> de mob nasce em cada spawn da invasao.
  *
- * <p>A invasao 1 e exatamente <b>2 creepers, 3 zumbis e 2 esqueletos</b>. A
- * partir dai cada regra cresce linearmente e novos tipos vao entrando, incluindo
- * mobs do Nether. O multiplicador global (config ou {@code /dtb multiplier})
- * escala tudo no final.
+ * <p>A invasao nao tem mais uma lista fechada de mobs: ela spawna sem parar do
+ * anoitecer ate o amanhecer, e cada spawn tira um tipo desta tabela. O que muda
+ * noite apos noite e quais tipos ja estao liberados — o zumbi/esqueleto/creeper
+ * valem desde a primeira, e os reforcos (incluindo os do Nether) vao entrando
+ * conforme as invasoes passam.
+ *
+ * <p>Enderman fica de fora de proposito: ele nao participa das invasoes.
  */
 public final class WaveComposition {
 
     /**
      * @param type      tipo de mob
-     * @param firstWave primeira invasao em que ele aparece
-     * @param base      quantidade na {@code firstWave}
-     * @param growth    quanto cresce por invasao a partir dai
+     * @param firstWave primeira invasao em que ele pode aparecer
+     * @param weight    peso no sorteio depois de liberado (maior = mais comum)
      */
-    private record Rule(EntityType<? extends MobEntity> type, int firstWave, int base, double growth) {
+    private record Rule(EntityType<? extends MobEntity> type, int firstWave, int weight) {
     }
 
     private static final List<Rule> RULES = List.of(
             // --- nucleo do Overworld
-            new Rule(EntityType.ZOMBIE, 1, 3, 1.2D),
-            new Rule(EntityType.SKELETON, 1, 2, 0.9D),
-            new Rule(EntityType.CREEPER, 1, 2, 0.6D),
-            new Rule(EntityType.SPIDER, 2, 1, 0.5D),
-            new Rule(EntityType.HUSK, 4, 1, 0.4D),
-            new Rule(EntityType.STRAY, 5, 1, 0.4D),
-            new Rule(EntityType.CAVE_SPIDER, 6, 1, 0.4D),
-            new Rule(EntityType.WITCH, 7, 1, 0.25D),
-            new Rule(EntityType.ZOMBIE_VILLAGER, 8, 1, 0.3D),
-            new Rule(EntityType.ENDERMAN, 9, 1, 0.2D),
-            new Rule(EntityType.DROWNED, 11, 1, 0.3D),
-            new Rule(EntityType.VINDICATOR, 14, 1, 0.25D),
+            new Rule(EntityType.ZOMBIE, 1, 30),
+            new Rule(EntityType.SKELETON, 1, 22),
+            new Rule(EntityType.CREEPER, 1, 18),
+            new Rule(EntityType.SPIDER, 2, 12),
+            new Rule(EntityType.HUSK, 4, 10),
+            new Rule(EntityType.STRAY, 5, 8),
+            new Rule(EntityType.CAVE_SPIDER, 6, 7),
+            new Rule(EntityType.WITCH, 7, 4),
+            new Rule(EntityType.ZOMBIE_VILLAGER, 8, 6),
+            new Rule(EntityType.DROWNED, 11, 5),
+            new Rule(EntityType.VINDICATOR, 14, 3),
 
             // --- reforcos do Nether
-            new Rule(EntityType.MAGMA_CUBE, 3, 1, 0.4D),
-            new Rule(EntityType.WITHER_SKELETON, 4, 1, 0.33D),
-            new Rule(EntityType.BLAZE, 5, 1, 0.3D),
-            new Rule(EntityType.ZOMBIFIED_PIGLIN, 6, 1, 0.35D),
-            new Rule(EntityType.PIGLIN_BRUTE, 8, 1, 0.25D),
-            new Rule(EntityType.HOGLIN, 10, 1, 0.25D),
-            new Rule(EntityType.GHAST, 12, 1, 0.15D));
+            new Rule(EntityType.MAGMA_CUBE, 3, 6),
+            new Rule(EntityType.WITHER_SKELETON, 4, 6),
+            new Rule(EntityType.BLAZE, 5, 5),
+            new Rule(EntityType.ZOMBIFIED_PIGLIN, 6, 6),
+            new Rule(EntityType.PIGLIN_BRUTE, 8, 3),
+            new Rule(EntityType.HOGLIN, 10, 3),
+            new Rule(EntityType.GHAST, 12, 2));
 
     private WaveComposition() {
     }
 
-    /** Quantidade de cada tipo na invasao pedida, ja com o multiplicador aplicado. */
-    public static List<CountedType> counts(int wave, double multiplier) {
-        List<CountedType> result = new ArrayList<>();
+    /** Sorteia um tipo entre os liberados para a invasao informada. */
+    public static EntityType<? extends MobEntity> pick(int wave, Random random) {
+        int total = 0;
+        for (Rule rule : RULES) {
+            if (wave >= rule.firstWave()) {
+                total += rule.weight();
+            }
+        }
+        if (total <= 0) {
+            return EntityType.ZOMBIE;
+        }
+
+        int roll = random.nextInt(total);
         for (Rule rule : RULES) {
             if (wave < rule.firstWave()) {
                 continue;
             }
-            int base = rule.base() + (int) Math.floor((wave - rule.firstWave()) * rule.growth());
-            if (base <= 0) {
-                continue;
-            }
-            int scaled = (int) Math.max(1L, Math.round(base * multiplier));
-            result.add(new CountedType(rule.type(), scaled));
-        }
-        return result;
-    }
-
-    public static int totalMobs(int wave, double multiplier) {
-        int total = 0;
-        for (CountedType entry : counts(wave, multiplier)) {
-            total += entry.count();
-        }
-        return total;
-    }
-
-    /**
-     * Ordem de spawn da invasao: os tipos sao intercalados (round-robin) para a
-     * onda chegar misturada em vez de vir um bloco de cada mob.
-     *
-     * <p>E deterministico de proposito: se o servidor reiniciar no meio de uma
-     * invasao da para reconstruir a fila e continuar de {@code mobsSpawned}.
-     */
-    public static List<EntityType<? extends MobEntity>> spawnOrder(int wave, double multiplier) {
-        List<CountedType> counts = counts(wave, multiplier);
-        List<EntityType<? extends MobEntity>> order = new ArrayList<>();
-        int[] left = new int[counts.size()];
-        int remaining = 0;
-        for (int i = 0; i < counts.size(); i++) {
-            left[i] = counts.get(i).count();
-            remaining += left[i];
-        }
-        while (remaining > 0) {
-            for (int i = 0; i < counts.size(); i++) {
-                if (left[i] > 0) {
-                    order.add(counts.get(i).type());
-                    left[i]--;
-                    remaining--;
-                }
+            roll -= rule.weight();
+            if (roll < 0) {
+                return rule.type();
             }
         }
-        return order;
+        return EntityType.ZOMBIE;
     }
 
-    public record CountedType(EntityType<? extends MobEntity> type, int count) {
+    /** Tipos ja liberados na invasao informada (usado so para diagnostico). */
+    public static List<EntityType<? extends MobEntity>> unlocked(int wave) {
+        List<EntityType<? extends MobEntity>> types = new ArrayList<>();
+        for (Rule rule : RULES) {
+            if (wave >= rule.firstWave()) {
+                types.add(rule.type());
+            }
+        }
+        return types;
     }
 }

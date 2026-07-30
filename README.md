@@ -127,15 +127,21 @@ estiverem carregando um totem**. Cooldown padrao de 30s.
 ## As invasoes
 
 * Comecam automaticamente **ao anoitecer** (tempo 13000), uma por noite.
-* A invasao 1 e exatamente **2 creepers, 3 zumbis e 2 esqueletos**.
-* A cada invasao a quantidade cresce, novos tipos entram e o **ritmo de spawn
-  aumenta** (o intervalo entre lotes encolhe e o lote cresce).
+* A invasao **nao tem um numero fechado de mobs**: ela spawna em lotes do
+  anoitecer ate o fim da noite. O que segura a quantidade e o teto de invasores
+  vivos ao mesmo tempo (`maxConcurrentInvaders`, padrao 60).
+* Os invasores nascem num anel medido **em chunks** a partir do chunk do Nexus:
+  de `spawnChunkRadiusMin` (2) ate `spawnChunkRadiusMax` (3). Os 2 chunks
+  colados no Nexus ficam livres de spawn.
+* **Todo mob hostil que nascer dentro de 3 chunks do Nexus** — spawn natural,
+  spawner ou ovo — e recrutado pela invasao, ganha as habilidades de invasor e
+  marcha ate o bloco. **Enderman e a unica excecao**: ele nunca participa.
+* A cada invasao novos tipos entram no sorteio e o **ritmo de spawn aumenta**
+  (o intervalo entre lotes encolhe e o lote cresce).
 * Mobs do **Nether** entram a partir da invasao 3: magma cube, wither skeleton,
   blaze, zombified piglin, piglin brute, hoglin e ghast.
-* Qualquer mob hostil que nascer dentro de **120 blocos** do Nexus (spawn natural,
-  spawner, ovo) e **atraido** e ganha as habilidades de invasor — mas nao entra na
-  contagem oficial da onda.
-* A onda termina quando todos morrem ou quando amanhece.
+* Depois do fim da noite a onda para de spawnar, mas quem ja nasceu continua
+  atacando; a onda fecha de vez ao amanhecer.
 * Os invasores querem o Nexus, mas **atacam o jogador normalmente** se ele
   aparecer, com as mesmas habilidades.
 
@@ -178,24 +184,18 @@ Os chunks ficam em nivel de *entity ticking*: mobs se movem, spawnam e batem no
 Nexus normalmente ali dentro.
 
 ```json
-{ "keepNexusChunksLoaded": true, "forcedChunkRadius": 1 }
+{ "keepNexusChunksLoaded": true, "forcedChunkRadius": 3 }
 ```
 
-`forcedChunkRadius` e **em chunks**: `0` = so o chunk do Nexus, `1` = ele mais os
-adjacentes (3x3, o padrao), `2` = 5x5. Se voce mudar o valor, o mod solta a area
-antiga e marca a nova sozinho.
+`forcedChunkRadius` e **em chunks**: `0` = so o chunk do Nexus, `1` = 3x3,
+`3` = 7x7 (o padrao). O padrao cobre exatamente a area de spawn (2 a 3 chunks) e
+a area de atracao (3 chunks), entao a invasao roda inteira mesmo sem ninguem por
+perto. Se voce mudar o valor, o mod solta a area antiga e marca a nova sozinho.
 
-**Duas consequencias que valem atencao:**
-
-1. **A invasao acontece mesmo com todo mundo offline.** As ondas comecam ao
-   anoitecer independente de haver jogador, e o Nexus toma dano sem ninguem para
-   defender. Em algumas noites seguidas sem defesa ele cai — e, com
-   `deleteWorldOnNexusDestroyed` ligado, o mundo e apagado.
-2. **A area de spawn e maior que a area carregada no padrao.** O anel de spawn
-   vai de 22 a 44 blocos, enquanto o 3x3 cobre ~24 blocos a partir do centro.
-   Com jogador por perto nao muda nada (ele carrega os chunks em volta); sem
-   jogador, os mobs so nascem dentro da area forcada. Para invasoes completas
-   totalmente desassistidas, use `forcedChunkRadius: 3` ou maior.
+**Consequencia que vale atencao:** a invasao acontece **mesmo com todo mundo
+offline**. As ondas comecam ao anoitecer independente de haver jogador, e o Nexus
+toma dano sem ninguem para defender. Algumas noites seguidas sem defesa e ele
+cai — e, com `deleteWorldOnNexusDestroyed` ligado, o mundo e apagado.
 
 ## HUD
 

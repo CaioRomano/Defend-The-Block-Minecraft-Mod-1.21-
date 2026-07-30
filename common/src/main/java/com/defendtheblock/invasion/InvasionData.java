@@ -33,7 +33,7 @@ public class InvasionData {
     private int currentWave;
     private boolean waveActive;
 
-    private int mobsTotal;
+    /** Quantos invasores ja nasceram nesta noite (a invasao nao tem teto fixo). */
     private int mobsSpawned;
     private final Set<UUID> activeInvaders = new LinkedHashSet<>();
 
@@ -127,17 +127,13 @@ public class InvasionData {
         return waveActive;
     }
 
-    public int getMobsTotal() {
-        return mobsTotal;
-    }
-
     public int getMobsSpawned() {
         return mobsSpawned;
     }
 
-    /** Mobs que ainda faltam ser derrotados: os vivos mais os que faltam nascer. */
-    public int getMobsRemaining() {
-        return activeInvaders.size() + Math.max(0, mobsTotal - mobsSpawned);
+    /** Invasores vivos agora. */
+    public int getMobsAlive() {
+        return activeInvaders.size();
     }
 
     public Set<UUID> getActiveInvaders() {
@@ -157,9 +153,8 @@ public class InvasionData {
         return removed;
     }
 
-    public void startWave(int wave, int total) {
+    public void startWave(int wave) {
         this.currentWave = wave;
-        this.mobsTotal = total;
         this.mobsSpawned = 0;
         this.waveActive = true;
         this.spawnTimer = 0;
@@ -177,7 +172,6 @@ public class InvasionData {
             wavesCompleted++;
         }
         waveActive = false;
-        mobsTotal = 0;
         mobsSpawned = 0;
         activeInvaders.clear();
         markDirty();
@@ -222,7 +216,6 @@ public class InvasionData {
         wavesCompleted = nbt.getInt("WavesCompleted");
         currentWave = nbt.getInt("CurrentWave");
         waveActive = nbt.getBoolean("WaveActive");
-        mobsTotal = nbt.getInt("MobsTotal");
         mobsSpawned = nbt.getInt("MobsSpawned");
         multiplier = nbt.contains("Multiplier") ? nbt.getDouble("Multiplier") : DtbConfig.get().mobMultiplier;
         lastWaveDay = nbt.contains("LastWaveDay") ? nbt.getLong("LastWaveDay") : -1L;
@@ -253,7 +246,6 @@ public class InvasionData {
         nbt.putInt("WavesCompleted", wavesCompleted);
         nbt.putInt("CurrentWave", currentWave);
         nbt.putBoolean("WaveActive", waveActive);
-        nbt.putInt("MobsTotal", mobsTotal);
         nbt.putInt("MobsSpawned", mobsSpawned);
         nbt.putDouble("Multiplier", multiplier);
         nbt.putLong("LastWaveDay", lastWaveDay);
