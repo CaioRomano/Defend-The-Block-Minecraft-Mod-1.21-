@@ -1,4 +1,6 @@
 plugins {
+    // Loom 1.7 usa Problems.forNamespace(String), removida no Gradle 8.11, entao
+    // o wrapper fica preso no 8.10.2. Para subir o Gradle, suba o Loom junto.
     id 'fabric-loom' version '1.7-SNAPSHOT' apply false
 }
 

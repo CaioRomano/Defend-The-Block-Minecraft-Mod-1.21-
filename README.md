@@ -185,6 +185,21 @@ Nexus.
 Os jars saem em `fabric-<versao>/build/libs/`. Java 17 para 1.20.1, Java 21 para
 1.21.1. Para testar em desenvolvimento: `./gradlew :fabric-1.21.1:runClient`.
 
+**Use sempre o `./gradlew` do repositorio, nao um Gradle instalado na maquina.**
+O wrapper esta fixado no **Gradle 8.10.2** porque o **Fabric Loom 1.7** usa a API
+incubadora `Problems.forNamespace(String)`, que o Gradle removeu na versao 8.11.
+Rodar com Gradle 8.11 ou mais novo quebra logo na aplicacao do plugin:
+
+```
+Failed to apply plugin 'fabric-loom'.
+> Could not create an instance of type ...LoomProblemReporter.
+   > 'org.gradle.api.problems.ProblemReporter
+      org.gradle.api.problems.Problems.forNamespace(java.lang.String)'
+```
+
+Para subir o Gradle acima de 8.11, e preciso subir o Loom junto (1.9+) em
+`build.gradle`.
+
 As texturas sao geradas por script, de forma deterministica — os PNGs ja estao
 commitados e so precisam ser refeitos se voce mexer na arte:
 
