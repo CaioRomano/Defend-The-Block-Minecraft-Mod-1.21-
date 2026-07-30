@@ -37,6 +37,18 @@ public final class DtbConfig {
      * {@code false} se voce so quer a mensagem de derrota.
      */
     public boolean deleteWorldOnNexusDestroyed = true;
+    /**
+     * Mantem os chunks em volta do Nexus sempre carregados, mesmo sem nenhum
+     * jogador por perto (usa o forceload do proprio Minecraft).
+     */
+    public boolean keepNexusChunksLoaded = true;
+    /**
+     * Raio, <b>em chunks</b>, da area mantida carregada em volta do Nexus.
+     *
+     * <p>0 = so o chunk do Nexus, 1 = ele mais os adjacentes (3x3, o padrao),
+     * 2 = 5x5, e assim por diante.
+     */
+    public int forcedChunkRadius = 1;
 
     // ----------------------------------------------------------- invasoes
     /** Multiplicador global da quantidade de mobs por invasao. */

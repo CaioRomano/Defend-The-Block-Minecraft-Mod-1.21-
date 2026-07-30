@@ -71,6 +71,8 @@ O D O      E = Olho do Ender
 * So funciona no **Overworld**.
 * **Apenas o primeiro** Nexus colocado no mundo conta. Se voce colocar um segundo,
   ele e removido e devolvido para o inventario.
+* O chunk do Nexus e os **adjacentes** (3x3 por padrao) ficam **sempre
+  carregados**, mesmo sem ninguem por perto — veja "Chunks carregados" abaixo.
 * Depois de colocado **nao pode mais ser retirado** — nem quebrando, nem no
   criativo, nem com explosao, nem com pistao. So os invasores tiram vida dele.
 * Vida padrao: 400 (configuravel).
@@ -163,6 +165,37 @@ obsidiana nao passa) — para esses e preciso TNT ou creeper. Bedrock, barreira 
 proprio Nexus nunca sao quebrados.
 
 ---
+
+## Chunks carregados
+
+O chunk onde o Nexus esta e os vizinhos ficam permanentemente carregados via o
+forceload do proprio Minecraft (o mesmo do comando `/forceload`), entao a
+invasao continua rodando com os jogadores longe. O estado e persistido pelo
+vanilla em `forcedchunks.dat` e sobrevive a reinicios; o mod reaplica no boot
+para pegar mudancas de config.
+
+Os chunks ficam em nivel de *entity ticking*: mobs se movem, spawnam e batem no
+Nexus normalmente ali dentro.
+
+```json
+{ "keepNexusChunksLoaded": true, "forcedChunkRadius": 1 }
+```
+
+`forcedChunkRadius` e **em chunks**: `0` = so o chunk do Nexus, `1` = ele mais os
+adjacentes (3x3, o padrao), `2` = 5x5. Se voce mudar o valor, o mod solta a area
+antiga e marca a nova sozinho.
+
+**Duas consequencias que valem atencao:**
+
+1. **A invasao acontece mesmo com todo mundo offline.** As ondas comecam ao
+   anoitecer independente de haver jogador, e o Nexus toma dano sem ninguem para
+   defender. Em algumas noites seguidas sem defesa ele cai — e, com
+   `deleteWorldOnNexusDestroyed` ligado, o mundo e apagado.
+2. **A area de spawn e maior que a area carregada no padrao.** O anel de spawn
+   vai de 22 a 44 blocos, enquanto o 3x3 cobre ~24 blocos a partir do centro.
+   Com jogador por perto nao muda nada (ele carrega os chunks em volta); sem
+   jogador, os mobs so nascem dentro da area forcada. Para invasoes completas
+   totalmente desassistidas, use `forcedChunkRadius: 3` ou maior.
 
 ## HUD
 

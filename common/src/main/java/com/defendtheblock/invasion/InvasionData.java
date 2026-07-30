@@ -41,6 +41,9 @@ public class InvasionData {
     private long lastWaveDay = -1L;
     private boolean gameOver;
 
+    /** Raio (em chunks) atualmente mantido carregado, ou -1 se nenhum. */
+    private int forcedRadius = -1;
+
     /** Contador ate o proximo lote de spawn. Nao precisa ser persistido, mas e barato. */
     private int spawnTimer;
 
@@ -71,7 +74,18 @@ public class InvasionData {
         this.waveActive = false;
         this.gameOver = false;
         this.lastWaveDay = -1L;
+        this.forcedRadius = -1;
         this.activeInvaders.clear();
+        markDirty();
+    }
+
+    /** Raio (em chunks) que esta forcado agora em volta do Nexus, ou -1. */
+    public int getForcedRadius() {
+        return forcedRadius;
+    }
+
+    public void setForcedRadius(int forcedRadius) {
+        this.forcedRadius = forcedRadius;
         markDirty();
     }
 
@@ -213,6 +227,7 @@ public class InvasionData {
         multiplier = nbt.contains("Multiplier") ? nbt.getDouble("Multiplier") : DtbConfig.get().mobMultiplier;
         lastWaveDay = nbt.contains("LastWaveDay") ? nbt.getLong("LastWaveDay") : -1L;
         gameOver = nbt.getBoolean("GameOver");
+        forcedRadius = nbt.contains("ForcedRadius") ? nbt.getInt("ForcedRadius") : -1;
 
         activeInvaders.clear();
         NbtList list = nbt.getList("ActiveInvaders", NbtElement.STRING_TYPE);
@@ -243,6 +258,7 @@ public class InvasionData {
         nbt.putDouble("Multiplier", multiplier);
         nbt.putLong("LastWaveDay", lastWaveDay);
         nbt.putBoolean("GameOver", gameOver);
+        nbt.putInt("ForcedRadius", forcedRadius);
 
         NbtList list = new NbtList();
         for (UUID uuid : activeInvaders) {

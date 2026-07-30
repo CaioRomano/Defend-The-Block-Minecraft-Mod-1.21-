@@ -55,6 +55,7 @@ public final class NexusManager {
         InvasionData data = getData(world);
         data.placeNexus(pos);
         data.setMultiplier(DtbConfig.get().mobMultiplier);
+        NexusChunkLoader.apply(world.getServer().getOverworld(), data);
 
         world.playSound(null, pos, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
         world.spawnParticles(ParticleTypes.END_ROD, pos.getX() + 0.5D, pos.getY() + 1.2D, pos.getZ() + 0.5D,
@@ -100,6 +101,8 @@ public final class NexusManager {
         InvasionData data = getData(world);
         data.setGameOver(true);
         data.finishWave(false);
+        // Sem Nexus nao ha mais motivo para segurar os chunks carregados.
+        NexusChunkLoader.release(world, data);
 
         world.setBlockState(pos, Blocks.AIR.getDefaultState());
         world.playSound(null, pos, SoundEvents.ENTITY_WITHER_DEATH, SoundCategory.BLOCKS, 1.0F, 0.6F);

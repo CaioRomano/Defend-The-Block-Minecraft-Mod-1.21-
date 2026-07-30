@@ -3,7 +3,9 @@ package com.defendtheblock;
 import com.defendtheblock.command.DtbCommands;
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.config.DtbConfig;
+import com.defendtheblock.invasion.InvasionData;
 import com.defendtheblock.invasion.InvasionManager;
+import com.defendtheblock.invasion.NexusChunkLoader;
 import com.defendtheblock.invasion.NexusManager;
 import com.defendtheblock.registry.ModBlocks;
 import com.defendtheblock.registry.ModEntities;
@@ -42,6 +44,15 @@ public class DefendTheBlock implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(InvasionManager::tick);
         ServerEntityEvents.ENTITY_LOAD.register(InvasionManager::onEntityLoad);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> NexusManager.deletePendingWorld());
+
+        // Reaplica o forceload no boot: pega mudancas de config e conserta o
+        // estado caso alguem tenha mexido com /forceload na mao.
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            InvasionData data = NexusManager.getData(server);
+            if (data.hasNexus() && !data.isGameOver()) {
+                NexusChunkLoader.apply(server.getOverworld(), data);
+            }
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 InvasionManager.syncTo(handler.getPlayer()));
 
