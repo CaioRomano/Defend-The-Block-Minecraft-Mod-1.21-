@@ -290,20 +290,27 @@ Verificado localmente: todos os JSON validos, todos os PNG gerados e
 inspecionados, e os 44 arquivos Java passam no parser do `javac` sem erro
 estrutural — o que prova sintaxe, nao assinatura de API.
 
-Espere alguns erros de compilacao no primeiro build. Os pontos de maior risco,
-em ordem:
+A primeira compilacao de verdade ja aconteceu e apontou 5 erros, todos
+corrigidos:
 
-1. **`SoundEvents`** — no 1.21 varios campos viraram `RegistryEntry<SoundEvent>`
-   em vez de `SoundEvent`.
-2. **Construtores de `ArrowEntity` / `SpectralArrowEntity` no 1.21.1** — usei a
-   forma de 4 argumentos.
-3. **`EnchantmentHelper.enchant(...)` no 1.21.1** — assinatura de 5 argumentos.
-4. **`Item.BLOCK_ITEMS`** em `ModItems` — depende do campo ser publico no yarn.
-5. **`FlyingItemEntityRenderer::new`** e **`AbstractSkeletonEntity.updateAttackType()`**
-   — aridade e visibilidade.
+| Erro | Versao | Correcao |
+|---|---|---|
+| `LookControl.lookAtEntity` nao existe | ambas | e `lookAt(Entity, float, float)` |
+| `HudRenderCallback` passa `RenderTickCounter`, nao `float` | 1.21.1 | lambda com tipo inferido, serve nas duas |
+| `SoundEvents.ITEM_CROSSBOW_LOADING_END` virou `RegistryEntry` | 1.21.1 | constante `DtbCompat.CROSSBOW_LOADED` |
+| `PersistentProjectileEntity.setPunch` sumiu | 1.21.1 | `DtbCompat.applyPunch` |
+| `setPierceLevel` virou privado | 1.21.1 | `DtbCompat.applyPiercing` |
 
-Sao erros de compilacao, nao bugs silenciosos: o compilador aponta arquivo e
-linha, e a correcao e local.
+**Limitacao conhecida no 1.21:** Impacto e Perfuracao da torreta ficam **sem
+efeito**. O 1.20.5 passou a derivar esses dois dos encantamentos do
+`ItemStack` da arma que disparou, e a torreta guarda os niveis dela em NBT
+proprio, nao numa arma. Os outros quatro encantamentos (Poder, Chama, Multitiro,
+Carga Rapida) funcionam normalmente nas duas versoes, e no 1.20.1 os seis
+funcionam. Para resolver, a torreta precisa montar um stack de besta encantado e
+passar como arma no construtor da flecha.
+
+Como o jogo em si nunca foi executado, ainda podem aparecer erros nas etapas
+seguintes do build (mixins, datagen) e problemas que so aparecem jogando.
 
 ---
 

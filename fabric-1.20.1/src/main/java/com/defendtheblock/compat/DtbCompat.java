@@ -27,6 +27,8 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -44,6 +46,9 @@ import java.util.Map;
 public final class DtbCompat {
 
     public static final Identifier INVASION_SYNC = new Identifier(DefendTheBlock.MOD_ID, "invasion_sync");
+
+    /** No 1.21 este som virou {@code RegistryEntry<SoundEvent>}; aqui ainda e direto. */
+    public static final SoundEvent CROSSBOW_LOADED = SoundEvents.ITEM_CROSSBOW_LOADING_END;
 
     private DtbCompat() {
     }
@@ -109,6 +114,20 @@ public final class DtbCompat {
         ArrowEntity arrow = new ArrowEntity(world, owner);
         arrow.initFromStack(ammo);
         return arrow;
+    }
+
+    /** Impacto (Punch): repulsao extra da flecha. */
+    public static void applyPunch(PersistentProjectileEntity arrow, int level) {
+        if (level > 0) {
+            arrow.setPunch(level);
+        }
+    }
+
+    /** Perfuracao (Piercing): quantos alvos a flecha atravessa. */
+    public static void applyPiercing(PersistentProjectileEntity arrow, int level) {
+        if (level > 0) {
+            arrow.setPierceLevel((byte) level);
+        }
     }
 
     // ------------------------------------------------------------ itens em nbt

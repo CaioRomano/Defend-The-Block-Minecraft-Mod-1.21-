@@ -22,7 +22,10 @@ public class DefendTheBlockClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.ARROW_TURRET, TurretRenderer::new);
         EntityRendererRegistry.register(ModEntities.WEB_SHOT, FlyingItemEntityRenderer::new);
 
-        HudRenderCallback.EVENT.register(InvasionHud::render);
+        // Lambda em vez de method reference: o tipo do segundo parametro e
+        // inferido, entao a mesma linha serve para o float do 1.20.1 e para o
+        // RenderTickCounter do 1.21.
+        HudRenderCallback.EVENT.register((context, tickDelta) -> InvasionHud.render(context));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientInvasionState.reset());
 
         DtbClientCompat.registerNetworking(ClientInvasionState::update);

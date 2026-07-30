@@ -26,6 +26,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -41,6 +43,9 @@ import java.util.Optional;
  * {@code common/} nao sabe em qual versao esta rodando.
  */
 public final class DtbCompat {
+
+    /** No 1.21 os sons de besta viraram {@code RegistryEntry<SoundEvent>}. */
+    public static final SoundEvent CROSSBOW_LOADED = SoundEvents.ITEM_CROSSBOW_LOADING_END.value();
 
     private DtbCompat() {
     }
@@ -101,6 +106,24 @@ public final class DtbCompat {
             return new SpectralArrowEntity(world, owner, ammo, null);
         }
         return new ArrowEntity(world, owner, ammo, null);
+    }
+
+    /**
+     * Impacto (Punch) — <b>sem efeito no 1.21</b>.
+     *
+     * <p>O 1.20.5 tirou {@code setPunch} da flecha: repulsao e perfuracao agora
+     * saem dos encantamentos do {@code ItemStack} da arma que disparou, passado
+     * no construtor da flecha. A torreta guarda os niveis dela em NBT proprio,
+     * nao numa arma, entao aqui isso vira no-op ate a torreta montar um stack de
+     * besta encantado para passar como arma.
+     */
+    public static void applyPunch(PersistentProjectileEntity arrow, int level) {
+        // ver javadoc: precisa do caminho de weapon stack no 1.21
+    }
+
+    /** Perfuracao (Piercing) — <b>sem efeito no 1.21</b>, mesmo motivo do Punch. */
+    public static void applyPiercing(PersistentProjectileEntity arrow, int level) {
+        // ver javadoc de applyPunch
     }
 
     // ------------------------------------------------------------ itens em nbt

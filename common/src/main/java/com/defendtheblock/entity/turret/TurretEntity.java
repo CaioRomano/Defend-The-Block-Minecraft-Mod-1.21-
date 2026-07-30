@@ -255,7 +255,7 @@ public class TurretEntity extends MobEntity {
             held.decrement(moved);
         }
 
-        playSound(SoundEvents.ITEM_CROSSBOW_LOADING_END, 1.0F, 1.0F);
+        playSound(DtbCompat.CROSSBOW_LOADED, 1.0F, 1.0F);
         updateDisplayName();
         reportStatus(player);
         return ActionResult.SUCCESS;

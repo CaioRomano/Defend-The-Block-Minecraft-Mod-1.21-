@@ -86,12 +86,8 @@ public class TurretShootGoal extends Goal {
 
         arrow.setDamage(turret.getArrowDamage());
         arrow.setCritical(true);
-        if (turret.getPunch() > 0) {
-            arrow.setPunch(turret.getPunch());
-        }
-        if (turret.getPiercing() > 0) {
-            arrow.setPierceLevel((byte) turret.getPiercing());
-        }
+        DtbCompat.applyPunch(arrow, turret.getPunch());
+        DtbCompat.applyPiercing(arrow, turret.getPiercing());
         if (turret.getFlame() > 0) {
             arrow.setFireTicks(100);
         }

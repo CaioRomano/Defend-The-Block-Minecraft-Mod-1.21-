@@ -68,7 +68,7 @@ public class SpiderWebShotGoal extends Goal {
         if (target == null || !(spider.getWorld() instanceof ServerWorld world)) {
             return;
         }
-        spider.getLookControl().lookAtEntity(target, 30.0F, 30.0F);
+        spider.getLookControl().lookAt(target, 30.0F, 30.0F);
 
         if (--cooldown > 0) {
             return;

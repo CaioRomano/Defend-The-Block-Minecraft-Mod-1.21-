@@ -29,7 +29,13 @@ public final class InvasionHud {
     private InvasionHud() {
     }
 
-    public static void render(DrawContext context, float tickDelta) {
+    /**
+     * O segundo parametro do {@code HudRenderCallback} mudou de {@code float}
+     * para {@code RenderTickCounter} no 1.21, e o HUD nao usa esse valor, entao
+     * ele nao entra na assinatura: o registro passa um lambda com o tipo
+     * inferido, que compila nas duas versoes.
+     */
+    public static void render(DrawContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.options.hudHidden) {
             return;
