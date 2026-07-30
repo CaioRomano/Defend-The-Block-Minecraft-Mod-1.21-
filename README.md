@@ -281,16 +281,19 @@ receitas ficam por versao porque o campo `result` do JSON mudou de `item` para
 
 ## Status de verificacao
 
-O codigo foi escrito e revisado e as texturas foram geradas e conferidas, mas
-**o build nunca foi executado**: o ambiente onde o mod foi escrito bloqueia
+**`./gradlew buildAll` compila com sucesso as duas versoes** (Fabric Loom
+1.7.4 + Gradle 8.10.2, testado numa maquina com acesso a rede). Isso prova que
+o codigo bate com as APIs do Minecraft e do Fabric nas duas versoes — nao
+prova que o mod funciona jogando. Ninguem colocou o Nexus, viu a torreta girar
+nem sobreviveu a uma invasao ainda.
+
+Historico de como chegou aqui: o codigo foi escrito num ambiente que bloqueia
 `maven.fabricmc.net`, `libraries.minecraft.net` e `piston-meta.mojang.com`, entao
-o Loom nao consegue baixar Minecraft, mappings nem a Fabric API.
-
-Verificado localmente: todos os JSON validos, todos os PNG gerados e
-inspecionados, e os 44 arquivos Java passam no parser do `javac` sem erro
-estrutural — o que prova sintaxe, nao assinatura de API.
-
-A primeira compilacao de verdade ja aconteceu e apontou 5 erros, todos
+o Loom nao conseguia baixar Minecraft, mappings nem a Fabric API. Antes do
+primeiro build de verdade, o que dava para verificar ali era: todos os JSON
+validos, todos os PNG gerados e inspecionados, e os arquivos Java passando no
+parser do `javac` sem erro estrutural — o que prova sintaxe, nao assinatura de
+API. A primeira compilacao de verdade, feita depois, apontou 5 erros, todos
 corrigidos:
 
 | Erro | Versao | Correcao |
@@ -309,8 +312,11 @@ Carga Rapida) funcionam normalmente nas duas versoes, e no 1.20.1 os seis
 funcionam. Para resolver, a torreta precisa montar um stack de besta encantado e
 passar como arma no construtor da flecha.
 
-Como o jogo em si nunca foi executado, ainda podem aparecer erros nas etapas
-seguintes do build (mixins, datagen) e problemas que so aparecem jogando.
+**Ainda nao testado em jogo.** Compilar prova assinatura de API, nao
+comportamento: falta rodar `runClient`, colocar o Nexus, forcar uma invasao com
+`/dtb forcewave` e ver se a torreta realmente gira e atira. E nessa etapa que
+problemas de mixin (nomes de campo do `MobEntityAccessor`) ou de logica de jogo
+apareceriam, se existirem.
 
 ---
 
