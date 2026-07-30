@@ -34,22 +34,23 @@ public final class WaveComposition {
             new Rule(EntityType.SKELETON, 1, 22),
             new Rule(EntityType.CREEPER, 1, 18),
             new Rule(EntityType.SPIDER, 2, 12),
-            new Rule(EntityType.HUSK, 4, 10),
-            new Rule(EntityType.STRAY, 5, 8),
-            new Rule(EntityType.CAVE_SPIDER, 6, 7),
-            new Rule(EntityType.WITCH, 7, 4),
-            new Rule(EntityType.ZOMBIE_VILLAGER, 8, 6),
-            new Rule(EntityType.DROWNED, 11, 5),
-            new Rule(EntityType.VINDICATOR, 14, 3),
+            new Rule(EntityType.HUSK, 3, 10),
+            new Rule(EntityType.STRAY, 4, 9),
+            new Rule(EntityType.CAVE_SPIDER, 5, 8),
+            new Rule(EntityType.WITCH, 6, 5),
+            new Rule(EntityType.ZOMBIE_VILLAGER, 7, 6),
+            new Rule(EntityType.DROWNED, 9, 5),
+            new Rule(EntityType.VINDICATOR, 12, 4),
 
-            // --- reforcos do Nether
-            new Rule(EntityType.MAGMA_CUBE, 3, 6),
-            new Rule(EntityType.WITHER_SKELETON, 4, 6),
-            new Rule(EntityType.BLAZE, 5, 5),
-            new Rule(EntityType.ZOMBIFIED_PIGLIN, 6, 6),
-            new Rule(EntityType.PIGLIN_BRUTE, 8, 3),
-            new Rule(EntityType.HOGLIN, 10, 3),
-            new Rule(EntityType.GHAST, 12, 2));
+            // --- reforcos do Nether: entram cedo e com peso de verdade, para
+            // aparecerem em quantidade nas ondas em vez de serem curiosidade.
+            new Rule(EntityType.MAGMA_CUBE, 2, 9),
+            new Rule(EntityType.WITHER_SKELETON, 2, 8),
+            new Rule(EntityType.BLAZE, 3, 8),
+            new Rule(EntityType.ZOMBIFIED_PIGLIN, 3, 9),
+            new Rule(EntityType.PIGLIN_BRUTE, 5, 5),
+            new Rule(EntityType.HOGLIN, 6, 4),
+            new Rule(EntityType.GHAST, 8, 3));
 
     private WaveComposition() {
     }

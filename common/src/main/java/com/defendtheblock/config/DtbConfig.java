@@ -56,9 +56,12 @@ public final class DtbConfig {
     public double mobMultiplier = 1.0D;
     /**
      * Distancia minima de spawn, <b>em chunks</b>, contada a partir do chunk do
-     * Nexus. Com 2, nenhum invasor nasce nos 2 chunks colados no Nexus.
+     * Nexus. Com 1, toda a area de ativacao e usada menos o chunk do Nexus.
+     *
+     * <p>O chunk do Nexus (distancia 0) <b>nunca</b> spawna invasor, mesmo que
+     * este valor seja colocado em 0: e uma regra fixa do mod.
      */
-    public int spawnChunkRadiusMin = 2;
+    public int spawnChunkRadiusMin = 1;
     /** Distancia maxima de spawn, em chunks, a partir do chunk do Nexus. */
     public int spawnChunkRadiusMax = 3;
     /**
@@ -68,16 +71,27 @@ public final class DtbConfig {
      */
     public int attractionChunkRadius = 3;
     /** Ticks entre cada lote de spawn na invasao 1. Diminui a cada invasao. */
-    public int baseSpawnInterval = 100;
+    public int baseSpawnInterval = 60;
+    /** Quanto o intervalo entre lotes encolhe a cada invasao, em ticks. */
+    public int spawnIntervalStepPerWave = 4;
     /** Menor intervalo de spawn possivel, em ticks. */
-    public int minSpawnInterval = 20;
+    public int minSpawnInterval = 10;
+    /** Quantos invasores nascem por lote na invasao 1. */
+    public double baseSpawnBatch = 2.0D;
+    /** Quanto o lote cresce a cada invasao. */
+    public double spawnBatchGrowthPerWave = 0.5D;
+    /** Teto de invasores vivos ao mesmo tempo na invasao 1. */
+    public int baseConcurrentInvaders = 30;
+    /** Quanto esse teto sobe a cada invasao. */
+    public int concurrentInvadersPerWave = 5;
     /**
-     * Teto de invasores vivos ao mesmo tempo.
+     * Teto absoluto de invasores vivos ao mesmo tempo.
      *
-     * <p>A invasao nao tem mais um numero fixo de mobs: ela spawna sem parar ate
-     * amanhecer, entao este valor e o que segura a carga do servidor.
+     * <p>A invasao nao tem numero fixo de mobs: ela spawna sem parar ate o fim
+     * da noite, entao e este valor que segura a carga do servidor. Baixe se o
+     * servidor sofrer nas invasoes altas.
      */
-    public int maxConcurrentInvaders = 60;
+    public int maxConcurrentInvaders = 100;
 
     // ------------------------------------------------- chances de habilidade
     // Sempre abaixo dos mobs "normais": a soma das habilidades especiais de um

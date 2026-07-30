@@ -128,18 +128,32 @@ estiverem carregando um totem**. Cooldown padrao de 30s.
 
 * Comecam automaticamente **ao anoitecer** (tempo 13000), uma por noite.
 * A invasao **nao tem um numero fechado de mobs**: ela spawna em lotes do
-  anoitecer ate o fim da noite. O que segura a quantidade e o teto de invasores
-  vivos ao mesmo tempo (`maxConcurrentInvaders`, padrao 60).
-* Os invasores nascem num anel medido **em chunks** a partir do chunk do Nexus:
-  de `spawnChunkRadiusMin` (2) ate `spawnChunkRadiusMax` (3). Os 2 chunks
-  colados no Nexus ficam livres de spawn.
+  anoitecer ate o fim da noite.
+* Os invasores nascem **so dentro da area de ativacao**, medida em chunks a
+  partir do chunk do Nexus: de `spawnChunkRadiusMin` (1) ate
+  `spawnChunkRadiusMax` (3). Fora dessa area o mundo segue com o spawn normal
+  do vanilla.
+* **O chunk onde o Nexus esta nunca spawna invasor.** E regra fixa do mod, nao
+  depende da config.
 * **Todo mob hostil que nascer dentro de 3 chunks do Nexus** — spawn natural,
   spawner ou ovo — e recrutado pela invasao, ganha as habilidades de invasor e
   marcha ate o bloco. **Enderman e a unica excecao**: ele nunca participa.
-* A cada invasao novos tipos entram no sorteio e o **ritmo de spawn aumenta**
-  (o intervalo entre lotes encolhe e o lote cresce).
-* Mobs do **Nether** entram a partir da invasao 3: magma cube, wither skeleton,
-  blaze, zombified piglin, piglin brute, hoglin e ghast.
+* Mobs do **Nether** entram cedo e com peso de verdade: magma cube e wither
+  skeleton na invasao 2, blaze e zombified piglin na 3, piglin brute na 5,
+  hoglin na 6 e ghast na 8. Da invasao 3 em diante eles sao cerca de **um quarto
+  de toda a horda**.
+* A cada invasao novos tipos entram no sorteio e tudo acelera junto: o lote
+  cresce, o intervalo entre lotes encolhe e o teto de invasores vivos sobe.
+
+| Invasao | Mobs por lote | Intervalo | Teto de vivos | Nether |
+|---|---|---|---|---|
+| 1 | 2 | 2.8s | 35 | — |
+| 3 | 4 | 2.4s | 45 | 27% |
+| 8 | 6 | 1.4s | 70 | 28% |
+| 14+ | 9+ | 0.5s | 100 | 26% |
+
+O teto de vivos e o que realmente segura a carga do servidor: baixe
+`maxConcurrentInvaders` se as invasoes altas pesarem demais.
 * Depois do fim da noite a onda para de spawnar, mas quem ja nasceu continua
   atacando; a onda fecha de vez ao amanhecer.
 * Os invasores querem o Nexus, mas **atacam o jogador normalmente** se ele

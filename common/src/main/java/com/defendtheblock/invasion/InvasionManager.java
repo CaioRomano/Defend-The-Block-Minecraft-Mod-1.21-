@@ -121,12 +121,19 @@ public final class InvasionManager {
         int wave = data.getCurrentWave();
         // A cada invasao o intervalo entre lotes encolhe e o lote cresce:
         // e o "ratespawn" aumentando noite apos noite.
-        int interval = Math.max(config.minSpawnInterval, config.baseSpawnInterval - wave * 6);
-        int batch = (int) Math.max(1L, Math.round((1 + wave / 3.0D) * data.getMultiplier()));
+        int interval = Math.max(config.minSpawnInterval,
+                config.baseSpawnInterval - wave * config.spawnIntervalStepPerWave);
+        double raw = (config.baseSpawnBatch + wave * config.spawnBatchGrowthPerWave) * data.getMultiplier();
+        int batch = (int) Math.max(1L, Math.round(raw));
         data.setSpawnTimer(interval);
 
+        // O teto de invasores vivos tambem sobe por invasao, senao a escalada
+        // empaca assim que a onda passa a viver encostada no limite.
+        int cap = Math.min(config.maxConcurrentInvaders,
+                config.baseConcurrentInvaders + wave * config.concurrentInvadersPerWave);
+
         for (int i = 0; i < batch; i++) {
-            if (data.getActiveInvaders().size() >= config.maxConcurrentInvaders) {
+            if (data.getActiveInvaders().size() >= cap) {
                 break;
             }
             EntityType<? extends MobEntity> type = WaveComposition.pick(wave, world.getRandom());
@@ -167,10 +174,14 @@ public final class InvasionManager {
     }
 
     /**
-     * Um lugar valido no anel de spawn, medido <b>em chunks</b> a partir do
-     * chunk do Nexus: nada nasce a menos de {@code spawnChunkRadiusMin} chunks,
-     * nada alem de {@code spawnChunkRadiusMax}. A distancia e de Chebyshev
-     * (quadrada), que e como o jogo enxerga vizinhanca de chunk.
+     * Um lugar valido dentro da area de ativacao, medida <b>em chunks</b> a
+     * partir do chunk do Nexus. A distancia e de Chebyshev (quadrada), que e
+     * como o jogo enxerga vizinhanca de chunk.
+     *
+     * <p>Só os chunks da area de ativacao spawnam invasor; fora dela o mundo
+     * segue com o spawn normal do vanilla. O <b>chunk do Nexus nunca spawna</b>,
+     * independente da config: e uma regra fixa, nao um efeito colateral do raio
+     * minimo.
      */
     private static BlockPos findSpawnPos(ServerWorld world, BlockPos nexus) {
         DtbConfig config = DtbConfig.get();
@@ -181,7 +192,9 @@ public final class InvasionManager {
         for (int attempt = 0; attempt < 32; attempt++) {
             int dx = world.getRandom().nextInt(max * 2 + 1) - max;
             int dz = world.getRandom().nextInt(max * 2 + 1) - max;
-            if (Math.max(Math.abs(dx), Math.abs(dz)) < min) {
+            int chunkDistance = Math.max(Math.abs(dx), Math.abs(dz));
+            // Regra fixa: nada nasce no chunk onde o bloco esta.
+            if (chunkDistance == 0 || chunkDistance < min) {
                 continue;
             }
 
