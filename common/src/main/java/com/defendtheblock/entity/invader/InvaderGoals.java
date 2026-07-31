@@ -87,20 +87,26 @@ public final class InvaderGoals {
 
         MobEntityAccessor accessor = (MobEntityAccessor) mob;
 
-        // Prioridades bem abaixo (numero menor = mais importante) das goals de
-        // perambular/olhar do vanilla, para o mob nunca "esquecer" o Nexus por
-        // ficar vagando a toa. So cedem quando o proprio canStart() de cada
-        // goal decide ceder (por exemplo, AttackNexusGoal para quando ha um
-        // alvo vivo por perto, deixando as goals de combate vanilla agirem).
-        accessor.defendtheblock$getGoalSelector().add(1, new BreachObstacleGoal(mob, MOVE_SPEED));
-        accessor.defendtheblock$getGoalSelector().add(2, new ClimbLadderGoal(mob, MOVE_SPEED));
+        // Prioridades NEGATIVAS de proposito: o vanilla registra as proprias
+        // goals de combate (ex. ZombieAttackGoal) tipicamente na prioridade 2,
+        // ANTES da gente sequer tocar no mob (o goalSelector ja vem com elas
+        // quando o mob e recrutado). Se a nossa cadeia usasse numeros
+        // positivos (1, 2, 3...) ela perderia o Control.MOVE/LOOK para essas
+        // goals vanilla sempre que as duas quisessem rodar ao mesmo tempo —
+        // foi exatamente isso que fazia o Nexus "perder" para o combate mesmo
+        // com o mob literalmente em cima do bloco. Usando negativos, a nossa
+        // cadeia inteira sempre vence esse empate, e a ordem relativa entre
+        // elas continua a mesma de antes (arrombar > escalar > pontilhar/teia
+        // > atacar o Nexus).
+        accessor.defendtheblock$getGoalSelector().add(-3, new BreachObstacleGoal(mob, MOVE_SPEED));
+        accessor.defendtheblock$getGoalSelector().add(-2, new ClimbLadderGoal(mob, MOVE_SPEED));
         if (DtbConfig.get().invadersCanBridge) {
-            accessor.defendtheblock$getGoalSelector().add(3, new BridgeToNexusGoal(mob));
+            accessor.defendtheblock$getGoalSelector().add(-1, new BridgeToNexusGoal(mob));
         }
         if (data.hasAbility(InvaderAbility.WEB_SHOT)) {
-            accessor.defendtheblock$getGoalSelector().add(3, new SpiderWebShotGoal(mob));
+            accessor.defendtheblock$getGoalSelector().add(-1, new SpiderWebShotGoal(mob));
         }
-        accessor.defendtheblock$getGoalSelector().add(4, new AttackNexusGoal(mob, MOVE_SPEED));
+        accessor.defendtheblock$getGoalSelector().add(0, new AttackNexusGoal(mob, MOVE_SPEED));
 
         // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho. A
         // torreta so vira alvo de campo (RevengeGoal, nativo do vanilla) se

@@ -6,12 +6,15 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenTexts;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Aba de estatisticas da torreta, aberta pelo clique direito de mao vazia
@@ -24,16 +27,26 @@ import net.minecraft.util.Identifier;
  * aba sempre mostra o progresso mais recente. Essa escolha evita depender de
  * {@code ScreenHandlerRegistry}/{@code Slot}, familia de API sem nenhum
  * precedente testado neste projeto; ver o README para detalhes.
+ *
+ * <p>O botao "Fechar" e desenhado e testado a mao (nao usa
+ * {@code ButtonWidget}/{@code addDrawableChild}) porque a caixa inteira muda
+ * de altura conforme o texto (traduzido) precisa quebrar linha, e um widget
+ * registrado uma vez em {@code init()} nao acompanharia isso.
  */
 @Environment(EnvType.CLIENT)
 public final class TurretStatsScreen extends Screen {
 
-    private static final int WIDTH = 220;
+    private static final int WIDTH = 260;
     private static final int LINE_HEIGHT = 12;
+    private static final int PADDING = 10;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 20;
 
     private static TurretStatsScreen current;
 
     private TurretStatsData data;
+    private int buttonLeft;
+    private int buttonTop;
 
     private TurretStatsScreen(TurretStatsData data) {
         super(Text.translatable("screen.defendtheblock.turret_stats"));
@@ -52,9 +65,6 @@ public final class TurretStatsScreen extends Screen {
     @Override
     protected void init() {
         current = this;
-        addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
-                .dimensions(width / 2 - 50, height / 2 + 90, 100, 20)
-                .build());
     }
 
     @Override
@@ -71,61 +81,172 @@ public final class TurretStatsScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        int left = width / 2 - WIDTH / 2;
-        int top = height / 2 - 100;
+        // Escurece o mundo atras da aba primeiro: sem isso o painel ficava com
+        // pouco contraste (e "apagado") contra um ceu claro ou uma area bem
+        // iluminada atras do jogador.
+        context.fill(0, 0, width, height, 0x9A000000);
 
-        context.fill(left - 8, top - 10, left + WIDTH + 8, top + 210, 0xD0100C18);
-        context.fill(left - 8, top - 10, left + WIDTH + 8, top - 9, 0xFF16C8D2);
-        context.fill(left - 8, top + 209, left + WIDTH + 8, top + 210, 0xFF16C8D2);
+        int left = width / 2 - WIDTH / 2;
+
+        // Monta todas as linhas ANTES de desenhar qualquer coisa, ja quebradas
+        // para a largura da aba — o bug antigo era desenhar direto numa caixa
+        // de tamanho fixo, que nao acompanhava textos mais compridos
+        // (traducoes maiores que o ingles) e deixava letras vazando pra fora.
+        List<Line> lines = buildLines();
+
+        int contentHeight = 0;
+        for (Line line : lines) {
+            contentHeight += line.height();
+        }
+
+        int top = Math.max(PADDING + 4, height / 2 - contentHeight / 2 - PADDING);
+        int boxTop = top - PADDING;
+        int boxBottom = top + contentHeight + PADDING + BUTTON_HEIGHT + PADDING;
+
+        context.fill(left - PADDING, boxTop, left + WIDTH + PADDING, boxBottom, 0xF0100C18);
+        context.fill(left - PADDING, boxTop, left + WIDTH + PADDING, boxTop + 1, 0xFF16C8D2);
+        context.fill(left - PADDING, boxBottom - 1, left + WIDTH + PADDING, boxBottom, 0xFF16C8D2);
+        context.fill(left - PADDING, boxTop, left - PADDING + 1, boxBottom, 0xFF16C8D2);
+        context.fill(left + WIDTH + PADDING - 1, boxTop, left + WIDTH + PADDING, boxBottom, 0xFF16C8D2);
 
         int y = top;
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, y, 0xFF7EF4F7);
-        y += LINE_HEIGHT * 2;
-
-        context.drawTextWithShadow(textRenderer, Text.translatable("turret.defendtheblock.tier." + data.tier),
-                left, y, 0xFFE3E3EC);
-        y += LINE_HEIGHT;
-
-        drawBar(context, left, y, WIDTH, data.health, data.maxHealth, 0xFF3FD86B,
-                Text.translatable("screen.defendtheblock.turret_health", (int) data.health, (int) data.maxHealth));
-        y += LINE_HEIGHT + 6;
-
-        context.drawTextWithShadow(textRenderer,
-                Text.translatable("turret.defendtheblock.stats", String.format("%.1f", data.damage),
-                        (int) data.range, String.format("%.1f", data.reloadTicks / 20.0F)),
-                left, y, 0xFFE3E3EC);
-        y += LINE_HEIGHT;
-
-        context.drawTextWithShadow(textRenderer,
-                Text.translatable("turret.defendtheblock.ammo_line", data.ammo, data.maxAmmo),
-                left, y, 0xFFE3E3EC);
-        y += LINE_HEIGHT * 2;
-
-        context.drawTextWithShadow(textRenderer,
-                Text.translatable("screen.defendtheblock.repair_hint", itemName(data.repairItemId)),
-                left, y, 0xFFAFD8FF);
-        y += LINE_HEIGHT;
-
-        if (data.nextUpgradeItemId.isEmpty()) {
-            context.drawTextWithShadow(textRenderer,
-                    Text.translatable("turret.defendtheblock.max_tier"), left, y, 0xFFF7D774);
-        } else {
-            context.drawTextWithShadow(textRenderer,
-                    Text.translatable("screen.defendtheblock.upgrade_hint", itemName(data.nextUpgradeItemId),
-                            data.upgradeProgress, data.nextUpgradeCount),
-                    left, y, 0xFFAFD8FF);
+        for (Line line : lines) {
+            y = line.draw(context, left, y);
         }
+
+        buttonLeft = width / 2 - BUTTON_WIDTH / 2;
+        buttonTop = boxBottom - PADDING - BUTTON_HEIGHT;
+        boolean hovered = mouseX >= buttonLeft && mouseX < buttonLeft + BUTTON_WIDTH
+                && mouseY >= buttonTop && mouseY < buttonTop + BUTTON_HEIGHT;
+        context.fill(buttonLeft, buttonTop, buttonLeft + BUTTON_WIDTH, buttonTop + BUTTON_HEIGHT,
+                hovered ? 0xFF3A3252 : 0xFF241E38);
+        context.drawCenteredTextWithShadow(textRenderer, ScreenTexts.DONE,
+                buttonLeft + BUTTON_WIDTH / 2, buttonTop + (BUTTON_HEIGHT - 8) / 2, 0xFFE3E3EC);
 
         super.render(context, mouseX, mouseY, delta);
     }
 
-    private void drawBar(DrawContext context, int x, int y, int barWidth, float value, float max, int color,
-                         Text label) {
-        float ratio = max <= 0 ? 0 : Math.max(0.0F, Math.min(1.0F, value / max));
-        int filled = Math.round(barWidth * ratio);
-        context.fill(x, y, x + barWidth, y + 6, 0xFF2B2440);
-        context.fill(x, y, x + filled, y + 6, color);
-        context.drawTextWithShadow(textRenderer, label, x, y + 8, 0xFFE3E3EC);
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && mouseX >= buttonLeft && mouseX < buttonLeft + BUTTON_WIDTH
+                && mouseY >= buttonTop && mouseY < buttonTop + BUTTON_HEIGHT) {
+            close();
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    // ---------------------------------------------------------------- linhas
+
+    private List<Line> buildLines() {
+        List<Line> lines = new ArrayList<>();
+        lines.add(new TitleLine(title));
+        lines.add(new SpacerLine());
+        lines.add(new TextLine(Text.translatable("turret.defendtheblock.tier." + data.tier), 0xFFE3E3EC));
+        lines.add(new BarLine(data.health, data.maxHealth, 0xFF3FD86B,
+                Text.translatable("screen.defendtheblock.turret_health", (int) data.health, (int) data.maxHealth)));
+        lines.add(new SpacerLine());
+        lines.add(new TextLine(Text.translatable("turret.defendtheblock.stats", String.format("%.1f", data.damage),
+                (int) data.range, String.format("%.1f", data.reloadTicks / 20.0F)), 0xFFE3E3EC));
+        lines.add(new TextLine(Text.translatable("turret.defendtheblock.ammo_line", data.ammo, data.maxAmmo),
+                0xFFE3E3EC));
+        lines.add(new SpacerLine());
+        lines.add(new TextLine(Text.translatable("screen.defendtheblock.repair_hint", itemName(data.repairItemId)),
+                0xFFAFD8FF));
+        lines.add(data.nextUpgradeItemId.isEmpty()
+                ? new TextLine(Text.translatable("turret.defendtheblock.max_tier"), 0xFFF7D774)
+                : new TextLine(Text.translatable("screen.defendtheblock.upgrade_hint",
+                        itemName(data.nextUpgradeItemId), data.upgradeProgress, data.nextUpgradeCount), 0xFFAFD8FF));
+        return lines;
+    }
+
+    /** Um bloco de desenho dentro da aba: pode ocupar mais de uma linha depois de quebrado. */
+    private abstract class Line {
+        abstract int height();
+
+        abstract int draw(DrawContext context, int left, int y);
+    }
+
+    private final class SpacerLine extends Line {
+        @Override
+        int height() {
+            return LINE_HEIGHT / 2;
+        }
+
+        @Override
+        int draw(DrawContext context, int left, int y) {
+            return y + height();
+        }
+    }
+
+    private final class TitleLine extends Line {
+        private final Text text;
+
+        TitleLine(Text text) {
+            this.text = text;
+        }
+
+        @Override
+        int height() {
+            return LINE_HEIGHT * 2;
+        }
+
+        @Override
+        int draw(DrawContext context, int left, int y) {
+            context.drawCenteredTextWithShadow(textRenderer, text, width / 2, y, 0xFF7EF4F7);
+            return y + height();
+        }
+    }
+
+    private class TextLine extends Line {
+        final List<OrderedText> rows;
+        final int color;
+
+        TextLine(Text text, int color) {
+            this.rows = textRenderer.wrapLines(text, WIDTH);
+            this.color = color;
+        }
+
+        @Override
+        int height() {
+            return Math.max(1, rows.size()) * LINE_HEIGHT;
+        }
+
+        @Override
+        int draw(DrawContext context, int left, int y) {
+            for (OrderedText row : rows) {
+                context.drawTextWithShadow(textRenderer, row, left, y, color);
+                y += LINE_HEIGHT;
+            }
+            return y;
+        }
+    }
+
+    private final class BarLine extends TextLine {
+        private final float value;
+        private final float max;
+        private final int barColor;
+
+        BarLine(float value, float max, int barColor, Text label) {
+            super(label, 0xFFE3E3EC);
+            this.value = value;
+            this.max = max;
+            this.barColor = barColor;
+        }
+
+        @Override
+        int height() {
+            return 8 + super.height();
+        }
+
+        @Override
+        int draw(DrawContext context, int left, int y) {
+            float ratio = max <= 0 ? 0 : Math.max(0.0F, Math.min(1.0F, value / max));
+            int filled = Math.round(WIDTH * ratio);
+            context.fill(left, y, left + WIDTH, y + 6, 0xFF2B2440);
+            context.fill(left, y, left + filled, y + 6, barColor);
+            return super.draw(context, left, y + 8);
+        }
     }
 
     private static Text itemName(String itemId) {

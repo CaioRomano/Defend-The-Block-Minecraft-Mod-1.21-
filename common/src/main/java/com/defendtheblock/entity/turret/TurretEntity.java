@@ -3,18 +3,15 @@ package com.defendtheblock.entity.turret;
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.ai.TurretShootGoal;
-import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.network.TurretStatsData;
 import com.defendtheblock.registry.ModItems;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArrowItem;
 import net.minecraft.item.Item;
@@ -91,11 +88,14 @@ public class TurretEntity extends MobEntity {
                 .add(EntityAttributes.GENERIC_ARMOR, 4.0D);
     }
 
+    /**
+     * So a {@link TurretShootGoal}: ela mesma cuida de achar/trocar de alvo
+     * (ver o javadoc de la para o porque de nao usar mais um
+     * {@code ActiveTargetGoal} separado no target selector).
+     */
     @Override
     protected void initGoals() {
         goalSelector.add(1, new TurretShootGoal(this));
-        targetSelector.add(1, new ActiveTargetGoal<>(this, MobEntity.class, 10, true, false,
-                entity -> (entity instanceof Monster || InvaderAccess.isInvader(entity)) && !isDegenerateAngle(entity)));
     }
 
     /**
@@ -105,10 +105,21 @@ public class TurretEntity extends MobEntity {
      * so por estar mais perto e fique inerte em vez de atirar em quem estiver
      * se aproximando dentro do campo de visao dela.
      */
-    private boolean isDegenerateAngle(LivingEntity entity) {
+    public boolean isDegenerateAngle(LivingEntity entity) {
+        return horizontalSquaredDistanceTo(entity) < 0.25D;
+    }
+
+    /**
+     * Distancia horizontal (ignora altura) ao quadrado. O alcance da torreta
+     * e medido so nesse plano: senao uma torreta bem alta (no topo de uma
+     * torre, por exemplo) perderia alcance efetivo contra quem se aproxima
+     * pelo chao, ja que a altura consumiria parte do orcamento de uma
+     * distancia 3D.
+     */
+    public double horizontalSquaredDistanceTo(LivingEntity entity) {
         double dx = entity.getX() - getX();
         double dz = entity.getZ() - getZ();
-        return dx * dx + dz * dz < 0.25D;
+        return dx * dx + dz * dz;
     }
 
     // ------------------------------------------------------------ atributos

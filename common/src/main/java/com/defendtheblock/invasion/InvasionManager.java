@@ -347,7 +347,12 @@ public final class InvasionManager {
             List<Entity> doomed = new ArrayList<>();
             for (Entity entity : world.iterateEntities()) {
                 InvaderData invader = InvaderAccess.of(entity);
-                if (invader != null && invader.isInvader() && invader.countsForWave()) {
+                // countsForWave so importa para a contagem/HUD da onda — todo
+                // invasor (contado ou so atraido) precisa sumir aqui, senao um
+                // mob atraido (recrutado fora do lote oficial) sobrevive para
+                // sempre a trocas de Nexus e continua "atacando o vento" no
+                // lugar onde o Nexus costumava estar.
+                if (invader != null && invader.isInvader()) {
                     doomed.add(entity);
                 }
             }

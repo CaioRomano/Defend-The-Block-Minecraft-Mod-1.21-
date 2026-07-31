@@ -97,6 +97,13 @@ vertical**: um mob bem embaixo (ou em cima) dela nunca vira alvo, exatamente par
 não ficar inerte tentando acertar quem esta debaixo dela em vez de quem esta se
 aproximando dentro do campo de visao.
 
+O alcance dela e medido **so no plano horizontal**, nao em linha reta 3D — uma
+torreta no topo de uma torre nao perde alcance efetivo contra quem se aproxima
+pelo chao. E ela **reavalia o proprio alvo a cada poucos ticks**: se o atual
+sair de alcance, ficar sem visada ou virar impossivel de mirar, ela troca por
+outro mob de verdade alcancavel em vez de ficar grudada olhando pro mesmo
+lugar enquanto outros passam na frente.
+
 | Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
 |---|---|---|---|---|---|---|
 | Madeira | 2.0 | 12 | 2.0s | 20 | 64 | — |
@@ -278,6 +285,17 @@ e aranha em cima do Nexus sem causar dano (o alvo dela ainda era uma torreta
 distante, nao o bloco embaixo dela). Removendo essa goal e deixando o combate
 com torreta ser puramente reativo, os quatro sintomas somem juntos, porque a
 causa era uma so.
+
+**Segundo bug, mais sutil (corrigido numa rodada seguinte):** mesmo depois de
+remover a deteccao a distancia, creeper e aranha ainda deixavam de causar dano
+ao Nexus com um alvo por perto — porque a `AttackNexusGoal` (a IA que
+efetivamente causa o dano) tinha prioridade numerica mais baixa que a goal de
+combate **vanilla** do proprio mob, entao perdia o controle de movimento pra
+ela sempre que havia um alvo por perto, mesmo com o mob literalmente em cima
+do bloco. Agora ela sempre vence esse empate (prioridades negativas, ver
+"Status de verificacao") e, alem disso, **nunca cede o alcance de golpe do
+Nexus** para nenhum alvo, nem torreta nem jogador — chegou perto o bastante,
+o Nexus toma o golpe, ponto final.
 
 ---
 
@@ -535,6 +553,76 @@ Pontos de risco, do maior para o menor:
   o fogo vanilla se espalhar) em vez de queimar o bloco diretamente — mais
   simples e mais barato que simular combustao a mao, mas depende do fogo
   vanilla realmente pegar no bloco de baixo, o que nao foi visto em jogo ainda.
+
+**Quarta rodada:** o segundo playtest (agora com a torreta e a aba de verdade
+em jogo) achou causas raiz mais profundas que a rodada anterior nao cobria.
+Resumo dos diagnosticos:
+
+- **Torreta grudava num alvo e ignorava tudo o mais.** A causa era a propria
+  escolha do alvo: um `ActiveTargetGoal` no target selector segurava o alvo
+  ate ele morrer ou sair do *follow range* (40 blocos, bem mais que o alcance
+  real de tiro de qualquer nivel), sem nunca reavaliar se aquele alvo ainda
+  dava pra atacar de verdade. Um mob fora de alcance de tiro, atras de uma
+  parede, ou simplesmente pior posicionado que outro passando na frente
+  continuava sendo "o alvo" indefinidamente. **Removido o `ActiveTargetGoal`
+  por completo** — agora e a propria `TurretShootGoal` que escolhe e reavalia
+  o alvo a cada 5 ticks, trocando por um candidato de verdade engajavel
+  (dentro de alcance, visivel, fora do proprio eixo vertical) sempre que o
+  atual deixa de servir, ou por um bem mais perto (margem de 2 blocos pra nao
+  ficar oscilando entre dois alvos parecidos).
+- **Torreta numa torre alta nao acertava mobs abaixo dela** (mesmo nao estando
+  exatamente embaixo). O alcance era medido em distancia 3D
+  (`squaredDistanceTo`), entao a altura da torre "comia" parte do orcamento de
+  alcance — uma torreta de nivel madeira (12 blocos) 15 blocos no ar mal
+  enxergava o chao. Trocado para **distancia so no plano horizontal**
+  (`TurretEntity#horizontalSquaredDistanceTo`), do jeito que uma torre de
+  defesa deveria funcionar.
+- **Creeper nao explodia no Nexus, aranha ficava em cima dele sem dar dano, e
+  de modo geral "as torretas ficaram focadas em mobs e nao davam dano ao
+  Nexus".** Essa era a causa raiz por tras de tres queixas diferentes: a
+  `AttackNexusGoal` (prioridade numerica 4) perdia o controle de
+  movimento/mira para as goals de combate **vanilla** do proprio mob
+  (`ZombieAttackGoal` e equivalentes, tipicamente prioridade 2), sempre que
+  havia um alvo por perto — mesmo que o mob estivesse literalmente em cima do
+  Nexus. Como o alvo (torreta) fica "engajado" ate 60 ticks por causa da
+  correcao da rodada anterior, essa janela de perda de prioridade ficou bem
+  mais comum. Duas mudancas: (1) `AttackNexusGoal#canStart()` agora retorna
+  `true` incondicionalmente quando o mob ja esta dentro do alcance de golpe do
+  Nexus, nao cede mais pra "tem alvo por perto" nesse caso; (2) toda a cadeia
+  de goals customizadas (arrombar, escalar, pontilhar/teia, atacar o Nexus)
+  passou a usar **prioridades negativas** (-3 a 0), garantindo que ela sempre
+  vence qualquer goal vanilla de combate na disputa por Control.MOVE/LOOK, nao
+  so nominalmente mas de fato. Essa e provavelmente a correcao mais importante
+  desta rodada.
+- **`/dtb removenexus` deixava mobs "atacando o vento"** no lugar onde o Nexus
+  costumava estar, e o Nexus novo (colocado em outro lugar) tomava dano
+  desses mobs antigos. Duas causas empilhadas: `despawnAllInvaders` so
+  descartava invasores com `countsForWave() == true`, deixando de fora
+  qualquer mob "atraido" (recrutado fora do lote oficial de spawn) — esses
+  sobreviviam para sempre a qualquer reset. E mesmo os que fossem descartados
+  a tempo, `AttackNexusGoal#attackNexus` aplicava dano no **estado global
+  atual** do Nexus sem checar se a posicao que o mob tinha guardada ainda
+  batia com ele — um mob parado no lugar do Nexus antigo conseguia ferir um
+  Nexus novo em outra coordenada. Corrigido nos dois pontos: o despawn agora
+  derruba todo invasor (contado ou nao), e `attackNexus` se recusa a bater
+  (e se "aposenta" como invasor) se a posicao do Nexus que ele conhece nao for
+  mais a atual.
+- **A aba de estatisticas estava "apagada" e com texto vazando pra fora da
+  moldura.** Dois problemas de verdade: nada escurecia o mundo atras da aba
+  (baixo contraste contra um ceu claro), e o texto era desenhado direto numa
+  caixa de altura/largura fixas, sem quebra de linha — qualquer traducao mais
+  comprida que o espaco disponivel simplesmente vazava. Reescrita para: (1)
+  escurecer a tela toda antes de desenhar o painel; (2) quebrar todo texto com
+  `TextRenderer#wrapLines` antes de desenhar; (3) calcular a altura da caixa a
+  partir do conteudo de verdade (numero de linhas depois da quebra), nunca um
+  valor fixo. O botao "Fechar" deixou de ser um `ButtonWidget` registrado em
+  `init()` porque a caixa muda de altura conforme o texto quebra — agora e
+  desenhado e testado a mao em `render()`/`mouseClicked()`.
+
+Como sempre, **nada disso passou por `buildAll` nem por teste em jogo ainda**
+— e a rodada com mais mudancas de comportamento de goal (prioridades
+negativas, torreta escolhendo o proprio alvo) desde o inicio do projeto, entao
+vale prestar atencao especial nela no proximo playtest.
 
 ---
 

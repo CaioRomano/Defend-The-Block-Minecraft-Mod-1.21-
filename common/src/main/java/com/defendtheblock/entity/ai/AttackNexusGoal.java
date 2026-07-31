@@ -21,8 +21,14 @@ import java.util.EnumSet;
  * Goal principal do invasor: caminhar ate o Nexus e bater nele.
  *
  * <p>Cede a vez para as IAs vanilla de combate sempre que o mob tem um alvo
- * vivo por perto, entao os mobs continuam caçando o jogador normalmente e so
- * voltam para o Nexus quando ninguem esta por perto.
+ * vivo por perto <b>e ainda nao chegou no Nexus</b> — assim os mobs continuam
+ * caçando o jogador/torreta que estiver no caminho. Mas uma vez que o mob
+ * esta mesmo dentro do alcance de ataque do Nexus, {@link #canStart()} volta
+ * a valer true incondicionalmente: o Nexus e sempre a prioridade final,
+ * mesmo que uma torreta ou o jogador estejam bem do lado. Essa goal e
+ * instalada com prioridade numerica bem abaixo das goals vanilla de combate
+ * (ver {@code InvaderGoals#install}), entao quando ela quer rodar, ela ganha
+ * o controle de movimento/olhar de qualquer goal vanilla que tambem queira.
  */
 public class AttackNexusGoal extends Goal {
 
@@ -52,12 +58,17 @@ public class AttackNexusGoal extends Goal {
         if (!(mob.getWorld() instanceof ServerWorld world) || NexusManager.getData(world).isGameOver()) {
             return false;
         }
-        return !hasCloseTarget();
+        return isAtNexus() || !hasCloseTarget();
     }
 
     @Override
     public boolean shouldContinue() {
         return canStart();
+    }
+
+    /** Ja esta dentro do alcance de golpe do Nexus — nesse caso nada mais tem prioridade. */
+    private boolean isAtNexus() {
+        return mob.squaredDistanceTo(NexusPathing.center(data.getNexusPos())) <= ATTACK_RANGE * ATTACK_RANGE;
     }
 
     /**
@@ -155,6 +166,17 @@ public class AttackNexusGoal extends Goal {
 
     private void attackNexus(BlockPos nexus) {
         if (!data.canHitNexus() || !(mob.getWorld() instanceof ServerWorld world)) {
+            return;
+        }
+        // O mob guarda a SUA PROPRIA copia da posicao do Nexus, tirada quando
+        // foi recrutado. Se o Nexus foi removido/recolocado nesse meio tempo
+        // (por exemplo via /dtb removenexus), essa copia fica desatualizada —
+        // sem essa checagem, o dano cairia no Nexus atual (estado global) mesmo
+        // com o mob fisicamente parado no lugar do Nexus antigo, "atacando o
+        // vento" e ainda assim ferindo um Nexus novo em outro lugar.
+        if (!nexus.equals(NexusManager.getData(world).getNexusPos())) {
+            data.setInvader(false);
+            mob.setTarget(null);
             return;
         }
         DtbConfig config = DtbConfig.get();
