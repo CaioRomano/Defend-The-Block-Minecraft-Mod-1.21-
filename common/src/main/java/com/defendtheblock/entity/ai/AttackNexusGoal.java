@@ -240,17 +240,19 @@ public class AttackNexusGoal extends Goal {
             mob.setTarget(null);
             return;
         }
+        // O creeper e o unico invasor que NAO danifica o Nexus. O papel dele na
+        // horda e abrir passagem: ele se explode em obstaculos (ver
+        // BreachObstacleGoal) para o resto da horda entrar, e nada mais. Sem
+        // isso um punhado de creepers derrubava o bloco sozinho e tirava a
+        // graca de todo o resto da invasao.
+        if (mob instanceof CreeperEntity) {
+            return;
+        }
+
         DtbConfig config = DtbConfig.get();
         data.setNexusHitCooldown(config.nexusHitCooldown);
         data.setObstacle(null);
         data.setStuckTicks(0);
-
-        if (mob instanceof CreeperEntity creeper) {
-            // O creeper termina a viagem se explodindo em cima do Nexus.
-            creeper.ignite();
-            NexusManager.damage(world, config.nexusDamagePerHit * 8, mob);
-            return;
-        }
 
         mob.swingHand(Hand.MAIN_HAND);
         int damage = config.nexusDamagePerHit + data.getWave() / 4;

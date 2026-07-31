@@ -1,6 +1,7 @@
 package com.defendtheblock.entity.projectile;
 
 import com.defendtheblock.compat.DtbCompat;
+import com.defendtheblock.invasion.InvaderBlocks;
 import com.defendtheblock.registry.ModEntities;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -67,15 +68,17 @@ public class WebShotEntity extends ThrownItemEntity {
         if (!(getWorld() instanceof ServerWorld world)) {
             return;
         }
+        // Via InvaderBlocks: a teia entra na lista de faxina do amanhecer,
+        // senao cada noite deixaria o terreno coberto de teia para sempre.
         if (world.getBlockState(pos).isReplaceable()) {
-            world.setBlockState(pos, Blocks.COBWEB.getDefaultState());
+            InvaderBlocks.place(world, pos, Blocks.COBWEB.getDefaultState());
             return;
         }
         // Se o ponto exato esta ocupado, tenta um vizinho livre.
         for (Direction direction : Direction.values()) {
             BlockPos side = pos.offset(direction);
             if (world.getBlockState(side).isReplaceable()) {
-                world.setBlockState(side, Blocks.COBWEB.getDefaultState());
+                InvaderBlocks.place(world, side, Blocks.COBWEB.getDefaultState());
                 return;
             }
         }

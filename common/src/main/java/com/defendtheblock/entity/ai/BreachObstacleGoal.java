@@ -4,6 +4,7 @@ import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAbility;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderData;
+import com.defendtheblock.invasion.InvaderBlocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
@@ -32,24 +33,40 @@ import java.util.EnumSet;
  * IA de arrombamento: entra em acao quando {@link InvaderData#getObstacle()}
  * aponta para um bloco que esta impedindo o mob de chegar ao Nexus.
  *
- * <p>O que ele faz depende da habilidade sorteada:
+ * <p>A regra de base e que <b>todo invasor consegue cavar</b> — a picareta
+ * deixou de ser requisito e virou so vantagem de velocidade. O creeper e a
+ * unica excecao: ele nao quebra bloco na mao, o jeito dele de abrir passagem e
+ * se explodir. Em cima disso, a habilidade sorteada oferece um atalho:
+ *
  * <ul>
  *   <li>{@link InvaderAbility#DOOR_BREACHER} - todo invasor (exceto creeper)
- *       arromba porta fechada, sem precisar de nenhuma outra habilidade;</li>
+ *       arromba porta fechada bem mais rapido que cavando;</li>
  *   <li>{@link InvaderAbility#SUICIDE_BREACH} - creeper se explode no obstaculo;</li>
  *   <li>{@link InvaderAbility#TNT_SAPPER} - zumbi planta e acende uma TNT;</li>
  *   <li>{@link InvaderAbility#LADDER_BUILDER} - zumbi monta uma coluna de escadas
  *       (que o resto da horda tambem usa);</li>
  *   <li>{@link InvaderAbility#FIRE_STARTER} - zumbi ateia fogo em obstaculo de
  *       madeira em vez de quebra-lo;</li>
- *   <li>{@link InvaderAbility#PICKAXE_MINER} - zumbi minera o bloco.</li>
+ *   <li>{@link InvaderAbility#PICKAXE_MINER} - cava no tempo cheio, sem a
+ *       penalidade de {@code unarmedMineTicksMultiplier}.</li>
  * </ul>
+ *
+ * <p>Todo bloco colocado aqui passa por {@link com.defendtheblock.invasion.InvaderBlocks},
+ * para ser desfeito no fim da invasao.
  */
 public class BreachObstacleGoal extends Goal {
 
     private static final double WORK_RANGE = 3.2D;
-    /** Teto absoluto de tempo neste goal, para nunca virar um mob congelado. */
-    private static final int MAX_GOAL_TICKS = 400;
+    /**
+     * Folga somada ao tempo de trabalho para formar o teto de tempo do goal.
+     *
+     * <p>O teto existe para um caso nao previsto nunca virar um mob congelado
+     * para sempre, entao ele precisa ser maior que qualquer arrombamento
+     * legitimo — inclusive o de um mob sem picareta cavando pedra, que e o
+     * mais lento de todos. Por isso e calculado por obstaculo em
+     * {@link #start()}, em vez de ser um numero fixo.
+     */
+    private static final int GOAL_TICK_SLACK = 200;
 
     private final MobEntity mob;
     private final InvaderData data;
@@ -61,6 +78,8 @@ public class BreachObstacleGoal extends Goal {
     private int approachTimer;
     /** Ticks desde que este mob comecou a lidar com o obstaculo atual. */
     private int goalTicks;
+    /** Teto de tempo deste obstaculo, calculado em {@link #start()}. */
+    private int maxGoalTicks;
 
     public BreachObstacleGoal(MobEntity mob, double speed) {
         this.mob = mob;
@@ -109,8 +128,15 @@ public class BreachObstacleGoal extends Goal {
         if (data.hasAbility(InvaderAbility.FIRE_STARTER) && isWood(state)) {
             return true;
         }
-        return data.hasAbility(InvaderAbility.PICKAXE_MINER)
-                && state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
+        // O creeper nao quebra bloco na mao: o jeito dele de abrir passagem e
+        // se explodir, e so isso.
+        if (mob instanceof CreeperEntity) {
+            return false;
+        }
+        // Todo o resto consegue cavar. A picareta deixou de ser requisito e
+        // virou so vantagem (ver unarmedMineTicksMultiplier): uma parede sem
+        // ninguem com picareta por perto nao pode ser um muro intransponivel.
+        return state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
     }
 
     @Override
@@ -138,7 +164,7 @@ public class BreachObstacleGoal extends Goal {
     public boolean shouldContinue() {
         // Teto absoluto de tempo: nenhum arrombamento legitimo demora tanto, e
         // sem isso qualquer caso nao previsto vira um mob congelado para sempre.
-        if (goalTicks > MAX_GOAL_TICKS) {
+        if (goalTicks > maxGoalTicks) {
             return false;
         }
         return target != null
@@ -158,10 +184,17 @@ public class BreachObstacleGoal extends Goal {
         float hardness = Math.max(0.2F, state.getHardness(mob.getWorld(), target));
         // Porta usa seu proprio ritmo (mais rapido que minerar parede de verdade);
         // ferro (dureza 5) naturalmente demora mais que madeira (dureza 3).
-        int ticksPerHardness = state.getBlock() instanceof DoorBlock
-                ? DtbConfig.get().doorBreakTicksPerHardness
-                : DtbConfig.get().mineTicksPerHardness;
-        requiredMineTicks = Math.max(15, Math.min(400, (int) (hardness * ticksPerHardness)));
+        DtbConfig config = DtbConfig.get();
+        double ticksPerHardness = state.getBlock() instanceof DoorBlock
+                ? config.doorBreakTicksPerHardness
+                : config.mineTicksPerHardness;
+        // Sem picareta a mesma parede leva bem mais tempo — e a diferenca entre
+        // "todo mob consegue" e "o zumbi mineiro e quem faz isso rapido".
+        if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
+            ticksPerHardness *= Math.max(1.0D, config.unarmedMineTicksMultiplier);
+        }
+        requiredMineTicks = Math.max(15, Math.min(1200, (int) (hardness * ticksPerHardness)));
+        maxGoalTicks = requiredMineTicks + GOAL_TICK_SLACK;
     }
 
     @Override
@@ -235,11 +268,10 @@ public class BreachObstacleGoal extends Goal {
         if (data.hasAbility(InvaderAbility.FIRE_STARTER) && igniteWood(world)) {
             return;
         }
-        if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
-            // Rede de seguranca: chegou ate aqui sem nenhum branch aplicavel.
-            // canHandle() deveria ter impedido, mas o mundo muda embaixo do
-            // mob (a porta virou buraco, outro invasor gastou a TNT). Larga o
-            // obstaculo em vez de ficar parado olhando para ele.
+        if (mob instanceof CreeperEntity) {
+            // Rede de seguranca: creeper nao cava. Se chegou ate aqui e porque
+            // o SUICIDE_BREACH nao pegou, entao larga o obstaculo em vez de
+            // ficar parado olhando para ele.
             data.setObstacle(null);
             data.setBreachCooldown(40);
             return;
@@ -385,7 +417,7 @@ public class BreachObstacleGoal extends Goal {
             if (!world.getBlockState(pos).isReplaceable() || !world.getBlockState(wall).isReplaceable()) {
                 continue;
             }
-            world.setBlockState(wall, Blocks.COBBLESTONE.getDefaultState());
+            InvaderBlocks.place(world, wall, Blocks.COBBLESTONE.getDefaultState());
             placeLadder(world, pos, towardWall);
             offHand.decrement(1);
             placedAny = true;
@@ -395,7 +427,7 @@ public class BreachObstacleGoal extends Goal {
 
     private void placeLadder(ServerWorld world, BlockPos pos, Direction towardWall) {
         BlockState ladder = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, towardWall.getOpposite());
-        world.setBlockState(pos, ladder);
+        InvaderBlocks.place(world, pos, ladder);
     }
 
     private boolean finishLadder(ServerWorld world, BlockPos column, ItemStack offHand, boolean placedAny) {
@@ -435,7 +467,7 @@ public class BreachObstacleGoal extends Goal {
             return false;
         }
 
-        world.setBlockState(above, Blocks.FIRE.getDefaultState());
+        InvaderBlocks.place(world, above, Blocks.FIRE.getDefaultState());
         mob.swingHand(Hand.MAIN_HAND);
         world.playSound(null, target, SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.HOSTILE, 1.0F, 1.0F);
         data.setBreachCooldown(300);

@@ -9,7 +9,6 @@ import com.defendtheblock.entity.ai.SpiderWebShotGoal;
 import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.entity.ai.ThrowTntGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
-import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.mob.CreeperEntity;
@@ -142,19 +141,18 @@ public final class InvaderGoals {
         }
         accessor.defendtheblock$getGoalSelector().add(0, new AttackNexusGoal(mob, MOVE_SPEED));
 
-        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho. Para
-        // quem luta corpo a corpo, a torreta so vira alvo de campo
-        // (RevengeGoal, nativo do vanilla) se ela de fato acertar o mob
-        // primeiro — nunca por deteccao a distancia, que foi o que travou a
-        // horda numa rodada anterior.
-        accessor.defendtheblock$getTargetSelector().add(3, new ActiveTargetGoal<>(mob, PlayerEntity.class, true));
+        // Jogador e torreta so viram alvo quando estao no CAMPO DE VISAO do
+        // invasor — nao basta haver linha de visada. Fora do cone ele nem
+        // considera e segue marchando para o Nexus, que continua sendo o
+        // objetivo. O predicado extra do ActiveTargetGoal e o que impede o mob
+        // de "ver" um jogador colado na propria nuca.
+        accessor.defendtheblock$getTargetSelector().add(3,
+                new ActiveTargetGoal<>(mob, PlayerEntity.class, 10, true, false,
+                        player -> InvaderVision.isInFieldOfView(mob, player)));
 
-        // Ja quem ataca de longe (esqueleto e afins) prioriza derrubar as
-        // torretas: ele atira de onde esta, entao nao corre o risco de sair do
-        // caminho atras de uma torreta inalcancavel. InvaderCombatPriority
-        // continua garantindo que esse foco nao vira eterno.
-        if (mob instanceof RangedAttackMob) {
-            accessor.defendtheblock$getTargetSelector().add(2, new TargetTurretGoal(mob));
-        }
+        // A torreta vale para todo invasor: qualquer um consegue ataca-la.
+        // Quem segura o comportamento e o cone de visao dentro da propria goal,
+        // mais os tetos de tempo do InvaderCombatPriority.
+        accessor.defendtheblock$getTargetSelector().add(2, new TargetTurretGoal(mob));
     }
 }

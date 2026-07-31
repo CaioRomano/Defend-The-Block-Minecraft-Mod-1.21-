@@ -220,11 +220,13 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 |---|---|---|
 | Todos, exceto creeper | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
 | Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
+| Todos, exceto creeper | **Cavam qualquer parede** — sem picareta leva 3x mais tempo | 100% |
+| Todos | **Atacam torretas** que entrarem no campo de visao | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
-| Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender) | 100% |
+| Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender). **Nao danifica o Nexus** | 100% |
 | Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 16% |
 | Zumbi | **Construtor**: ergue caminho/pilar de blocos ate o Nexus, muito mais rapido que um invasor comum | 12% |
-| Zumbi | **Picareta**: minera o bloco que atrapalha | 18% |
+| Zumbi | **Picareta**: cava no tempo cheio, 3x mais rapido que os outros | 18% |
 | Zumbi | **TNT**: **arremessa** uma unica TNT em arco, como um projetil | 7% |
 | Zumbi | **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 10% |
 
@@ -286,11 +288,15 @@ A picareta nao vence blocos muito duros (limite de dureza 30, entao obsidiana
 segura) — para esses e preciso TNT ou creeper. Bedrock, barreira e o proprio
 Nexus nunca sao quebrados.
 
-### Todo mob ataca o Nexus, nao so quem chega perto
+### Todo mob ataca o Nexus — menos o creeper
 
 **Qualquer invasor que alcance o Nexus causa dano nele** — zumbi, esqueleto,
-creeper, blaze, o que for. Isso inclui o **creeper**, que se explode em cima do
-bloco em vez de so bater nele. As IAs de movimento dos invasores tem prioridade
+blaze, o que for.
+
+**O creeper e a unica excecao, de proposito.** O papel dele na horda e abrir
+passagem: ele se explode em obstaculos para o resto entrar, e nada mais. Nao
+tira um ponto de vida do Nexus. Sem essa regra, um punhado de creepers
+derrubava o bloco sozinho e tirava a graca de todo o resto da invasao. As IAs de movimento dos invasores tem prioridade
 bem acima das goals de vagar/olhar do vanilla, entao um creeper (ou qualquer
 outro mob) nao fica perambulando a toa em vez de seguir ate o alvo.
 
@@ -322,6 +328,20 @@ e ganha velocidade de escalada mesmo antes do vanilla marcar a colisao, e
 continua sendo puxado de volta ao centro da coluna a cada tick para nao
 "desgrudar" da escada no meio da subida.
 
+### O terreno volta ao normal ao amanhecer
+
+Tudo o que os invasores **construiram** durante a noite e desfeito quando a
+invasao acaba: pilares de cobblestone de quem ficou preso, colunas de escada
+dos zumbis carpinteiros, teia de aranha. Sem isso, cada noite deixava entulho
+permanente e depois de algumas invasoes o terreno em volta do Nexus virava um
+monumento as ondas anteriores.
+
+A remocao **nao dropa item** — esses blocos foram criados do nada pela
+invasao, entao devolve-los seria uma fonte infinita de recurso. E a faxina so
+mexe em posicoes que a invasao registrou, e so se o bloco ainda for o tipo que
+ela sabe colocar: se voce minerou o pilar do mob e construiu outra coisa ali,
+a limpeza passa longe.
+
 ### Depois de cada noite: saque ao redor do Nexus
 
 Toda invasao repelida (o jogador aguentou ate o amanhecer) derruba um punhado
@@ -338,12 +358,24 @@ flechada da torreta e exatamente o mesmo estimulo que levar uma flechada de um
 jogador. O jogador continua sendo alvo do jeito vanilla de sempre (ele ataca,
 o mob revida).
 
-**Esqueletos sao a excecao, de proposito:** eles *procuram* as torretas e
-priorizam derruba-las a ate 20 blocos (`rangedTurretPriorityRange`). O
-problema que fez a deteccao a distancia ser removida — mob saindo do caminho
-atras de uma torreta que nao consegue alcancar — simplesmente nao existe para
-quem atira parado de onde esta. Na pratica, as torretas viram alvo de fogo
-concentrado da linha de esqueletos, o que da a elas um contrapeso real.
+### So ataca o que enxerga
+
+Jogador e torreta so viram alvo quando estao **dentro do campo de visao** do
+invasor: um cone de 120 graus (`invaderFieldOfViewDegrees`) em volta do rumo
+para onde a cabeca dele esta virada, *e* com linha de visada livre. Fora
+disso, o mob nem considera — segue marchando para o Nexus.
+
+Isso e bem mais restritivo que a checagem que o vanilla oferece sozinha
+(`canSee`, que so pergunta se ha caminho livre entre os dois, mesmo que o alvo
+esteja atras da nuca do mob). Na pratica: uma torreta escondida atras da horda
+nao puxa a atencao de ninguem; a mesma torreta na linha de frente vira alvo de
+todo mundo que passar olhando para ela.
+
+**Todo invasor consegue atacar torreta** — nao e mais privilegio de quem atira
+de longe. O que muda por tipo e so o alcance em que ele repara nela: quem
+atira usa `rangedTurretPriorityRange` (20 blocos, porque resolve parado de
+onde esta), quem e corpo a corpo usa o raio curto de engajamento (6 blocos, o
+mesmo que o resto do sistema respeita).
 
 Mesmo depois de ser alvejado, o foco na torreta **nunca e permanente**, por
 duas regras que trabalham juntas:
@@ -499,6 +531,8 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `doorBreakTicksPerHardness` | 10 | Ritmo de arrombamento de portas (ferro demora mais que madeira) |
 | `turretRepairHealthPerItem` | 8.0 | Vida recuperada por unidade de material usada no reparo |
 | `turretVerticalFovDegrees` | 60.0 | Abertura vertical do cone de visao da torreta (define os pontos cegos) |
+| `invaderFieldOfViewDegrees` | 120.0 | Campo de visao do invasor para escolher jogador/torreta como alvo |
+| `unarmedMineTicksMultiplier` | 3.0 | Quanto mais lento um mob sem picareta cava a mesma parede |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -916,6 +950,40 @@ As chaves `spawnChunkRadiusMin`/`spawnChunkRadiusMax` foram substituidas por
 anel), que descrevem a intencao em vez de dois raios soltos. `forcedChunkRadius`
 e `attractionChunkRadius` subiram para 4, para continuarem cobrindo exatamente
 a area onde a invasao acontece.
+
+**Decima rodada — faxina, campo de visao e o novo papel do creeper.**
+
+- **Blocos de invasor sao desfeitos ao amanhecer.** Todo bloco que a horda
+  coloca (cobblestone de pilar/ponte, escadas, teia) passa por `InvaderBlocks`,
+  que registra a posicao no estado persistente da invasao. No fim da onda tudo
+  e removido **sem dropar item**. Antes de remover, confere que o bloco ainda e
+  um dos que a invasao sabe colocar — se o jogador minerou aquilo e construiu
+  outra coisa no lugar, a faxina nao encosta. O unico caso que escapa e o
+  jogador colocar exatamente o mesmo tipo de bloco na exata posicao
+  registrada; guardar o estado completo de cada bloco no save nao valeria o
+  custo para cobrir isso.
+- **Campo de visao de verdade** (`InvaderVision`). O vanilla so oferece
+  `canSee`, que e linha de visada — responde "ha caminho livre?", nao "ele esta
+  olhando para la?". Sozinho, deixava o mob mirar em algo atras da propria
+  nuca. Agora jogador e torreta so viram alvo dentro de um cone de 120 graus
+  em volta do rumo da cabeca, *e* com visada livre.
+- **Torreta virou alvo de todo mundo**, nao so de quem atira de longe. O medo
+  de reabrir o bug de "horda grudada nas torretas" e endereçado pelo cone (bem
+  mais restritivo que a linha de visada da primeira versao) somado aos tetos
+  de tempo que ja existiam no `InvaderCombatPriority`.
+- **Creeper nao danifica mais o Nexus.** O papel dele e exclusivamente abrir
+  passagem explodindo obstaculos.
+- **Todo invasor cava.** A picareta deixou de ser requisito e virou vantagem de
+  velocidade (`unarmedMineTicksMultiplier`, 3x). Isso muda bastante a
+  dificuldade: uma parede sem ninguem com picareta por perto deixou de ser um
+  muro intransponivel, e agora varios mobs cavam em paralelo. O creeper
+  continua sem cavar — o jeito dele e explodir.
+
+Um efeito colateral que precisou de ajuste: o teto de tempo do
+`BreachObstacleGoal` era um numero fixo (400 ticks), o que ficaria menor que o
+tempo legitimo de um mob sem picareta cavando pedra. Agora ele e calculado por
+obstaculo (tempo de trabalho + folga), senao a protecao contra travamento
+passaria a interromper trabalho valido.
 
 Nota de implementacao: a supressao do spawn natural e feita **descartando a
 entidade no `ServerEntityEvents.ENTITY_LOAD`**, nao interceptando o

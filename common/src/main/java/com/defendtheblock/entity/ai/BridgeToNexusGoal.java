@@ -3,6 +3,7 @@ package com.defendtheblock.entity.ai;
 import com.defendtheblock.entity.invader.InvaderAbility;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderData;
+import com.defendtheblock.invasion.InvaderBlocks;
 import com.defendtheblock.invasion.NexusManager;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ai.goal.Goal;
@@ -125,7 +126,7 @@ public class BridgeToNexusGoal extends Goal {
         if (!world.getBlockState(below).isAir() || mob.isOnGround()) {
             return;
         }
-        world.setBlockState(below, Blocks.COBBLESTONE.getDefaultState());
+        InvaderBlocks.place(world, below, Blocks.COBBLESTONE.getDefaultState());
         blocksPlaced++;
         placeCooldown = placeInterval();
         world.playSound(null, below, SoundEvents.BLOCK_STONE_PLACE, SoundCategory.HOSTILE, 1.0F, 1.0F);

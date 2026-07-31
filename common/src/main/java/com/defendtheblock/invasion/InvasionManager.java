@@ -103,6 +103,10 @@ public final class InvasionManager {
         int wave = data.getCurrentWave();
         BlockPos nexus = data.getNexusPos();
         despawnAllInvaders(server);
+        // Desfaz pilares, escadas e teias que os invasores deixaram para tras.
+        // Vale tanto para a noite vencida quanto para a onda cancelada: o
+        // entulho nao tem por que sobreviver a invasao que o criou.
+        InvaderBlocks.clearAll(server);
         data.finishWave(completed);
 
         if (completed) {

@@ -171,6 +171,23 @@ public final class DtbConfig {
     /** Ticks que o zumbi leva minerando um bloco (multiplicado pela dureza). */
     public int mineTicksPerHardness = 14;
     /**
+     * Multiplicador de tempo para quem quebra bloco <b>sem picareta</b>.
+     *
+     * <p>Todo invasor consegue abrir buraco numa parede — a picareta nao e mais
+     * requisito, so vantagem. Com 3.0, o zumbi mineiro leva um terco do tempo
+     * que os outros levam no mesmo bloco.
+     */
+    public double unarmedMineTicksMultiplier = 3.0D;
+    /**
+     * Angulo total do campo de visao do invasor, em graus.
+     *
+     * <p>Usado para decidir se ele <i>enxerga</i> um jogador ou uma torreta e
+     * pode escolher como alvo. Fora do cone, ele simplesmente segue para o
+     * Nexus. 120 graus e o cone humano aproximado: 60 para cada lado do rumo
+     * em que a cabeca esta virada.
+     */
+    public double invaderFieldOfViewDegrees = 120.0D;
+    /**
      * Deixa qualquer invasor construir um caminho de blocos (pilar/pontilhar)
      * quando fica preso e o Nexus esta visivelmente acima dele. E uma
      * heuristica simples, nao um pathfinder — desligue se nao quiser mobs

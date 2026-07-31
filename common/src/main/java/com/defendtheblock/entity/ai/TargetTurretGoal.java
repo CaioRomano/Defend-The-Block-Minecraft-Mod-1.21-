@@ -3,7 +3,9 @@ package com.defendtheblock.entity.ai;
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderData;
+import com.defendtheblock.entity.invader.InvaderVision;
 import com.defendtheblock.entity.turret.TurretEntity;
+import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.Box;
@@ -12,21 +14,31 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Faz um invasor <b>de ataque a distancia</b> (esqueleto e afins) priorizar a
- * destruicao das torretas.
+ * Faz o invasor tratar a torreta como alvo — mas <b>so o que ele enxerga</b>.
  *
- * <p>Uma versao anterior desta goal existia para <em>todo</em> invasor e foi
- * removida porque travava a horda inteira: mobs corpo a corpo saiam
- * perseguindo torretas que muitas vezes nem conseguiam alcancar, e nunca
- * voltavam para o Nexus. Aqui ela volta restrita a quem ataca de longe, onde
- * o problema nao existe — o esqueleto atira de onde esta, sem precisar de um
- * caminho ate a torreta, entao priorizar a torreta nao tira ele do lugar nem
- * o impede de seguir para o Nexus depois.
+ * <p>Toda a historia desta goal e sobre nao deixar o combate roubar a invasao:
  *
- * <p>A trava de tempo continua valendo: quem cuida de nao deixar o foco virar
- * eterno e o {@code InvaderCombatPriority}, que solta a torreta depois de
- * {@code maxTurretEngageTicks} e ainda coloca um periodo de carencia antes de
- * poder mirar em outra.
+ * <ul>
+ *   <li>a primeira versao varria 64 blocos e forcava o alvo para a torreta mais
+ *       proxima <i>visivel por linha de visada</i>. A horda inteira ficava
+ *       grudada nas torretas e nunca voltava ao Nexus;</li>
+ *   <li>a segunda foi removida por completo, e a torreta so virava alvo por
+ *       revide (o {@code RevengeGoal} do vanilla);</li>
+ *   <li>a terceira voltou restrita a quem ataca a distancia, que nao precisa
+ *       sair do lugar para atirar.</li>
+ * </ul>
+ *
+ * <p>Agora ela vale para <b>todo invasor</b>, e o que segura o comportamento e
+ * o <b>campo de visao</b> ({@link InvaderVision}): se a torreta nao esta no
+ * cone que o mob esta olhando, ele nem considera — segue para o Nexus. Isso e
+ * bem mais restritivo que a linha de visada sozinha, que era justamente o que
+ * deixava a primeira versao tao agressiva.
+ *
+ * <p>O alcance depende de como o mob luta: quem atira usa
+ * {@code rangedTurretPriorityRange} (ele resolve de longe, parado); quem e
+ * corpo a corpo usa {@code nexusPriorityEngageRange}, o mesmo raio curto que o
+ * {@code InvaderCombatPriority} respeita — sem isso ele escolheria um alvo
+ * distante que seria descartado no tick seguinte.
  */
 public class TargetTurretGoal extends Goal {
 
@@ -39,9 +51,16 @@ public class TargetTurretGoal extends Goal {
     public TargetTurretGoal(MobEntity mob) {
         this.mob = mob;
         this.data = InvaderAccess.of(mob);
-        // Nao toma nenhum Control: so define o alvo e deixa as goals de
-        // combate a distancia do proprio vanilla cuidarem do tiro.
+        // Nao toma nenhum Control: so define o alvo e deixa as IAs de combate
+        // do proprio vanilla cuidarem do ataque.
         setControls(EnumSet.noneOf(Control.class));
+    }
+
+    private double range() {
+        DtbConfig config = DtbConfig.get();
+        return mob instanceof RangedAttackMob
+                ? config.rangedTurretPriorityRange
+                : config.nexusPriorityEngageRange;
     }
 
     @Override
@@ -63,7 +82,7 @@ public class TargetTurretGoal extends Goal {
             return false;
         }
 
-        TurretEntity turret = findNearestTurret();
+        TurretEntity turret = findVisibleTurret();
         if (turret != null) {
             mob.setTarget(turret);
         }
@@ -71,15 +90,17 @@ public class TargetTurretGoal extends Goal {
         return false;
     }
 
-    private TurretEntity findNearestTurret() {
-        double radius = DtbConfig.get().rangedTurretPriorityRange;
+    private TurretEntity findVisibleTurret() {
+        double radius = range();
         Box box = mob.getBoundingBox().expand(radius);
         List<TurretEntity> turrets = mob.getWorld().getEntitiesByClass(TurretEntity.class, box, TurretEntity::isAlive);
 
         TurretEntity best = null;
-        double bestDistance = Double.MAX_VALUE;
+        double bestDistance = radius * radius;
         for (TurretEntity turret : turrets) {
-            if (!mob.getVisibilityCache().canSee(turret)) {
+            // Cone de visao + linha de visada: fora disso o mob nem sabe que
+            // a torreta existe, e segue marchando para o Nexus.
+            if (!InvaderVision.sees(mob, turret)) {
                 continue;
             }
             double distance = mob.squaredDistanceTo(turret);

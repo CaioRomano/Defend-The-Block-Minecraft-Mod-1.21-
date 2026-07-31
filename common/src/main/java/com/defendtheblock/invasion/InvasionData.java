@@ -47,6 +47,16 @@ public class InvasionData {
     /** Contador ate o proximo lote de spawn. Nao precisa ser persistido, mas e barato. */
     private int spawnTimer;
 
+    /**
+     * Todo bloco que um invasor colocou no mundo nesta invasao.
+     *
+     * <p>Guardado para ser desfeito no fim da noite: cobblestone de
+     * pilar/ponte, escadas dos zumbis carpinteiros, teia de aranha. Persistido
+     * porque uma invasao atravessa reinicios de servidor, e sem isso o mundo
+     * iria acumulando entulho invasao apos invasao.
+     */
+    private final Set<Long> placedBlocks = new LinkedHashSet<>();
+
     public void setDirtyMarker(Runnable dirtyMarker) {
         this.dirtyMarker = dirtyMarker;
     }
@@ -225,6 +235,32 @@ public class InvasionData {
         this.spawnTimer = spawnTimer;
     }
 
+    // ------------------------------------------------- blocos dos invasores
+
+    /** Teto de posicoes guardadas, para uma invasao longa nao inchar o save. */
+    private static final int MAX_PLACED_BLOCKS = 20000;
+
+    /** Registra um bloco colocado por um invasor, para ser desfeito ao amanhecer. */
+    public void addPlacedBlock(BlockPos pos) {
+        if (placedBlocks.size() >= MAX_PLACED_BLOCKS) {
+            return;
+        }
+        if (placedBlocks.add(pos.asLong())) {
+            markDirty();
+        }
+    }
+
+    public Set<Long> getPlacedBlocks() {
+        return placedBlocks;
+    }
+
+    public void clearPlacedBlocks() {
+        if (!placedBlocks.isEmpty()) {
+            placedBlocks.clear();
+            markDirty();
+        }
+    }
+
     // ----------------------------------------------------------------- nbt
 
     public void readNbt(NbtCompound nbt) {
@@ -243,6 +279,11 @@ public class InvasionData {
         lastWaveDay = nbt.contains("LastWaveDay") ? nbt.getLong("LastWaveDay") : -1L;
         gameOver = nbt.getBoolean("GameOver");
         forcedRadius = nbt.contains("ForcedRadius") ? nbt.getInt("ForcedRadius") : -1;
+
+        placedBlocks.clear();
+        for (long packed : nbt.getLongArray("PlacedBlocks")) {
+            placedBlocks.add(packed);
+        }
 
         activeInvaders.clear();
         NbtList list = nbt.getList("ActiveInvaders", NbtElement.STRING_TYPE);
@@ -279,6 +320,13 @@ public class InvasionData {
             list.add(NbtString.of(uuid.toString()));
         }
         nbt.put("ActiveInvaders", list);
+
+        long[] packed = new long[placedBlocks.size()];
+        int i = 0;
+        for (Long value : placedBlocks) {
+            packed[i++] = value;
+        }
+        nbt.putLongArray("PlacedBlocks", packed);
         return nbt;
     }
 }
