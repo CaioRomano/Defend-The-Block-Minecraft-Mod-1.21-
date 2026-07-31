@@ -45,6 +45,10 @@ public final class InvaderGoals {
             return;
         }
 
+        // Todo invasor, exceto o creeper (que ja tem seu proprio jeito de
+        // arrombar), arromba portas fechadas em vez de so abri-las.
+        data.addAbility(InvaderAbility.DOOR_BREACHER);
+
         if (mob instanceof SpiderEntity) {
             // Aranhas ja sobem parede no vanilla; a teia e o unico extra.
             if (random.nextDouble() < config.spiderWebChance) {

@@ -60,10 +60,22 @@ public class AttackNexusGoal extends Goal {
         return canStart();
     }
 
-    /** Alvo vivo e perto o bastante para o mob preferir mata-lo primeiro. */
+    /**
+     * Alvo vivo e perto o bastante para o mob preferir mata-lo primeiro.
+     *
+     * <p>Na pratica {@code mob.getTarget()} ja e limpo pelo
+     * {@code InvaderCombatPriority} sempre que fica mais longe que
+     * {@code nexusPriorityEngageRange}, entao esta checagem e mais uma garantia
+     * redundante do que o unico portao — mas usa o mesmo raio para nao haver
+     * dois numeros diferentes representando a mesma ideia.
+     */
     private boolean hasCloseTarget() {
         LivingEntity target = mob.getTarget();
-        return target != null && target.isAlive() && mob.squaredDistanceTo(target) < 256.0D;
+        if (target == null || !target.isAlive()) {
+            return false;
+        }
+        double range = DtbConfig.get().nexusPriorityEngageRange;
+        return mob.squaredDistanceTo(target) < range * range;
     }
 
     @Override
@@ -94,6 +106,17 @@ public class AttackNexusGoal extends Goal {
             mob.getNavigation().stop();
             attackNexus(nexus);
             return;
+        }
+
+        // Uma porta fechada bem na frente sempre vira obstaculo marcado, mesmo
+        // que a navegacao vanilla conseguisse abri-la sozinha e passar: o
+        // invasor tem que arrombar (BreachObstacleGoal, prioridade mais alta),
+        // nunca so atravessar.
+        if (data.getObstacle() == null) {
+            BlockPos door = NexusPathing.findClosedDoorAhead(mob, nexus);
+            if (door != null) {
+                data.setObstacle(door);
+            }
         }
 
         if (--repathTimer <= 0) {

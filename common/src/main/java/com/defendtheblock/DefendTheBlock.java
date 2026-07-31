@@ -9,6 +9,7 @@ import com.defendtheblock.invasion.NexusChunkLoader;
 import com.defendtheblock.invasion.NexusManager;
 import com.defendtheblock.registry.ModBlocks;
 import com.defendtheblock.registry.ModEntities;
+import com.defendtheblock.registry.ModItemGroups;
 import com.defendtheblock.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -38,6 +39,7 @@ public class DefendTheBlock implements ModInitializer {
 
         ModBlocks.register();
         ModItems.register();
+        ModItemGroups.register();
         ModEntities.register();
         DtbCompat.registerServerNetworking();
 

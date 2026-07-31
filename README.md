@@ -35,6 +35,10 @@ Se o Nexus for destruido, o mod apaga a pasta do mundo. Nao ha segunda chance.
 
 ## O que voce constroi
 
+Os tres itens do mod vivem na **propria aba do inventario criativo**,
+"Defend The Block" — nao espalhados pelas abas vanilla de Combate ou Blocos
+Funcionais.
+
 ### Bloco Nexus
 
 O coracao do modo. Craft:
@@ -147,7 +151,8 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 
 | Mob | Habilidade | Chance |
 |---|---|---|
-| Todos | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
+| Todos, exceto creeper | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
+| Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
 | Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda | 35% |
 | Zumbi | **Picareta**: minera o bloco que atrapalha | 12% |
@@ -156,6 +161,17 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 
 As chances baixas sao de proposito: a maior parte da horda continua sendo de
 mobs comuns, e o encontro com um zumbi carregando TNT vira um evento.
+
+### Portas: arrombadas, nunca so abertas
+
+Nenhum invasor (exceto o creeper, que tem seu proprio jeito de passar) usa uma
+porta como se fosse um jogador abrindo-a. Uma porta fechada no caminho e sempre
+tratada como obstaculo: o mob para e **arromba a porta a base de golpes**, sem
+precisar de nenhuma ferramenta.
+
+Portas de ferro sao mais resistentes que as de madeira, na mesma proporcao da
+dureza real do bloco no jogo — a mesma logica que ja faz a picareta do zumbi
+demorar mais em paredes mais duras.
 
 A picareta nao vence blocos muito duros (limite de dureza 30, entao obsidiana
 segura) — para esses e preciso TNT ou creeper. Bedrock, barreira e o proprio
@@ -179,12 +195,21 @@ heuristica simples para nao deixar o Nexus inalcancavel so por estar no ar.
 Desligue com `invadersCanBridge: false` se preferir que mobs nunca coloquem
 bloco no mundo.
 
-### A torreta e um alvo como qualquer jogador
+### Jogador e torreta sao alvos — mas o Nexus e a prioridade
 
 Os invasores **enxergam a torreta a distancia**, do mesmo jeito que enxergariam
-um jogador — nao precisam levar um tiro dela primeiro para reagir. Uma vez que
-um invasor mira na torreta, as mesmas IAs de combate do jogo (corpo a corpo ou
-arco) entram em acao contra ela.
+um jogador — nao precisam levar um tiro dela primeiro para reagir. E, assim como
+o jogador, atacam o que estiver **no caminho** ate o Nexus.
+
+O importante e que isso nao vira uma cacada: **o Nexus continua sendo a
+prioridade real**. Um invasor so briga de verdade com um jogador ou uma torreta
+quando ela esta genuinamente perto (por padrao, dentro de 6 blocos) — se estiver
+mais longe que isso, o mob simplesmente esquece aquele alvo e volta a caminhar
+para o bloco. Isso evita a situacao de, por exemplo, 3 torretas em fila
+separadas por 5 blocos cada: o invasor nao precisa matar as tres em sequencia
+antes de sequer tentar o Nexus — ele so briga com o que estiver bloqueando a
+passagem no momento, sem sair do caminho para cacar algo distante. Ajustavel em
+`nexusPriorityEngageRange`.
 
 ---
 
@@ -288,6 +313,8 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `zombieTntChance` | 0.05 | Chance de zumbi com TNT |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
 | `turretDetectionRadius` | 64.0 | Raio (blocos) no qual invasores enxergam a torreta como alvo |
+| `nexusPriorityEngageRange` | 6.0 | Raio (blocos) para brigar com jogador/torreta antes de voltar ao Nexus |
+| `doorBreakTicksPerHardness` | 10 | Ritmo de arrombamento de portas (ferro demora mais que madeira) |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -355,16 +382,18 @@ comportamento: falta rodar `runClient`, colocar o Nexus, forcar uma invasao com
 problemas de mixin (nomes de campo do `MobEntityAccessor`) ou de logica de jogo
 apareceriam, se existirem.
 
-### Mudancas depois do primeiro playtest
+### Mudancas depois do playtest
 
-As secoes acima ja refletem os ajustes pedidos depois de jogar: redesign da
-torreta com textura por nivel, custo de upgrade variavel, todo mob (inclusive
-creeper) dando dano no Nexus, flecha de esqueleto danificando o Nexus,
-bridging quando o Nexus esta elevado, torreta tratada como alvo a distancia e a
-correcao do delay tiro-antes-de-mirar. **Nada disso passou por um novo
-`buildAll` nem por teste em jogo ainda** — a verificacao continua sendo so
-estrutural (`javac` sem erro), a mesma limitacao de sempre. Os pontos de maior
-risco, por serem os menos comprovados por uso anterior no projeto:
+As secoes acima ja refletem os ajustes pedidos depois de jogar, em duas
+rodadas. **Nenhuma das duas passou por um novo `buildAll` nem por teste em
+jogo ainda** — a verificacao continua sendo so estrutural (`javac` sem erro),
+a mesma limitacao de sempre.
+
+**Primeira rodada:** redesign da torreta com textura por nivel, custo de
+upgrade variavel, todo mob (inclusive creeper) dando dano no Nexus, flecha de
+esqueleto danificando o Nexus, bridging quando o Nexus esta elevado, torreta
+tratada como alvo a distancia e a correcao do delay tiro-antes-de-mirar.
+Pontos de maior risco:
 
 - **`ArrowNexusDamageMixin`** mixina em `ProjectileEntity#onBlockHit`. Se o
   Loom nao aplicar esse mixin (erro no boot, nao no build), e porque esse
@@ -377,6 +406,21 @@ risco, por serem os menos comprovados por uso anterior no projeto:
 - **Bridging** e deliberadamente uma heuristica (pular + colocar bloco embaixo
   dos pes), nao um pathfinder. Pode ficar estranho visualmente em terrenos
   complicados; o objetivo e so evitar o Nexus ficar impossivel de alcancar.
+
+**Segunda rodada:** o Nexus como prioridade real de combate (jogador/torreta so
+sao engajados quando genuinamente perto), arrombamento de portas para todo
+invasor exceto creeper, e a aba propria no inventario. Pontos de maior risco:
+
+- **`InvaderCombatPriority`** limpa `mob.getTarget()` a cada tick quando o alvo
+  esta longe demais. Isso pode gerar um "pisca" de 1 tick em que uma IA de
+  combate vanilla comeca a reagir antes do alvo ser limpo de novo — esperado,
+  imperceptivel, nao e bug.
+- **`FabricItemGroup`** (aba propria do inventario) e uma API de conveniencia
+  do Fabric API historicamente estavel entre versoes, ao contrario das APIs de
+  Mojang que causaram os erros da primeira compilacao — risco baixo, mas ainda
+  nao testada aqui.
+- **Deteccao de porta fechada** usa `DoorBlock`/`DoubleBlockHalf`, API estavel
+  desde a introducao de portas em duas metades (Minecraft 1.13) — risco baixo.
 
 ---
 

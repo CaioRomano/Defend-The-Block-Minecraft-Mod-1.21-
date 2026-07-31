@@ -3,10 +3,8 @@ package com.defendtheblock.registry;
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.item.ArrowTurretItem;
 import com.defendtheblock.item.GatheringTotemItem;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Rarity;
@@ -32,10 +30,7 @@ public final class ModItems {
         // Faz Block#asItem() devolver o BlockItem certo (pick block, drops...).
         Item.BLOCK_ITEMS.put(ModBlocks.NEXUS_BLOCK, NEXUS_BLOCK);
 
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> {
-            entries.add(NEXUS_BLOCK);
-            entries.add(GATHERING_TOTEM);
-        });
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ARROW_TURRET));
+        // Os itens vivem so na aba propria do mod (ModItemGroups), nao
+        // espalhados pelas abas vanilla de Combate/Blocos Funcionais.
     }
 }

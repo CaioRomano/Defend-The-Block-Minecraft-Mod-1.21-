@@ -1,6 +1,7 @@
 package com.defendtheblock.mixin;
 
 import com.defendtheblock.entity.invader.InvaderAccess;
+import com.defendtheblock.entity.invader.InvaderCombatPriority;
 import com.defendtheblock.entity.invader.InvaderData;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -39,6 +40,7 @@ public abstract class MobEntityMixin implements InvaderAccess {
     private void defendtheblock$tickInvader(CallbackInfo ci) {
         if (defendtheblock$invaderData.isInvader()) {
             defendtheblock$invaderData.tickCooldowns();
+            InvaderCombatPriority.tick((MobEntity) (Object) this, defendtheblock$invaderData);
         }
     }
 }

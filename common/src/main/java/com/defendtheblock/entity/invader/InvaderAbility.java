@@ -3,13 +3,18 @@ package com.defendtheblock.entity.invader;
 /**
  * Habilidades extras que um invasor pode receber.
  *
- * <p>Subir escada ({@link #LADDER_CLIMB}) e dado a <em>todo</em> invasor, como
- * pedido. As outras sao sorteadas com chances baixas configuraveis em
- * {@link com.defendtheblock.config.DtbConfig}.
+ * <p>Subir escada ({@link #LADDER_CLIMB}) e arrombar porta ({@link #DOOR_BREACHER})
+ * sao dadas a <em>todo</em> invasor exceto o creeper. As outras sao sorteadas
+ * com chances baixas configuraveis em {@link com.defendtheblock.config.DtbConfig}.
  */
 public enum InvaderAbility {
     /** Todo invasor sobe escadas que encontrar no caminho. */
     LADDER_CLIMB,
+    /**
+     * Todo invasor, exceto o creeper, arromba portas fechadas em vez de
+     * simplesmente abri-las — nunca so passa por elas.
+     */
+    DOOR_BREACHER,
     /** Creeper que se explode no obstaculo quando nao ha caminho ate o Nexus. */
     SUICIDE_BREACH,
     /** Aranha que atira teias nos alvos. */

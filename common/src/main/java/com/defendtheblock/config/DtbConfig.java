@@ -118,6 +118,20 @@ public final class DtbConfig {
      * a distancia — nao depende do alcance de perseguicao proprio do mob.
      */
     public double turretDetectionRadius = 64.0D;
+    /**
+     * Alcance, em blocos, dentro do qual um invasor mantem o alvo de combate
+     * atual (jogador ou torreta) em vez de esquece-lo e voltar para o Nexus.
+     *
+     * <p>E o que garante que o Nexus continua sendo a prioridade: um alvo mais
+     * longe que isso e "esquecido" a cada tick, entao o mob nunca sai do
+     * caminho para cacar algo distante — so briga com o que realmente estiver
+     * bloqueando a passagem. Com varias torretas espalhadas, isso evita que o
+     * invasor tenha que mata-las todas em sequencia antes de sequer tentar o
+     * bloco.
+     */
+    public double nexusPriorityEngageRange = 6.0D;
+    /** Ticks por ponto de dureza para arrombar uma porta fechada. */
+    public int doorBreakTicksPerHardness = 10;
 
     // ------------------------------------------------------------- torreta
     /** Multiplicador de dano global das torretas. */

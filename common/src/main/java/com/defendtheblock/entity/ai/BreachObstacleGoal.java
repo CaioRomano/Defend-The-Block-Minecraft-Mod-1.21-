@@ -6,7 +6,9 @@ import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderData;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.block.LadderBlock;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.TntEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -31,6 +33,8 @@ import java.util.EnumSet;
  *
  * <p>O que ele faz depende da habilidade sorteada:
  * <ul>
+ *   <li>{@link InvaderAbility#DOOR_BREACHER} - todo invasor (exceto creeper)
+ *       arromba porta fechada, sem precisar de nenhuma outra habilidade;</li>
  *   <li>{@link InvaderAbility#SUICIDE_BREACH} - creeper se explode no obstaculo;</li>
  *   <li>{@link InvaderAbility#TNT_SAPPER} - zumbi planta e acende uma TNT;</li>
  *   <li>{@link InvaderAbility#LADDER_BUILDER} - zumbi monta uma coluna de escadas
@@ -59,7 +63,8 @@ public class BreachObstacleGoal extends Goal {
     }
 
     private boolean hasBreachAbility() {
-        return data.hasAbility(InvaderAbility.SUICIDE_BREACH)
+        return data.hasAbility(InvaderAbility.DOOR_BREACHER)
+                || data.hasAbility(InvaderAbility.SUICIDE_BREACH)
                 || data.hasAbility(InvaderAbility.TNT_SAPPER)
                 || data.hasAbility(InvaderAbility.LADDER_BUILDER)
                 || data.hasAbility(InvaderAbility.PICKAXE_MINER);
@@ -91,7 +96,12 @@ public class BreachObstacleGoal extends Goal {
         approachTimer = 0;
         BlockState state = mob.getWorld().getBlockState(target);
         float hardness = Math.max(0.2F, state.getHardness(mob.getWorld(), target));
-        requiredMineTicks = Math.max(20, Math.min(400, (int) (hardness * DtbConfig.get().mineTicksPerHardness)));
+        // Porta usa seu proprio ritmo (mais rapido que minerar parede de verdade);
+        // ferro (dureza 5) naturalmente demora mais que madeira (dureza 3).
+        int ticksPerHardness = state.getBlock() instanceof DoorBlock
+                ? DtbConfig.get().doorBreakTicksPerHardness
+                : DtbConfig.get().mineTicksPerHardness;
+        requiredMineTicks = Math.max(15, Math.min(400, (int) (hardness * ticksPerHardness)));
     }
 
     @Override
@@ -125,6 +135,11 @@ public class BreachObstacleGoal extends Goal {
             return;
         }
         mob.getNavigation().stop();
+
+        if (data.hasAbility(InvaderAbility.DOOR_BREACHER) && world.getBlockState(target).getBlock() instanceof DoorBlock) {
+            breakDoor(world);
+            return;
+        }
 
         if (data.hasAbility(InvaderAbility.SUICIDE_BREACH) && mob instanceof CreeperEntity creeper) {
             creeper.ignite();
@@ -186,6 +201,43 @@ public class BreachObstacleGoal extends Goal {
     private void retreat() {
         Vec3d away = mob.getPos().subtract(Vec3d.ofCenter(target)).normalize().multiply(7.0D);
         mob.getNavigation().startMovingTo(mob.getX() + away.x, mob.getY(), mob.getZ() + away.z, speed * 1.4D);
+    }
+
+    // ------------------------------------------------------------- portas
+
+    /**
+     * Arromba a porta a base de golpes: todo invasor exceto o creeper faz isso,
+     * sem precisar de item nenhum. Porta de ferro (dureza maior) demora mais
+     * que porta de madeira, na proporcao real do jogo.
+     */
+    private void breakDoor(ServerWorld world) {
+        BlockState state = world.getBlockState(target);
+        if (!(state.getBlock() instanceof DoorBlock)) {
+            // A porta ja sumiu (outro invasor arrombou primeiro, por exemplo).
+            data.setObstacle(null);
+            return;
+        }
+
+        mineTicks++;
+        if (mineTicks % 5 == 0) {
+            mob.swingHand(Hand.MAIN_HAND);
+            world.playSound(null, target, state.getSoundGroup().getHitSound(), SoundCategory.HOSTILE, 0.6F, 0.8F);
+        }
+        int progress = (int) ((mineTicks / (float) requiredMineTicks) * 10.0F);
+        world.setBlockBreakingInfo(mob.getId(), target, Math.min(9, progress));
+
+        if (mineTicks >= requiredMineTicks) {
+            world.setBlockBreakingInfo(mob.getId(), target, -1);
+            // Porta ocupa duas metades (de cima e de baixo): quebra as duas juntas.
+            BlockPos otherHalf = state.get(DoorBlock.HALF) == DoubleBlockHalf.LOWER ? target.up() : target.down();
+            world.breakBlock(target, false, mob);
+            if (world.getBlockState(otherHalf).getBlock() instanceof DoorBlock) {
+                world.breakBlock(otherHalf, false, mob);
+            }
+            data.setObstacle(null);
+            data.setBreachCooldown(20);
+            target = null;
+        }
     }
 
     // -------------------------------------------------------------- escadas
