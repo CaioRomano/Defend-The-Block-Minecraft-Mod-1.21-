@@ -64,5 +64,10 @@
   "commands.defendtheblock.wave_stopped": "A invasao atual foi cancelada.",
   "commands.defendtheblock.nexus_removed": "O Nexus foi removido com seguranca (sem apagar o mundo).",
   "tooltip.defendtheblock.invader_egg.1": "Invoca um invasor com essa habilidade ja garantida.",
-  "tooltip.defendtheblock.invader_egg.2": "Ele marcha ate o Nexus, mas nao conta na contagem da onda."
+  "tooltip.defendtheblock.invader_egg.2": "Ele marcha ate o Nexus, mas nao conta na contagem da onda.",
+  "hud.defendtheblock.grace_days": "Primeira invasao em %s dia(s)",
+  "message.defendtheblock.grace_title": "O Nexus esta carregando",
+  "message.defendtheblock.grace_subtitle": "Primeira invasao em %s dia(s) — levante suas defesas",
+  "message.defendtheblock.invasion_tonight_title": "INVASAO ESTA NOITE",
+  "message.defendtheblock.invasion_tonight_subtitle": "A primeira horda vem ao anoitecer"
 }

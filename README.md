@@ -158,6 +158,49 @@ tempo — que tambem sobe a cada noite.
 | 8 | 6 | 1.4s | 70 | 28% |
 | 14+ | 9+ | 0.5s | 100 | 26% |
 
+### Os 3 dias de carencia
+
+Colocar o Nexus **nao** joga uma invasao na sua cabeca naquela mesma noite.
+Ha uma carencia de 3 dias do Minecraft (`gracePeriodDays`) para voce levantar
+as primeiras defesas.
+
+A cada amanhecer aparece um **aviso no meio da tela** com quantos dias faltam,
+e no dia da estreia o aviso muda para "INVASAO ESTA NOITE", com direito a
+toque de trombeta. O painel do HUD tambem mostra a contagem no lugar de
+"proxima invasao ao anoitecer".
+
+O aviso sai uma vez por dia e o dia ja anunciado fica no save, entao
+reconectar ou reiniciar o servidor nao repete a mensagem. Mundos salvos antes
+desta feature existir nao tem data de colocacao guardada — nesses, a carencia
+simplesmente nao se aplica e a campanha segue como ja estava.
+
+`/dtb forcewave` ignora a carencia, para poder testar sem esperar.
+
+### Zumbis rapidos e lentos
+
+Cada zumbi sorteia a propria velocidade: um pouco mais lento que o normal, no
+ritmo padrao, ou um pouco mais rapido. A **chance de sair rapido cresce a cada
+invasao** (ate um teto), o que aperta o jogo com o tempo sem precisar de mais
+mobs na tela — a mesma quantidade simplesmente chega antes. De quebra, a horda
+para de andar em bloco uniforme: os rapidos abrem na frente, os lentos ficam
+para tras.
+
+### Espaco para quem trabalha
+
+Cavar uma parede ou montar uma coluna de escada exige o mob parado num ponto
+exato. Com a horda inteira empurrando por tras, o trabalhador era deslocado e a
+tarefa nunca terminava.
+
+Agora, enquanto um zumbi com picareta esta cavando ou um construtor esta
+erguendo escada/pilar, **os outros invasores recuam** para fora de um raio de
+3 blocos (`workerClearanceRadius`) e so voltam a avancar quando a tarefa
+termina — a espera acaba sozinha quando o trabalhador conclui, desiste ou
+morre.
+
+**Com uma excecao:** quem ja esta em alcance de golpe do Nexus nunca recua.
+Chegar no bloco e o objetivo final da invasao, e ninguem abre mao disso para
+dar passagem a um colega.
+
 ### O quintal seguro e o anel de invasao
 
 Em volta do Nexus existem duas regioes concentricas, com formatos diferentes de
@@ -220,13 +263,11 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 |---|---|---|
 | Todos, exceto creeper | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
 | Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
-| Todos, exceto creeper | **Cavam qualquer parede** — sem picareta leva 3x mais tempo | 100% |
-| Todos | **Atacam torretas** que entrarem no campo de visao | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
 | Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender). **Nao danifica o Nexus** | 100% |
 | Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 16% |
 | Zumbi | **Construtor**: ergue caminho/pilar de blocos ate o Nexus, muito mais rapido que um invasor comum | 12% |
-| Zumbi | **Picareta**: cava no tempo cheio, 3x mais rapido que os outros | 18% |
+| Zumbi | **Picareta**: cava a parede que atrapalha | 18% |
 | Zumbi | **TNT**: **arremessa** uma unica TNT em arco, como um projetil | 7% |
 | Zumbi | **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 10% |
 
@@ -371,11 +412,21 @@ esteja atras da nuca do mob). Na pratica: uma torreta escondida atras da horda
 nao puxa a atencao de ninguem; a mesma torreta na linha de frente vira alvo de
 todo mundo que passar olhando para ela.
 
-**Todo invasor consegue atacar torreta** — nao e mais privilegio de quem atira
-de longe. O que muda por tipo e so o alcance em que ele repara nela: quem
-atira usa `rangedTurretPriorityRange` (20 blocos, porque resolve parado de
-onde esta), quem e corpo a corpo usa o raio curto de engajamento (6 blocos, o
-mesmo que o resto do sistema respeita).
+**Procurar torreta ativamente e so de quem ataca de longe.** O esqueleto
+resolve parado de onde esta, entao priorizar a torreta a ate 20 blocos
+(`rangedTurretPriorityRange`) nao o tira do caminho.
+
+**O corpo a corpo tem o Nexus como objetivo e ponto final.** Para ele a
+torreta so vira alvo se **todas** estas condicoes valerem ao mesmo tempo:
+
+1. a torreta **o acertou primeiro** (revide, via `RevengeGoal` do vanilla);
+2. ela esta **perto** — dentro do raio curto de engajamento (6 blocos);
+3. o **pathfinding realmente chega la** (checado uma vez, no tick em que o
+   alvo e adotado).
+
+Falhou qualquer uma delas, ele larga o alvo na hora e volta a marchar. Sem a
+condicao 3, o mob ficava batendo a cabeca numa torreta em cima de um pilar ou
+do outro lado de um fosso: perto em linha reta, inalcancavel de fato.
 
 Mesmo depois de ser alvejado, o foco na torreta **nunca e permanente**, por
 duas regras que trabalham juntas:
@@ -532,7 +583,11 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `turretRepairHealthPerItem` | 8.0 | Vida recuperada por unidade de material usada no reparo |
 | `turretVerticalFovDegrees` | 60.0 | Abertura vertical do cone de visao da torreta (define os pontos cegos) |
 | `invaderFieldOfViewDegrees` | 120.0 | Campo de visao do invasor para escolher jogador/torreta como alvo |
-| `unarmedMineTicksMultiplier` | 3.0 | Quanto mais lento um mob sem picareta cava a mesma parede |
+| `workerClearanceRadius` | 3.0 | Espaco que a horda desocupa em volta de quem cava/constroi |
+| `gracePeriodDays` | 3 | Dias de carencia entre colocar o Nexus e a primeira invasao |
+| `zombieSlowChance` | 0.25 | Chance de zumbi mais lento |
+| `zombieFastChanceBase` | 0.08 | Chance de zumbi mais rapido na invasao 1 |
+| `zombieFastChancePerWave` | 0.035 | Quanto essa chance sobe por invasao (teto 0.55) |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -984,6 +1039,51 @@ Um efeito colateral que precisou de ajuste: o teto de tempo do
 tempo legitimo de um mob sem picareta cavando pedra. Agora ele e calculado por
 obstaculo (tempo de trabalho + folga), senao a protecao contra travamento
 passaria a interromper trabalho valido.
+
+**Decima primeira rodada — restricoes, carencia e coordenacao da horda.**
+Parte desta rodada desfaz coisas da anterior, por decisao de design depois de
+ver o resultado:
+
+- **Quebrar bloco voltou a ser privilegio de tres habilidades** (picareta, TNT
+  e creeper). Deixar toda a horda cavar tornava qualquer muro irrelevante — o
+  efeito na dificuldade foi grande demais. A penalidade
+  `unarmedMineTicksMultiplier` saiu junto, virou config morta.
+- **Corpo a corpo nao caca mais torreta.** A `TargetTurretGoal` voltou a ser
+  so de quem ataca a distancia. Para o corpo a corpo a torreta so vira alvo se
+  as tres condicoes valerem juntas: ela o acertou primeiro, esta dentro do raio
+  curto de engajamento, e o **pathfinding realmente chega la** — esta ultima e
+  nova, checada uma vez no tick em que o alvo e adotado. Sem ela o mob ficava
+  batendo a cabeca numa torreta em cima de um pilar: perto em linha reta,
+  inalcancavel de fato.
+- **Torretas nao tem fogo amigo** e **bloqueiam o campo de visao uma da
+  outra**. A imunidade e simples (a flecha tem a torreta como atacante). O
+  bloqueio precisou ser feito a mao com um raycast contra as caixas das outras
+  torretas, porque o `canSee` do vanilla so testa blocos — para ele, uma
+  entidade no meio do caminho nao existe. A desobstrucao e automatica e nao
+  precisa de nenhum evento: a torreta destruida some da lista de entidades e o
+  tiro volta a passar no rescan seguinte.
+- **Carencia de 3 dias** apos colocar o Nexus, com aviso na tela por dia e um
+  aviso especial no dia da estreia. O dia ja anunciado e persistido, entao
+  reconectar nao repete a mensagem. Mundos antigos (sem data de colocacao
+  salva) simplesmente nao entram em carencia.
+- **Velocidade variavel dos zumbis**, com a chance de rapido subindo por
+  invasao. Aplicada via `setBaseValue` no atributo em vez de
+  `EntityAttributeModifier`, de proposito: o construtor do modifier mudou entre
+  1.20.1 (UUID) e 1.21 (Identifier), enquanto `setBaseValue` e igual nas duas —
+  exatamente o tipo de diferenca que ja derrubou este mod antes.
+- **Horda abre espaco para quem trabalha** (`YieldToWorkerGoal`). Detalhes que
+  precisaram de cuidado: a goal roda em prioridade -1, acima da
+  `AttackNexusGoal`, senao o impulso de seguir para o bloco venceria o recuo;
+  mas ela se recusa a rodar se o mob ja estiver em alcance de golpe do Nexus,
+  entao nunca atrapalha o objetivo final. A flag de "trabalhando" e limpa
+  incondicionalmente no `stop()` das duas goals que a levantam — se vazasse, a
+  horda inteira ficaria abrindo espaco para um mob que nao esta fazendo nada. E
+  ha um teto de 200 ticks recuando, pela mesma razao de sempre.
+
+Nota sobre conflito de controles: no nivel de prioridade -1 convivem tres
+goals, e elas nao brigam porque pegam controles disjuntos —
+`BridgeToNexusGoal` usa JUMP, `SpiderWebShotGoal` usa LOOK e
+`YieldToWorkerGoal` usa MOVE.
 
 Nota de implementacao: a supressao do spawn natural e feita **descartando a
 entidade no `ServerEntityEvents.ENTITY_LOAD`**, nao interceptando o

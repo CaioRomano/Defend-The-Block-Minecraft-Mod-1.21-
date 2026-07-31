@@ -79,10 +79,46 @@ public final class InvasionManager {
             }
             // No fim da noite (apos NIGHT_END) a onda segue viva, mas para de
             // spawnar: quem ja nasceu termina a briga, ninguem novo aparece.
-        } else if (night && day != data.getLastWaveDay()) {
-            data.setLastWaveDay(day);
-            startWave(server, data, data.getWavesCompleted() + 1);
+        } else {
+            announceCountdown(server, data, day);
+            // Carencia inicial: as primeiras noites passam em paz para o
+            // jogador levantar defesa antes da estreia.
+            if (night && day != data.getLastWaveDay() && !data.isInGracePeriod(day)) {
+                data.setLastWaveDay(day);
+                startWave(server, data, data.getWavesCompleted() + 1);
+            }
         }
+    }
+
+    /**
+     * Aviso na tela, uma vez por dia, enquanto a carencia inicial corre.
+     *
+     * <p>Nos dias anteriores mostra quantos faltam; no dia da estreia avisa que
+     * a invasao e naquela noite. O dia ja anunciado fica guardado no estado
+     * persistente, entao reconectar ou reiniciar o servidor nao repete o aviso.
+     */
+    private static void announceCountdown(MinecraftServer server, InvasionData data, long day) {
+        if (data.getNexusPlacedDay() < 0L || day == data.getLastCountdownDay()) {
+            return;
+        }
+        long remaining = data.daysUntilFirstInvasion(day);
+        // Depois da estreia nao ha mais contagem para mostrar.
+        if (remaining <= 0L && !data.isInGracePeriod(day) && day > data.getFirstInvasionDay()) {
+            return;
+        }
+        data.setLastCountdownDay(day);
+
+        if (remaining > 0L) {
+            NexusManager.broadcastTitle(server,
+                    Text.translatable("message.defendtheblock.grace_title").formatted(Formatting.AQUA),
+                    Text.translatable("message.defendtheblock.grace_subtitle", remaining).formatted(Formatting.WHITE));
+            return;
+        }
+        NexusManager.broadcastTitle(server,
+                Text.translatable("message.defendtheblock.invasion_tonight_title").formatted(Formatting.RED),
+                Text.translatable("message.defendtheblock.invasion_tonight_subtitle").formatted(Formatting.GOLD));
+        server.getOverworld().playSound(null, data.getNexusPos(), SoundEvents.EVENT_RAID_HORN.value(),
+                SoundCategory.HOSTILE, 3.0F, 1.2F);
     }
 
     // ---------------------------------------------------------------- ondas
@@ -385,14 +421,20 @@ public final class InvasionManager {
 
     // ----------------------------------------------------------------- sync
 
+    /** Dia do mundo, contado sempre pelo Overworld (onde o Nexus vive). */
+    private static long currentDay(MinecraftServer server) {
+        return Math.floorDiv(server.getOverworld().getTimeOfDay(), 24000L);
+    }
+
     public static void sync(MinecraftServer server, InvasionData data) {
-        InvasionSyncData payload = InvasionSyncData.of(data);
+        InvasionSyncData payload = InvasionSyncData.of(data, currentDay(server));
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             DtbCompat.sendInvasionSync(player, payload);
         }
     }
 
     public static void syncTo(ServerPlayerEntity player) {
-        DtbCompat.sendInvasionSync(player, InvasionSyncData.of(NexusManager.getData(player.server)));
+        DtbCompat.sendInvasionSync(player,
+                InvasionSyncData.of(NexusManager.getData(player.server), currentDay(player.server)));
     }
 }

@@ -5,6 +5,8 @@ import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAbility;
 import com.defendtheblock.entity.invader.InvaderData;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.WitherSkeletonEntity;
@@ -99,6 +101,8 @@ public final class InvaderEquipment {
             mob.setEquipmentDropChance(EquipmentSlot.OFFHAND, 0.0F);
         }
 
+        rollSpeed(mob, wave, random);
+
         // O invasor nao troca de equipamento no meio da invasao.
         mob.setCanPickUpLoot(false);
 
@@ -107,6 +111,45 @@ public final class InvaderEquipment {
         if (mob instanceof AbstractSkeletonEntity skeleton) {
             skeleton.updateAttackType();
         }
+    }
+
+    /**
+     * Sorteia a velocidade do zumbi: um pouco mais lento, normal, ou um pouco
+     * mais rapido que o padrao da especie.
+     *
+     * <p>A chance de sair rapido <b>cresce a cada invasao</b> (ate um teto), o
+     * que aperta o jogo com o tempo sem precisar de mais mobs na tela: a mesma
+     * quantidade simplesmente chega antes. A horda tambem deixa de andar em
+     * bloco uniforme — os rapidos abrem na frente, os lentos ficam para tras.
+     *
+     * <p>Mexe direto no valor base do atributo em vez de usar
+     * {@code EntityAttributeModifier} de proposito: o construtor do modifier
+     * mudou entre 1.20.1 (UUID) e 1.21 (Identifier), enquanto
+     * {@code setBaseValue} tem a mesma assinatura nas duas.
+     */
+    private static void rollSpeed(MobEntity mob, int wave, Random random) {
+        if (!(mob instanceof ZombieEntity)) {
+            return;
+        }
+        EntityAttributeInstance speed = mob.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        if (speed == null) {
+            return;
+        }
+
+        DtbConfig config = DtbConfig.get();
+        double fastChance = Math.min(config.zombieFastChanceMax,
+                config.zombieFastChanceBase + Math.max(0, wave - 1) * config.zombieFastChancePerWave);
+
+        double roll = random.nextDouble();
+        double factor;
+        if (roll < fastChance) {
+            factor = config.zombieFastFactor;
+        } else if (roll < fastChance + config.zombieSlowChance) {
+            factor = config.zombieSlowFactor;
+        } else {
+            return;
+        }
+        speed.setBaseValue(speed.getBaseValue() * Math.max(0.1D, factor));
     }
 
     private static ItemStack mainHandFor(MobEntity mob, InvaderData data, int tier, Random random) {

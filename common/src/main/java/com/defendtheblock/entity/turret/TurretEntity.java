@@ -526,6 +526,11 @@ public class TurretEntity extends MobEntity {
         if (getWorld().isClient) {
             return false;
         }
+        // Sem fogo amigo: a flecha de uma torreta nunca fere outra. O dono da
+        // flecha e a torreta que atirou, entao ela aparece aqui como atacante.
+        if (source.getAttacker() instanceof TurretEntity) {
+            return false;
+        }
         if (source.getAttacker() instanceof PlayerEntity player) {
             pickUp(player);
             return false;

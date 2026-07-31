@@ -80,9 +80,16 @@ public final class InvasionHud {
                     Text.translatable("hud.defendtheblock.mobs", data.mobsAlive, data.mobsSpawned),
                     textX, textY, 0xFFFF7A6B);
         } else {
-            Text idle = data.gameOver
-                    ? Text.translatable("hud.defendtheblock.idle")
-                    : Text.translatable("hud.defendtheblock.next_wave");
+            Text idle;
+            if (data.gameOver) {
+                idle = Text.translatable("hud.defendtheblock.idle");
+            } else if (data.daysUntilInvasion > 0) {
+                // Carencia inicial: o painel mostra a contagem em vez de
+                // prometer invasao para esta noite.
+                idle = Text.translatable("hud.defendtheblock.grace_days", data.daysUntilInvasion);
+            } else {
+                idle = Text.translatable("hud.defendtheblock.next_wave");
+            }
             context.drawTextWithShadow(font, idle, textX, textY, TEXT_COLOR);
             textY += LINE_HEIGHT;
             context.drawTextWithShadow(font,

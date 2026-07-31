@@ -8,7 +8,9 @@ import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
 import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.entity.ai.ThrowTntGoal;
+import com.defendtheblock.entity.ai.YieldToWorkerGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
+import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.mob.CreeperEntity;
@@ -139,6 +141,11 @@ public final class InvaderGoals {
             // carrega uma unica TNT) e resolve alvo ou obstaculo a distancia.
             accessor.defendtheblock$getGoalSelector().add(-4, new ThrowTntGoal(mob));
         }
+        // Acima da AttackNexusGoal de proposito: recuar para dar espaco ao
+        // trabalhador precisa vencer o impulso de seguir para o bloco. A
+        // propria goal se recusa a rodar se o mob ja estiver em alcance de
+        // golpe do Nexus, entao ela nunca atrapalha o objetivo final.
+        accessor.defendtheblock$getGoalSelector().add(-1, new YieldToWorkerGoal(mob, MOVE_SPEED));
         accessor.defendtheblock$getGoalSelector().add(0, new AttackNexusGoal(mob, MOVE_SPEED));
 
         // Jogador e torreta so viram alvo quando estao no CAMPO DE VISAO do
@@ -150,9 +157,14 @@ public final class InvaderGoals {
                 new ActiveTargetGoal<>(mob, PlayerEntity.class, 10, true, false,
                         player -> InvaderVision.isInFieldOfView(mob, player)));
 
-        // A torreta vale para todo invasor: qualquer um consegue ataca-la.
-        // Quem segura o comportamento e o cone de visao dentro da propria goal,
-        // mais os tetos de tempo do InvaderCombatPriority.
-        accessor.defendtheblock$getTargetSelector().add(2, new TargetTurretGoal(mob));
+        // Procurar torreta ativamente e SO de quem ataca a distancia: ele
+        // resolve parado de onde esta, sem sair do caminho. O corpo a corpo
+        // nao ganha essa goal — para ele a torreta so vira alvo por revide
+        // (RevengeGoal do vanilla), e mesmo assim o InvaderCombatPriority
+        // ainda exige que ela esteja perto e alcancavel pelo pathfinding,
+        // senao ele volta imediatamente para o Nexus.
+        if (mob instanceof RangedAttackMob) {
+            accessor.defendtheblock$getTargetSelector().add(2, new TargetTurretGoal(mob));
+        }
     }
 }

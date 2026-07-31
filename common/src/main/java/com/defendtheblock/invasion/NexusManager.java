@@ -53,7 +53,8 @@ public final class NexusManager {
 
     public static void activate(ServerWorld world, BlockPos pos, PlayerEntity placer) {
         InvasionData data = getData(world);
-        data.placeNexus(pos);
+        long day = Math.floorDiv(world.getServer().getOverworld().getTimeOfDay(), 24000L);
+        data.placeNexus(pos, day);
         data.setMultiplier(DtbConfig.get().mobMultiplier);
         NexusChunkLoader.apply(world.getServer().getOverworld(), data);
 
@@ -66,6 +67,14 @@ public final class NexusManager {
         DefendTheBlock.LOGGER.info("Nexus ativado em {}", pos.toShortString());
         if (placer != null) {
             placer.sendMessage(Text.translatable("tooltip.defendtheblock.nexus_block.3").formatted(Formatting.RED), false);
+        }
+    }
+
+    /** Aviso grande no meio da tela de todo mundo (titulo + subtitulo). */
+    public static void broadcastTitle(MinecraftServer server, Text title, Text subtitle) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            player.networkHandler.sendPacket(new TitleS2CPacket(title));
+            player.networkHandler.sendPacket(new SubtitleS2CPacket(subtitle));
         }
     }
 

@@ -25,10 +25,13 @@ public final class InvasionSyncData {
     public final int mobsSpawned;
     public final double multiplier;
     public final boolean gameOver;
+    /** Dias que faltam para a primeira invasao; 0 = ja liberada. */
+    public final int daysUntilInvasion;
 
     public InvasionSyncData(boolean hasNexus, int nexusX, int nexusY, int nexusZ, int nexusHealth,
                             int nexusMaxHealth, int wavesCompleted, int currentWave, boolean waveActive,
-                            int mobsAlive, int mobsSpawned, double multiplier, boolean gameOver) {
+                            int mobsAlive, int mobsSpawned, double multiplier, boolean gameOver,
+                            int daysUntilInvasion) {
         this.hasNexus = hasNexus;
         this.nexusX = nexusX;
         this.nexusY = nexusY;
@@ -42,9 +45,10 @@ public final class InvasionSyncData {
         this.mobsSpawned = mobsSpawned;
         this.multiplier = multiplier;
         this.gameOver = gameOver;
+        this.daysUntilInvasion = daysUntilInvasion;
     }
 
-    public static InvasionSyncData of(InvasionData data) {
+    public static InvasionSyncData of(InvasionData data, long currentDay) {
         boolean hasNexus = data.hasNexus();
         return new InvasionSyncData(
                 hasNexus,
@@ -59,11 +63,12 @@ public final class InvasionSyncData {
                 data.getMobsAlive(),
                 data.getMobsSpawned(),
                 data.getMultiplier(),
-                data.isGameOver());
+                data.isGameOver(),
+                (int) Math.min(Integer.MAX_VALUE, data.daysUntilFirstInvasion(currentDay)));
     }
 
     public static InvasionSyncData empty() {
-        return new InvasionSyncData(false, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 1.0D, false);
+        return new InvasionSyncData(false, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 1.0D, false, 0);
     }
 
     public void write(PacketByteBuf buf) {
@@ -80,6 +85,7 @@ public final class InvasionSyncData {
         buf.writeVarInt(mobsSpawned);
         buf.writeDouble(multiplier);
         buf.writeBoolean(gameOver);
+        buf.writeVarInt(daysUntilInvasion);
     }
 
     public static InvasionSyncData read(PacketByteBuf buf) {
@@ -96,6 +102,7 @@ public final class InvasionSyncData {
                 buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readDouble(),
-                buf.readBoolean());
+                buf.readBoolean(),
+                buf.readVarInt());
     }
 }

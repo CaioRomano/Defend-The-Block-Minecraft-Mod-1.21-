@@ -4,6 +4,7 @@ import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.turret.TurretEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.RangedAttackMob;
+import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.mob.MobEntity;
 
 /**
@@ -80,6 +81,17 @@ public final class InvaderCombatPriority {
         }
 
         if (data.getEngagedTurret() != turret) {
+            // Primeiro tick contra esta torreta: o corpo a corpo so aceita o
+            // alvo se o pathfinding realmente chegar la. Sem isso ele fica
+            // batendo a cabeca numa torreta em cima de um pilar ou do outro
+            // lado de um fosso — o alvo era "perto" em linha reta e nunca
+            // alcancavel de fato. Para quem atira de longe isso nao vale:
+            // ele resolve sem sair do lugar.
+            if (!ranged && !canReach(mob, turret)) {
+                mob.setTarget(null);
+                data.giveUpOnTurret(config.turretIgnoreTicksAfterGiveUp);
+                return;
+            }
             data.engageTurret(turret, distance);
             return;
         }
@@ -111,5 +123,16 @@ public final class InvaderCombatPriority {
         }
         data.setTurretEngageTicks(0);
         data.setLastDistanceToTurret(distance);
+    }
+
+    /**
+     * O pathfinding do mob consegue mesmo chegar ate a torreta?
+     *
+     * <p>Custa uma busca de caminho, entao so e chamado uma vez, no tick em
+     * que o alvo e adotado — nao a cada tick.
+     */
+    private static boolean canReach(MobEntity mob, TurretEntity turret) {
+        Path path = mob.getNavigation().findPathTo(turret, 0);
+        return path != null && path.reachesTarget();
     }
 }

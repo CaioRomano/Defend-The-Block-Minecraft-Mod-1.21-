@@ -11,6 +11,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -165,7 +166,37 @@ public class TurretShootGoal extends Goal {
         double range = turret.getRange();
         return turret.horizontalSquaredDistanceTo(target) <= range * range
                 && turret.isInVisionCone(target)
-                && turret.getVisibilityCache().canSee(target);
+                && turret.getVisibilityCache().canSee(target)
+                && !blockedByTurret(target);
+    }
+
+    /**
+     * Outra torreta esta na frente, no caminho do tiro?
+     *
+     * <p>Torretas nao atiram umas nas outras (ver
+     * {@code TurretEntity#damage}), mas antes disso elas tambem nao deveriam
+     * <b>tentar</b> — uma torreta plantada na linha de fogo de outra bloqueia
+     * o campo de visao dela, do mesmo jeito que uma parede bloquearia.
+     *
+     * <p>Precisa ser feito a mao porque o {@code canSee} do vanilla so testa
+     * blocos: para ele, uma entidade no meio do caminho nao existe.
+     *
+     * <p>A "desobstrucao" e automatica e nao precisa de nenhum evento: a
+     * torreta que bloqueava simplesmente deixa de estar na lista de entidades
+     * quando e destruida, e o tiro volta a passar no proximo rescan.
+     */
+    private boolean blockedByTurret(LivingEntity target) {
+        Vec3d from = new Vec3d(turret.getX(), turret.getEyeY(), turret.getZ());
+        Vec3d to = target.getBoundingBox().getCenter();
+        Box segment = new Box(from, to).expand(1.0D);
+
+        for (TurretEntity other : turret.getWorld().getEntitiesByClass(TurretEntity.class, segment,
+                candidate -> candidate != turret && candidate.isAlive())) {
+            if (other.getBoundingBox().expand(0.05D).raycast(from, to).isPresent()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private LivingEntity findBestTarget() {

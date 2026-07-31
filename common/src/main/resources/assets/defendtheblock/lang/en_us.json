@@ -64,5 +64,10 @@
   "commands.defendtheblock.wave_stopped": "The current invasion was cancelled.",
   "commands.defendtheblock.nexus_removed": "The Nexus was safely removed (no world deletion).",
   "tooltip.defendtheblock.invader_egg.1": "Summons an invader with this ability already guaranteed.",
-  "tooltip.defendtheblock.invader_egg.2": "It marches on the Nexus, but does not count toward the wave."
+  "tooltip.defendtheblock.invader_egg.2": "It marches on the Nexus, but does not count toward the wave.",
+  "hud.defendtheblock.grace_days": "First invasion in %s day(s)",
+  "message.defendtheblock.grace_title": "The Nexus is charging",
+  "message.defendtheblock.grace_subtitle": "First invasion in %s day(s) — build your defenses",
+  "message.defendtheblock.invasion_tonight_title": "INVASION TONIGHT",
+  "message.defendtheblock.invasion_tonight_subtitle": "The first horde comes at nightfall"
 }

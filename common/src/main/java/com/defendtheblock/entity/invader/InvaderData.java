@@ -38,6 +38,18 @@ public class InvaderData {
     /** Carencia depois de desistir de uma torreta, para nao remirar na mesma na hora. */
     private int turretIgnoreTicks;
 
+    /**
+     * Este invasor esta executando uma <b>tarefa</b> que precisa de espaco:
+     * minerar um obstaculo ou construir escada/pilar.
+     *
+     * <p>Os outros invasores leem esta flag (via {@link InvaderAccess}) e se
+     * afastam, para nao empurrarem quem esta trabalhando para fora do lugar.
+     * Runtime puro: se o mob morre ou o chunk descarrega, a flag vai junto —
+     * que e exatamente o desejado, ninguem deve abrir espaco para um
+     * trabalhador que nao existe mais.
+     */
+    private boolean working;
+
     public boolean isInvader() {
         return invader;
     }
@@ -176,6 +188,14 @@ public class InvaderData {
         this.engagedTurret = null;
         this.turretEngageTicks = 0;
         this.lastDistanceToTurret = Double.MAX_VALUE;
+    }
+
+    public boolean isWorking() {
+        return working;
+    }
+
+    public void setWorking(boolean working) {
+        this.working = working;
     }
 
     public int getTurretIgnoreTicks() {

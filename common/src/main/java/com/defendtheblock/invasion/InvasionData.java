@@ -41,6 +41,11 @@ public class InvasionData {
     private long lastWaveDay = -1L;
     private boolean gameOver;
 
+    /** Dia do mundo em que o Nexus foi colocado, base da carencia inicial. */
+    private long nexusPlacedDay = -1L;
+    /** Ultimo dia em que a contagem regressiva foi anunciada, para nao repetir. */
+    private long lastCountdownDay = -1L;
+
     /** Raio (em chunks) atualmente mantido carregado, ou -1 se nenhum. */
     private int forcedRadius = -1;
 
@@ -75,8 +80,10 @@ public class InvasionData {
         return nexusPos;
     }
 
-    public void placeNexus(BlockPos pos) {
+    public void placeNexus(BlockPos pos, long day) {
         this.nexusPos = pos.toImmutable();
+        this.nexusPlacedDay = day;
+        this.lastCountdownDay = -1L;
         this.nexusMaxHealth = DtbConfig.get().nexusMaxHealth;
         this.nexusHealth = this.nexusMaxHealth;
         this.wavesCompleted = 0;
@@ -142,6 +149,8 @@ public class InvasionData {
         this.lastWaveDay = -1L;
         this.gameOver = false;
         this.forcedRadius = -1;
+        this.nexusPlacedDay = -1L;
+        this.lastCountdownDay = -1L;
         markDirty();
     }
 
@@ -218,6 +227,40 @@ public class InvasionData {
         markDirty();
     }
 
+    public long getNexusPlacedDay() {
+        return nexusPlacedDay;
+    }
+
+    /** Primeiro dia do mundo em que uma invasao pode comecar. */
+    public long getFirstInvasionDay() {
+        return nexusPlacedDay + Math.max(0, DtbConfig.get().gracePeriodDays);
+    }
+
+    /** Dias que ainda faltam para a primeira invasao (0 = e hoje a noite). */
+    public long daysUntilFirstInvasion(long currentDay) {
+        if (nexusPlacedDay < 0L) {
+            // Mundo salvo antes desta feature existir: nao ha data de
+            // colocacao para contar, entao a carencia simplesmente nao se
+            // aplica e a campanha segue como ja estava.
+            return 0L;
+        }
+        return Math.max(0L, getFirstInvasionDay() - currentDay);
+    }
+
+    /** Ainda esta na carencia inicial, antes da primeira invasao? */
+    public boolean isInGracePeriod(long currentDay) {
+        return nexusPlacedDay >= 0L && currentDay < getFirstInvasionDay();
+    }
+
+    public long getLastCountdownDay() {
+        return lastCountdownDay;
+    }
+
+    public void setLastCountdownDay(long day) {
+        this.lastCountdownDay = day;
+        markDirty();
+    }
+
     public long getLastWaveDay() {
         return lastWaveDay;
     }
@@ -277,6 +320,8 @@ public class InvasionData {
         mobsSpawned = nbt.getInt("MobsSpawned");
         multiplier = nbt.contains("Multiplier") ? nbt.getDouble("Multiplier") : DtbConfig.get().mobMultiplier;
         lastWaveDay = nbt.contains("LastWaveDay") ? nbt.getLong("LastWaveDay") : -1L;
+        nexusPlacedDay = nbt.contains("NexusPlacedDay") ? nbt.getLong("NexusPlacedDay") : -1L;
+        lastCountdownDay = nbt.contains("LastCountdownDay") ? nbt.getLong("LastCountdownDay") : -1L;
         gameOver = nbt.getBoolean("GameOver");
         forcedRadius = nbt.contains("ForcedRadius") ? nbt.getInt("ForcedRadius") : -1;
 
@@ -312,6 +357,8 @@ public class InvasionData {
         nbt.putInt("MobsSpawned", mobsSpawned);
         nbt.putDouble("Multiplier", multiplier);
         nbt.putLong("LastWaveDay", lastWaveDay);
+        nbt.putLong("NexusPlacedDay", nexusPlacedDay);
+        nbt.putLong("LastCountdownDay", lastCountdownDay);
         nbt.putBoolean("GameOver", gameOver);
         nbt.putInt("ForcedRadius", forcedRadius);
 

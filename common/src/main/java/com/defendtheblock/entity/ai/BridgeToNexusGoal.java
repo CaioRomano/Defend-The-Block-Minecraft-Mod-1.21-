@@ -98,10 +98,16 @@ public class BridgeToNexusGoal extends Goal {
     public void start() {
         blocksPlaced = 0;
         placeCooldown = 0;
+        // So o construtor dedicado pede espaco: o pilar improvisado de um
+        // invasor comum e rapido demais para valer parar a horda por ele.
+        if (builder) {
+            data.setWorking(true);
+        }
     }
 
     @Override
     public void stop() {
+        data.setWorking(false);
         data.setStuckTicks(0);
     }
 

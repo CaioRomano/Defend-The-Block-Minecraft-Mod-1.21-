@@ -33,10 +33,11 @@ import java.util.EnumSet;
  * IA de arrombamento: entra em acao quando {@link InvaderData#getObstacle()}
  * aponta para um bloco que esta impedindo o mob de chegar ao Nexus.
  *
- * <p>A regra de base e que <b>todo invasor consegue cavar</b> — a picareta
- * deixou de ser requisito e virou so vantagem de velocidade. O creeper e a
- * unica excecao: ele nao quebra bloco na mao, o jeito dele de abrir passagem e
- * se explodir. Em cima disso, a habilidade sorteada oferece um atalho:
+ * <p><b>Quebrar parede e privilegio de tres habilidades</b>, nao de toda a
+ * horda: picareta (cava), TNT (explode) e creeper (se explode). O resto dos
+ * invasores contorna o obstaculo ou espera a passagem ser aberta — deixar todo
+ * mundo cavar tornava qualquer muro irrelevante. Porta e um caso a parte:
+ * essa todo invasor arromba.
  *
  * <ul>
  *   <li>{@link InvaderAbility#DOOR_BREACHER} - todo invasor (exceto creeper)
@@ -47,8 +48,7 @@ import java.util.EnumSet;
  *       (que o resto da horda tambem usa);</li>
  *   <li>{@link InvaderAbility#FIRE_STARTER} - zumbi ateia fogo em obstaculo de
  *       madeira em vez de quebra-lo;</li>
- *   <li>{@link InvaderAbility#PICKAXE_MINER} - cava no tempo cheio, sem a
- *       penalidade de {@code unarmedMineTicksMultiplier}.</li>
+ *   <li>{@link InvaderAbility#PICKAXE_MINER} - cava o bloco.</li>
  * </ul>
  *
  * <p>Todo bloco colocado aqui passa por {@link com.defendtheblock.invasion.InvaderBlocks},
@@ -62,9 +62,9 @@ public class BreachObstacleGoal extends Goal {
      *
      * <p>O teto existe para um caso nao previsto nunca virar um mob congelado
      * para sempre, entao ele precisa ser maior que qualquer arrombamento
-     * legitimo — inclusive o de um mob sem picareta cavando pedra, que e o
-     * mais lento de todos. Por isso e calculado por obstaculo em
-     * {@link #start()}, em vez de ser um numero fixo.
+     * legitimo. Por isso e calculado por obstaculo em {@link #start()} (tempo
+     * de trabalho + esta folga), em vez de ser um numero fixo que poderia
+     * ficar menor que o trabalho real e interromper servico valido.
      */
     private static final int GOAL_TICK_SLACK = 200;
 
@@ -128,15 +128,12 @@ public class BreachObstacleGoal extends Goal {
         if (data.hasAbility(InvaderAbility.FIRE_STARTER) && isWood(state)) {
             return true;
         }
-        // O creeper nao quebra bloco na mao: o jeito dele de abrir passagem e
-        // se explodir, e so isso.
-        if (mob instanceof CreeperEntity) {
-            return false;
-        }
-        // Todo o resto consegue cavar. A picareta deixou de ser requisito e
-        // virou so vantagem (ver unarmedMineTicksMultiplier): uma parede sem
-        // ninguem com picareta por perto nao pode ser um muro intransponivel.
-        return state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
+        // Quebrar parede e privilegio de quem tem ferramenta para isso: o zumbi
+        // com picareta cava, o da TNT explode, o creeper se explode. O resto da
+        // horda contorna (ver AttackNexusGoal#tryDetour) ou espera a passagem
+        // ser aberta. Deixar todo mundo cavar tornava qualquer muro irrelevante.
+        return data.hasAbility(InvaderAbility.PICKAXE_MINER)
+                && state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
     }
 
     @Override
@@ -185,15 +182,10 @@ public class BreachObstacleGoal extends Goal {
         // Porta usa seu proprio ritmo (mais rapido que minerar parede de verdade);
         // ferro (dureza 5) naturalmente demora mais que madeira (dureza 3).
         DtbConfig config = DtbConfig.get();
-        double ticksPerHardness = state.getBlock() instanceof DoorBlock
+        int ticksPerHardness = state.getBlock() instanceof DoorBlock
                 ? config.doorBreakTicksPerHardness
                 : config.mineTicksPerHardness;
-        // Sem picareta a mesma parede leva bem mais tempo — e a diferenca entre
-        // "todo mob consegue" e "o zumbi mineiro e quem faz isso rapido".
-        if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
-            ticksPerHardness *= Math.max(1.0D, config.unarmedMineTicksMultiplier);
-        }
-        requiredMineTicks = Math.max(15, Math.min(1200, (int) (hardness * ticksPerHardness)));
+        requiredMineTicks = Math.max(15, Math.min(400, (int) (hardness * ticksPerHardness)));
         maxGoalTicks = requiredMineTicks + GOAL_TICK_SLACK;
     }
 
@@ -209,6 +201,10 @@ public class BreachObstacleGoal extends Goal {
             data.setObstacle(null);
             data.setBreachCooldown(40);
         }
+        // Sempre limpa a flag de trabalho ao sair: se ela vazasse, a horda
+        // inteira ficaria abrindo espaco para um mob que nao esta mais
+        // fazendo nada.
+        data.setWorking(false);
         target = null;
         mineTicks = 0;
         goalTicks = 0;
@@ -253,6 +249,11 @@ public class BreachObstacleGoal extends Goal {
             return;
         }
         mob.getNavigation().stop();
+        // Encostado no obstaculo e prestes a trabalhar: avisa a horda para
+        // abrir espaco (ver YieldToWorkerGoal). Cavar e montar escada exigem
+        // o mob parado num ponto exato; os outros empurrando o tiram de la.
+        data.setWorking(data.hasAbility(InvaderAbility.PICKAXE_MINER)
+                || data.hasAbility(InvaderAbility.LADDER_BUILDER));
 
         if (data.hasAbility(InvaderAbility.DOOR_BREACHER) && world.getBlockState(target).getBlock() instanceof DoorBlock) {
             breakDoor(world);
@@ -268,10 +269,10 @@ public class BreachObstacleGoal extends Goal {
         if (data.hasAbility(InvaderAbility.FIRE_STARTER) && igniteWood(world)) {
             return;
         }
-        if (mob instanceof CreeperEntity) {
-            // Rede de seguranca: creeper nao cava. Se chegou ate aqui e porque
-            // o SUICIDE_BREACH nao pegou, entao larga o obstaculo em vez de
-            // ficar parado olhando para ele.
+        if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
+            // Rede de seguranca: chegou ate aqui sem nenhum branch aplicavel
+            // (o mundo mudou embaixo do mob, ou o item da habilidade acabou).
+            // Larga o obstaculo em vez de ficar parado olhando para ele.
             data.setObstacle(null);
             data.setBreachCooldown(40);
             return;

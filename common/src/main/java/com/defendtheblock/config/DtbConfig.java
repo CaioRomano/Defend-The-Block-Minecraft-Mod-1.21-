@@ -52,6 +52,15 @@ public final class DtbConfig {
     public int forcedChunkRadius = 4;
 
     // ----------------------------------------------------------- invasoes
+    /**
+     * Dias de <b>carencia</b> entre colocar o Nexus e a primeira invasao.
+     *
+     * <p>Da tempo de erguer as primeiras defesas antes da primeira noite valer.
+     * A cada amanhecer da carencia aparece um aviso na tela com quantos dias
+     * faltam, e no dia da estreia o aviso diz que a invasao e naquela noite.
+     * 0 desliga a carencia (invasao ja na primeira noite).
+     */
+    public int gracePeriodDays = 3;
     /** Multiplicador global do ritmo de spawn da invasao. */
     public double mobMultiplier = 1.0D;
     /**
@@ -166,18 +175,30 @@ public final class DtbConfig {
      */
     public double elevatedNexusBuilderBonus = 2.5D;
 
+    // --------------------------------------------- velocidade dos zumbis
+    /** Chance de um zumbi nascer mais lento que o normal. */
+    public double zombieSlowChance = 0.25D;
+    /** Chance de um zumbi nascer mais rapido, ja na primeira invasao. */
+    public double zombieFastChanceBase = 0.08D;
+    /**
+     * Quanto a chance de zumbi rapido sobe a cada invasao.
+     *
+     * <p>E o que faz a horda ir ficando mais agressiva com o tempo sem precisar
+     * de mais mobs: as mesmas quantidades chegam antes. Limitado por
+     * {@code zombieFastChanceMax}.
+     */
+    public double zombieFastChancePerWave = 0.035D;
+    /** Teto da chance de zumbi rapido, para a horda nunca virar so corredores. */
+    public double zombieFastChanceMax = 0.55D;
+    /** Multiplicador de velocidade do zumbi lento. */
+    public double zombieSlowFactor = 0.75D;
+    /** Multiplicador de velocidade do zumbi rapido. */
+    public double zombieFastFactor = 1.3D;
+
     /** Dureza maxima de bloco que um zumbi mineiro consegue quebrar. */
     public double maxMineHardness = 30.0D;
     /** Ticks que o zumbi leva minerando um bloco (multiplicado pela dureza). */
     public int mineTicksPerHardness = 14;
-    /**
-     * Multiplicador de tempo para quem quebra bloco <b>sem picareta</b>.
-     *
-     * <p>Todo invasor consegue abrir buraco numa parede — a picareta nao e mais
-     * requisito, so vantagem. Com 3.0, o zumbi mineiro leva um terco do tempo
-     * que os outros levam no mesmo bloco.
-     */
-    public double unarmedMineTicksMultiplier = 3.0D;
     /**
      * Angulo total do campo de visao do invasor, em graus.
      *
@@ -187,6 +208,15 @@ public final class DtbConfig {
      * em que a cabeca esta virada.
      */
     public double invaderFieldOfViewDegrees = 120.0D;
+    /**
+     * Raio, em blocos, que os outros invasores desocupam em volta de quem esta
+     * cavando ou construindo.
+     *
+     * <p>Sem isso a horda empurrava o trabalhador para fora do ponto exato de
+     * que a tarefa precisa, e o servico nunca terminava. Quem ja esta em
+     * alcance de golpe do Nexus nunca recua — chegar no bloco vem antes.
+     */
+    public double workerClearanceRadius = 3.0D;
     /**
      * Deixa qualquer invasor construir um caminho de blocos (pilar/pontilhar)
      * quando fica preso e o Nexus esta visivelmente acima dele. E uma
