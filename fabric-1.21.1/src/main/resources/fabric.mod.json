@@ -22,7 +22,8 @@
     ]
   },
   "mixins": [
-    "defendtheblock.mixins.json"
+    "defendtheblock.mixins.json",
+    "defendtheblock-drops.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.15.0",

@@ -10,19 +10,22 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Impede que os mobs recrutados pela invasao dropem itens ao morrer.
+ * Corta a loot table dos invasores — versao <b>1.20.1</b>.
  *
- * <p>A invasao spawna centenas de mobs por noite. Sem isso, o chao em volta do
- * Nexus vira uma montanha de carne podre, ossos e equipamento — mais lag do
- * que recompensa, e nada disso tem a ver com o desafio. A recompensa da noite
- * vem do saque que o Nexus solta ao amanhecer.
+ * <p>Por que este arquivo vive no diretorio da versao, e nao em {@code common/}:
+ * {@code LivingEntity#dropLoot} tem assinaturas diferentes nas duas versoes
+ * suportadas. No 1.20.1 e {@code (DamageSource, boolean)}; no 1.21.1 ganhou um
+ * {@code ServerWorld} na frente, junto com o resto da familia de metodos de
+ * drop. Uma versao anterior deste mixin assumiu a assinatura errada e derrubou
+ * o jogo no boot — dai a separacao.
  *
- * <p>Desligavel em {@code invadersDropLoot}. O XP continua caindo normalmente:
- * so os itens sao cortados.
+ * <p>Ele tambem mora num config proprio marcado como {@code "required": false},
+ * de modo que um erro de assinatura aqui vira um aviso no log em vez de um
+ * crash: o mod continua funcionando, so os itens da loot table e que voltariam
+ * a cair.
  *
- * <p>Nota de versao: {@code dropLoot(DamageSource, boolean)} tem a mesma
- * assinatura no 1.20.1 e no 1.21.1 (o parametro {@code ServerWorld} so entrou
- * no 1.21.2), entao este mixin pode viver no codigo compartilhado.
+ * <p>O equipamento (armadura/arma) e tratado sem mixin nenhum, por
+ * {@code InvaderEquipment#dropChance}.
  */
 @Mixin(LivingEntity.class)
 public abstract class InvaderDropsMixin {

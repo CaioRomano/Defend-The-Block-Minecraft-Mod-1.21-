@@ -1,14 +1,12 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.8",
   "package": "com.defendtheblock.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ArrowNexusDamageMixin",
-    "MobEntityAccessor",
-    "MobEntityMixin"
+    "InvaderDropsMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

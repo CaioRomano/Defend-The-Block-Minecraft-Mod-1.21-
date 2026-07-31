@@ -777,12 +777,9 @@ mexeu menos em bugs e mais em conteudo:
   **arremessa em arco** ate 16 blocos, contra o alvo perseguido ou contra o
   proprio Nexus, com o pavio ja correndo. E uma `TntEntity` normal com
   velocidade inicial — nao precisou de entidade nova.
-- **Invasores nao dropam mais itens** (`invadersDropLoot`, padrao false), via
-  dois cortes: `InvaderDropsMixin` cancela `dropLoot` (a loot table) e o
-  `MobEntityMixin` cancela `dropEquipment` (armadura/arma sorteada). O XP
-  continua caindo. Nota de versao: `dropLoot(DamageSource, boolean)` tem a
-  mesma assinatura no 1.20.1 e no 1.21.1 — o parametro `ServerWorld` so entrou
-  no 1.21.2 — entao o mixin pode viver no codigo compartilhado.
+- **Invasores nao dropam mais itens** (`invadersDropLoot`, padrao false). O XP
+  continua caindo. Veja a oitava rodada abaixo para como isso foi feito — a
+  primeira tentativa estava errada e derrubava o jogo no boot.
 - **Alcance da torreta virou o atributo que define o papel dela.** A
   progressao era timida (12→32); agora e 14→46. Como o alcance passou a ser
   medido no plano horizontal, esses numeros valem por igual no chao ou no alto
@@ -844,6 +841,41 @@ Vale registrar que a explicacao que eu tinha dado antes para esse mesmo
 relato — municao das torretas acabando — estava errada, e era errada em dois
 sentidos: eu tinha entendido o sintoma ao contrario (mobs ficando *menos*
 inertes) e a hipotese nao explicava um travamento permanente.
+
+**Oitava rodada — o crash de mixin, e a licao sobre assinaturas.** A supressao
+de drops da sexta rodada **derrubava o jogo no boot** no 1.21.1. O Mixin foi
+direto ao ponto:
+
+```
+Invalid descriptor on MobEntityMixin->@Inject::defendtheblock$skipInvaderEquipment
+Expected (ServerWorld, DamageSource, boolean, CallbackInfo)
+but found (DamageSource, int, boolean, CallbackInfo)
+```
+
+Eu tinha **assumido** que `dropEquipment(DamageSource, int, boolean)` valia nas
+duas versoes. No 1.21.1 o `int lootingMultiplier` deu lugar a um `ServerWorld`
+na frente (parte da reforma de encantamentos/loot do 1.21) — ou seja, a
+assinatura difere entre as versoes, e aquele injection nunca poderia ter vivido
+em `common/`. Foi o mesmo tipo de erro que ja tinha acontecido com
+`ITEM_ARMOR_EQUIP_IRON`: afirmar uma assinatura de API que eu nao tinha como
+verificar aqui.
+
+A correcao reduz a superficie de risco em vez de so trocar a assinatura:
+
+- **Equipamento (armadura/arma) nao usa mais mixin nenhum.**
+  `mob.setEquipmentDropChance(slot, 0f)` e API publica e estavel nas duas
+  versoes, e resolve a parte que mais suja o chao (e a mais valiosa: armadura
+  de diamante). Isso e `InvaderEquipment#dropChance`.
+- **A loot table (carne podre, osso, flecha...) continua precisando de mixin**,
+  mas agora ele vive **por versao**, cada um com a assinatura real da sua:
+  `dropLoot(DamageSource, boolean)` no 1.20.1 e
+  `dropLoot(ServerWorld, DamageSource, boolean)` no 1.21.1.
+- **E esse mixin foi isolado num config proprio**
+  (`defendtheblock-drops.mixins.json`) marcado como **`"required": false`**.
+  Se a assinatura do `dropLoot` ainda estiver errada em alguma versao, o
+  Mixin loga um aviso e segue — o mod carrega normalmente e so os itens da
+  loot table voltam a cair, em vez de o jogo nao abrir. Nenhum outro mixin do
+  mod (que sao os que realmente sustentam a invasao) fica exposto a isso.
 
 ---
 

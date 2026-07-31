@@ -1,10 +1,8 @@
 package com.defendtheblock.mixin;
 
-import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderCombatPriority;
 import com.defendtheblock.entity.invader.InvaderData;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.nbt.NbtCompound;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,19 +41,6 @@ public abstract class MobEntityMixin implements InvaderAccess {
         if (defendtheblock$invaderData.isInvader()) {
             defendtheblock$invaderData.tickCooldowns();
             InvaderCombatPriority.tick((MobEntity) (Object) this, defendtheblock$invaderData);
-        }
-    }
-
-    /**
-     * Junto com {@code InvaderDropsMixin} (que corta a loot table), impede que
-     * o equipamento sorteado do invasor caia no chao — senao a horda ainda
-     * encheria o mundo de armadura e espada.
-     */
-    @Inject(method = "dropEquipment", at = @At("HEAD"), cancellable = true)
-    private void defendtheblock$skipInvaderEquipment(DamageSource source, int lootingMultiplier,
-                                                     boolean allowDrops, CallbackInfo ci) {
-        if (!DtbConfig.get().invadersDropLoot && defendtheblock$invaderData.isInvader()) {
-            ci.cancel();
         }
     }
 }

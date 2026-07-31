@@ -1,6 +1,7 @@
 package com.defendtheblock.invasion;
 
 import com.defendtheblock.compat.DtbCompat;
+import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAbility;
 import com.defendtheblock.entity.invader.InvaderData;
 import net.minecraft.entity.EquipmentSlot;
@@ -50,6 +51,20 @@ public final class InvaderEquipment {
         return Math.max(0, Math.min(4, (wave - 1) / 3));
     }
 
+    /**
+     * Chance de cada peca de equipamento cair quando o invasor morre.
+     *
+     * <p>Zero quando {@code invadersDropLoot} esta desligado (o padrao): a
+     * invasao spawna centenas de mobs por noite, e sem isso o chao em volta do
+     * Nexus vira uma montanha de armadura e espada. Isso resolve o equipamento
+     * <b>sem nenhum mixin</b> — {@code setEquipmentDropChance} e API publica e
+     * estavel, ao contrario de {@code dropEquipment}, cuja assinatura muda
+     * entre 1.20.1 e 1.21.1.
+     */
+    private static float dropChance() {
+        return DtbConfig.get().invadersDropLoot ? 0.03F : 0.0F;
+    }
+
     public static void equip(ServerWorld world, MobEntity mob, InvaderData data, int wave, Random random) {
         int tier = tierForWave(wave);
         double armorChance = Math.min(0.90D, 0.12D + wave * 0.06D);
@@ -67,7 +82,7 @@ public final class InvaderEquipment {
                 ItemStack piece = new ItemStack(ARMOR[pieceTier][i]);
                 maybeEnchant(world, piece, random, enchantChance, enchantPower);
                 mob.equipStack(ARMOR_SLOTS[i], piece);
-                mob.setEquipmentDropChance(ARMOR_SLOTS[i], 0.03F);
+                mob.setEquipmentDropChance(ARMOR_SLOTS[i], dropChance());
             }
         }
 
@@ -75,7 +90,7 @@ public final class InvaderEquipment {
         if (!mainHand.isEmpty()) {
             maybeEnchant(world, mainHand, random, enchantChance, enchantPower);
             mob.equipStack(EquipmentSlot.MAINHAND, mainHand);
-            mob.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.03F);
+            mob.setEquipmentDropChance(EquipmentSlot.MAINHAND, dropChance());
         }
 
         ItemStack offHand = offHandFor(data);
