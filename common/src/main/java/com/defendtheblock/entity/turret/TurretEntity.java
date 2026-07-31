@@ -390,7 +390,11 @@ public class TurretEntity extends MobEntity {
             player.sendMessage(Text.translatable("turret.defendtheblock.upgraded", tierName()), false);
             updateDisplayName();
         } else {
-            playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 0.7F, 1.2F);
+            // BLOCK_ANVIL_USE de novo, so que mais agudo: ITEM_ARMOR_EQUIP_IRON
+            // virou RegistryEntry<SoundEvent> no 1.21 (mesmo problema do som da
+            // besta carregando, ver DtbCompat.CROSSBOW_LOADED) e nao compila
+            // direto nas duas versoes.
+            playSound(SoundEvents.BLOCK_ANVIL_USE, 0.6F, 1.8F);
         }
         if (player instanceof ServerPlayerEntity serverPlayer) {
             sendStats(serverPlayer, false);
