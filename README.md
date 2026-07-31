@@ -798,17 +798,52 @@ mexeu menos em bugs e mais em conteudo:
   travamento — fazer isso para cada posicao do cubo, em dezenas de mobs, seria
   caro demais.
 
-**Sobre "os mobs ficavam menos inertes conforme a noite avancava":** a
-explicacao mais provavel e um efeito colateral do bug de prioridade de goal
-descrito na quarta rodada, combinado com a municao das torretas. Enquanto as
-torretas tinham flecha, elas acertavam mobs, o `RevengeGoal` dava um alvo a
-eles, e com esse alvo por perto a `AttackNexusGoal` cedia o controle de
-movimento — mob parado. Conforme a noite avancava e as torretas iam ficando
-sem municao, cada vez menos mobs recebiam alvo, e a horda voltava a andar
-normalmente. As correcoes da quarta e da quinta rodada (prioridades negativas
-e o `LookControl` zerando o pitch) atacam exatamente essa cadeia, entao o
-sintoma deve sumir junto — mas isso e uma hipotese raciocinada, nao algo que
-eu tenha conseguido observar rodando o jogo.
+**Setima rodada — a horda que congelava.** O relato era que, conforme a noite
+avancava, os mobs iam ficando **parados** ate a horda inteira travar. Isso nao
+era lag nem chunk descarregado: era um bug na `BreachObstacleGoal`, e o
+codigo das rodadas anteriores tinha agravado ele duas vezes.
+
+> `canStart()` perguntava apenas "este mob tem alguma habilidade de
+> arrombamento?". Como `DOOR_BREACHER` e dado a **todo** invasor menos o
+> creeper, a resposta era sempre sim. O goal entao assumia o controle de
+> movimento para qualquer obstaculo marcado, chegava perto, chamava
+> `navigation.stop()` — e caia atraves de todos os branches sem executar
+> nenhum, porque a parede nao era porta e o mob nao tinha picareta, TNT nem
+> escada. Ficava ali parado, com `shouldContinue()` retornando true para
+> sempre.
+
+O efeito era **cumulativo e irreversivel por mob**: cada invasor que
+esbarrasse uma vez numa parede que nao sabe tratar congelava de vez. Como ao
+longo da noite mais e mais mobs esbarram em alguma coisa, a horda ia
+"endurecendo" ate parecer que tudo tinha parado — exatamente o sintoma
+relatado.
+
+Duas mudancas minhas pioraram isso: as **prioridades negativas** da quarta
+rodada colocaram essa goal na prioridade mais alta do mod (entao o mob
+congelado nem sequer devolvia o movimento para a `AttackNexusGoal`), e
+reduzir o zumbi da TNT para **uma unica banana** na sexta rodada criou mais um
+caminho para o estado travado (depois de usar a TNT, `placeTnt` passa a
+retornar false e o mob cai no mesmo buraco).
+
+A correcao ataca a causa e ainda poe duas redes de seguranca:
+
+- **`canHandle(pos)`** substitui o antigo `hasBreachAbility()`: agora a
+  pergunta e "este mob consegue fazer alguma coisa com **este** obstaculo?" —
+  porta so conta com `DOOR_BREACHER`, TNT/escada so contam enquanto o item
+  existe no slot, isqueiro so conta em madeira, picareta so conta ate o limite
+  de dureza. Se a resposta e nao, o obstaculo e largado na hora e a
+  `AttackNexusGoal` (com a reavaliacao de rota da sexta rodada) assume para
+  tentar contornar.
+- **Teto de tempo** (`MAX_GOAL_TICKS`, 400 ticks): nenhum arrombamento
+  legitimo demora tanto, e sem isso qualquer caso nao previsto voltaria a
+  virar um mob congelado para sempre.
+- **`stop()` libera a marcacao de obstaculo**, para o mob nao reentrar no
+  mesmo lugar no tick seguinte e travar em loop.
+
+Vale registrar que a explicacao que eu tinha dado antes para esse mesmo
+relato — municao das torretas acabando — estava errada, e era errada em dois
+sentidos: eu tinha entendido o sintoma ao contrario (mobs ficando *menos*
+inertes) e a hipotese nao explicava um travamento permanente.
 
 ---
 
