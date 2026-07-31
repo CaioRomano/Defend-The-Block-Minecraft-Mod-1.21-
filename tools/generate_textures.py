@@ -133,33 +133,41 @@ def nexus_face(kind):
 
 # O icone do item e visto de cima: a besta deitada sobre a base, com a
 # coronha apontando para baixo no icone e os bracos/corda para cima.
+#
+# Redesenhado a partir de uma referencia enviada pelo usuario: mira traseira
+# escura no topo, os bracos formam uma faixa entrelacada madeira/dourado
+# emoldurada a ouro, com os pes de ferro (pontas escuras) nas duas
+# extremidades, uma calha de ferro logo abaixo, e a base tambem emoldurada a
+# ouro com um "grip" escuro no fundo. E uma estilizacao a 16x16 da imagem, nao
+# um traçado pixel a pixel — nessa resolucao o entrelacado diagonal da
+# referencia vira so a alternancia de duas linhas (ver linhas 3-4 da arte).
 TURRET_ITEM_PALETTE = {
     "A": rgba("#6b4a2a"),  # madeira escura da coronha
     "W": rgba("#8a6236"),  # madeira clara da coronha
-    "I": rgba("#b9b9c4"),  # ferro dos bracos
+    "I": rgba("#b9b9c4"),  # ferro dos bracos/calha
     "i": rgba("#7d7d88"),  # ferro sombra (pontas dos bracos)
-    "S": rgba("#e9e2d2"),  # corda
     "M": rgba("#8f8f9b"),  # base, vista de cima
-    "m": rgba("#5f5f6b"),  # base, sombra/borda
+    "G": rgba("#c9932c"),  # moldura dourada
+    "K": rgba("#1a1512"),  # mira traseira, quase preta
 }
 
 TURRET_ITEM_ART = [
     "................",
-    ".....SSSSSS.....",
+    "......KKKK......",
+    "..GGGGGGGGGGGG..",
+    "..iIGAWAAWAGIi..",
+    "..iIGWAWWAWGIi..",
+    "..GGGGGGGGGGGG..",
     "..IIIIIIIIIIII..",
-    "..iiIIIIIIIIii..",
-    "......IIII......",
     "......AWWA......",
     "......AWWA......",
-    "......AWWA......",
-    "......AWWA......",
-    "......AWWA......",
-    "...mMMAWWAMMm...",
-    "...mMMAWWAMMm...",
-    "...mMMAWWAMMm...",
-    "...mMMMMMMMMm...",
-    "...mMMMMMMMMm...",
-    "....mmmmmmmm....",
+    "...GMMAWWAMMG...",
+    "...GMMAWWAMMG...",
+    "...GMMMMMMMMG...",
+    "...GMMMMMMMMG...",
+    "....AAAAAAAA....",
+    "....AAAAAAAA....",
+    "....GGGGGGGG....",
 ]
 
 TOTEM_PALETTE = {
