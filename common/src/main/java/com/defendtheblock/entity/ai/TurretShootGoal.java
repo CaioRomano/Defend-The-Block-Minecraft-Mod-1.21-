@@ -51,9 +51,10 @@ public class TurretShootGoal extends Goal {
             return;
         }
 
-        turret.aimAt(target);
-
-        if (turret.getCooldown() > 0 || !turret.hasAmmo()) {
+        // So atira quando a besta ja estiver de fato apontada para o alvo: sem
+        // isso o tiro saia primeiro e a rotacao seguia depois, visivelmente errado.
+        boolean aimed = turret.aimAt(target);
+        if (turret.getCooldown() > 0 || !turret.hasAmmo() || !aimed) {
             return;
         }
         if (!turret.getVisibilityCache().canSee(target)) {

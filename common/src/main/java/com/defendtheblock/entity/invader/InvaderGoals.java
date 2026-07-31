@@ -3,9 +3,10 @@ package com.defendtheblock.entity.invader;
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.ai.AttackNexusGoal;
 import com.defendtheblock.entity.ai.BreachObstacleGoal;
+import com.defendtheblock.entity.ai.BridgeToNexusGoal;
 import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
-import com.defendtheblock.entity.turret.TurretEntity;
+import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.mob.CreeperEntity;
@@ -81,18 +82,25 @@ public final class InvaderGoals {
 
         MobEntityAccessor accessor = (MobEntityAccessor) mob;
 
-        // Prioridades acima (numero menor) das goals de perambular do vanilla,
-        // mas abaixo das goals de ataque corpo a corpo, para o mob preferir o
-        // jogador quando ele estiver por perto.
-        accessor.defendtheblock$getGoalSelector().add(3, new BreachObstacleGoal(mob, MOVE_SPEED));
-        accessor.defendtheblock$getGoalSelector().add(4, new ClimbLadderGoal(mob, MOVE_SPEED));
-        if (data.hasAbility(InvaderAbility.WEB_SHOT)) {
-            accessor.defendtheblock$getGoalSelector().add(4, new SpiderWebShotGoal(mob));
+        // Prioridades bem abaixo (numero menor = mais importante) das goals de
+        // perambular/olhar do vanilla, para o mob nunca "esquecer" o Nexus por
+        // ficar vagando a toa. So cedem quando o proprio canStart() de cada
+        // goal decide ceder (por exemplo, AttackNexusGoal para quando ha um
+        // alvo vivo por perto, deixando as goals de combate vanilla agirem).
+        accessor.defendtheblock$getGoalSelector().add(1, new BreachObstacleGoal(mob, MOVE_SPEED));
+        accessor.defendtheblock$getGoalSelector().add(2, new ClimbLadderGoal(mob, MOVE_SPEED));
+        if (DtbConfig.get().invadersCanBridge) {
+            accessor.defendtheblock$getGoalSelector().add(3, new BridgeToNexusGoal(mob));
         }
-        accessor.defendtheblock$getGoalSelector().add(6, new AttackNexusGoal(mob, MOVE_SPEED));
+        if (data.hasAbility(InvaderAbility.WEB_SHOT)) {
+            accessor.defendtheblock$getGoalSelector().add(3, new SpiderWebShotGoal(mob));
+        }
+        accessor.defendtheblock$getGoalSelector().add(4, new AttackNexusGoal(mob, MOVE_SPEED));
 
-        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho.
+        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho — e
+        // agora enxerga a torreta do mesmo jeito que enxergaria um jogador,
+        // nao so depois de levar um tiro dela.
         accessor.defendtheblock$getTargetSelector().add(3, new ActiveTargetGoal<>(mob, PlayerEntity.class, true));
-        accessor.defendtheblock$getTargetSelector().add(4, new ActiveTargetGoal<>(mob, TurretEntity.class, true));
+        accessor.defendtheblock$getTargetSelector().add(4, new TargetTurretGoal(mob));
     }
 }

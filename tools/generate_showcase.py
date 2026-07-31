@@ -74,11 +74,13 @@ def main():
     sheet(entries).save(path)
     print("->", os.path.relpath(path, ROOT))
 
-    turret = load("entity", "arrow_turret.png")
+    tier_names = ["Madeira", "Ferro", "Ouro", "Diamante", "Esmeralda"]
+    tier_entries = [
+        (load("entity", f"arrow_turret_{tier}.png"), tier_names[tier])
+        for tier in range(len(tier_names))
+    ]
     path = os.path.join(OUT, "textura_torreta.png")
-    canvas = Image.new("RGBA", (turret.width * 4 + PAD * 2, turret.height * 4 + PAD * 2), BG)
-    canvas.alpha_composite(turret.resize((turret.width * 4, turret.height * 4), Image.NEAREST), (PAD, PAD))
-    canvas.save(path)
+    sheet(tier_entries, columns=5).save(path)
     print("->", os.path.relpath(path, ROOT))
 
 

@@ -106,6 +106,18 @@ public final class DtbConfig {
     public double maxMineHardness = 30.0D;
     /** Ticks que o zumbi leva minerando um bloco (multiplicado pela dureza). */
     public int mineTicksPerHardness = 14;
+    /**
+     * Deixa qualquer invasor construir um caminho de blocos (pilar/pontilhar)
+     * quando fica preso e o Nexus esta visivelmente acima dele. E uma
+     * heuristica simples, nao um pathfinder — desligue se nao quiser mobs
+     * colocando bloco no mundo.
+     */
+    public boolean invadersCanBridge = true;
+    /**
+     * Raio, em blocos, no qual um invasor enxerga a torreta como um alvo valido
+     * a distancia — nao depende do alcance de perseguicao proprio do mob.
+     */
+    public double turretDetectionRadius = 64.0D;
 
     // ------------------------------------------------------------- torreta
     /** Multiplicador de dano global das torretas. */

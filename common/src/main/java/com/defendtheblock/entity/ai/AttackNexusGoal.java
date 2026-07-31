@@ -112,8 +112,12 @@ public class AttackNexusGoal extends Goal {
             double previous = data.getLastDistanceToNexus();
             if (distance > previous - 0.75D) {
                 markBlocked(nexus);
+                // Sinal compartilhado com BridgeToNexusGoal: quantos ciclos seguidos
+                // o mob nao avancou. Um Nexus suspenso no ar e o caso tipico.
+                data.setStuckTicks(data.getStuckTicks() + 1);
             } else {
                 data.setObstacle(null);
+                data.setStuckTicks(0);
             }
             data.setLastDistanceToNexus(distance);
         }
@@ -133,6 +137,7 @@ public class AttackNexusGoal extends Goal {
         DtbConfig config = DtbConfig.get();
         data.setNexusHitCooldown(config.nexusHitCooldown);
         data.setObstacle(null);
+        data.setStuckTicks(0);
 
         if (mob instanceof CreeperEntity creeper) {
             // O creeper termina a viagem se explodindo em cima do Nexus.

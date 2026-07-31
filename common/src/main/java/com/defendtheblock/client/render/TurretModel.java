@@ -51,12 +51,29 @@ public final class TurretModel {
                 ModelPartBuilder.create().uv(0, 34).cuboid(-1.0F, -2.5F, -9.0F, 2.0F, 2.0F, 10.0F, Dilation.NONE),
                 ModelTransform.NONE);
 
-        head.addChild("limb_left",
-                ModelPartBuilder.create().uv(34, 14).cuboid(1.0F, -2.0F, -8.0F, 6.0F, 1.0F, 2.0F, Dilation.NONE),
+        // Guarda-mao / gatilho, embaixo da coronha.
+        head.addChild("grip",
+                ModelPartBuilder.create().uv(34, 22).cuboid(-1.0F, 0.0F, -3.0F, 2.0F, 2.0F, 2.0F, Dilation.NONE),
                 ModelTransform.NONE);
 
+        // Bracos do arco, angulados para fora a partir da trave: o que da a
+        // besta a silhueta em "V" em vez de duas barras paralelas planas.
+        head.addChild("limb_left",
+                ModelPartBuilder.create().uv(34, 14).cuboid(0.0F, -0.5F, -1.0F, 6.0F, 1.0F, 2.0F, Dilation.NONE),
+                ModelTransform.of(1.0F, -1.5F, -8.0F, 0.0F, 0.3F, 0.0F));
+
         head.addChild("limb_right",
-                ModelPartBuilder.create().uv(34, 18).cuboid(-7.0F, -2.0F, -8.0F, 6.0F, 1.0F, 2.0F, Dilation.NONE),
+                ModelPartBuilder.create().uv(34, 18).cuboid(-6.0F, -0.5F, -1.0F, 6.0F, 1.0F, 2.0F, Dilation.NONE),
+                ModelTransform.of(-1.0F, -1.5F, -8.0F, 0.0F, -0.3F, 0.0F));
+
+        // Trave: a barra onde os bracos se apoiam, perpendicular a coronha.
+        head.addChild("riser",
+                ModelPartBuilder.create().uv(0, 47).cuboid(-6.0F, -0.5F, -9.0F, 12.0F, 1.0F, 2.0F, Dilation.NONE),
+                ModelTransform.NONE);
+
+        // Corda, ligando as pontas dos bracos na frente da trave.
+        head.addChild("string",
+                ModelPartBuilder.create().uv(0, 51).cuboid(-6.0F, -0.5F, -10.5F, 12.0F, 1.0F, 1.0F, Dilation.NONE),
                 ModelTransform.NONE);
 
         return TexturedModelData.of(data, 64, 64);

@@ -4,6 +4,7 @@
   "package": "com.defendtheblock.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ArrowNexusDamageMixin",
     "MobEntityAccessor",
     "MobEntityMixin"
   ],

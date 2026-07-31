@@ -74,15 +74,25 @@ Clique com a mao para ver o status. O resto e interacao direta:
 | Livro encantado | Aplica Poder, Impacto, Chama, Perfuracao, Multitiro ou Carga Rapida |
 | Agachado + mao vazia | Recolhe a torreta e as flechas que sobraram |
 
-| Nivel | Dano | Alcance | Recarga | Vida | Municao |
-|---|---|---|---|---|---|
-| Madeira | 2.0 | 12 | 2.0s | 20 | 64 |
-| Ferro | 3.0 | 16 | 1.6s | 30 | 96 |
-| Ouro | 4.0 | 20 | 1.2s | 40 | 128 |
-| Diamante | 5.5 | 26 | 0.8s | 55 | 192 |
-| Esmeralda | 7.0 | 32 | 0.5s | 75 | 256 |
+Ela **so atira quando esta de fato apontada para o alvo** — gira primeiro, dispara
+depois, nunca o contrario.
 
-O nivel e a municao aparecem no nome, acima da torreta.
+| Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
+|---|---|---|---|---|---|---|
+| Madeira | 2.0 | 12 | 2.0s | 20 | 64 | — |
+| Ferro | 3.0 | 16 | 1.6s | 30 | 96 | 6x Barra de Ferro |
+| Ouro | 4.0 | 20 | 1.2s | 40 | 128 | 4x Barra de Ouro |
+| Diamante | 5.5 | 26 | 0.8s | 55 | 192 | 3x Diamante |
+| Esmeralda | 7.0 | 32 | 0.5s | 75 | 256 | 2x Esmeralda |
+
+O custo cai conforme o material fica mais raro: ferro (facil de juntar em
+quantidade) pede mais unidades, esmeralda (o mais raro) pede menos.
+
+O nivel e a municao aparecem no nome, acima da torreta. O **visual muda a cada
+upgrade**: a coronha de madeira e o suporte de pedra sao o "detalhe original da
+besta" e ficam iguais em todo nivel, mas o mecanismo — trave, bracos, corda,
+gatilho, a faixa do pedestal e a gema — troca de cor para o material daquele
+nivel (cinza neutro → cinza polido → dourado → ciano → verde).
 
 ### Totem de Reuniao
 
@@ -150,6 +160,31 @@ mobs comuns, e o encontro com um zumbi carregando TNT vira um evento.
 A picareta nao vence blocos muito duros (limite de dureza 30, entao obsidiana
 segura) — para esses e preciso TNT ou creeper. Bedrock, barreira e o proprio
 Nexus nunca sao quebrados.
+
+### Todo mob ataca o Nexus, nao so quem chega perto
+
+**Qualquer invasor que alcance o Nexus causa dano nele** — zumbi, esqueleto,
+creeper, blaze, o que for. Isso inclui o **creeper**, que se explode em cima do
+bloco em vez de so bater nele. As IAs de movimento dos invasores tem prioridade
+bem acima das goals de vagar/olhar do vanilla, entao um creeper (ou qualquer
+outro mob) nao fica perambulando a toa em vez de seguir ate o alvo.
+
+**Esqueletos atiram flechas que danificam o Nexus** quando o acertam
+diretamente, alem do golpe corpo a corpo quando ficam perto.
+
+**Se o Nexus estiver num lugar alto ou suspenso no ar**, o invasor que ficar
+preso por tempo demais comeca a **construir um caminho de blocos** (cobblestone)
+embaixo dos proprios pes, pulando ate ganhar altura ou atravessar um vao — uma
+heuristica simples para nao deixar o Nexus inalcancavel so por estar no ar.
+Desligue com `invadersCanBridge: false` se preferir que mobs nunca coloquem
+bloco no mundo.
+
+### A torreta e um alvo como qualquer jogador
+
+Os invasores **enxergam a torreta a distancia**, do mesmo jeito que enxergariam
+um jogador — nao precisam levar um tiro dela primeiro para reagir. Uma vez que
+um invasor mira na torreta, as mesmas IAs de combate do jogo (corpo a corpo ou
+arco) entram em acao contra ela.
 
 ---
 
@@ -251,6 +286,8 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `zombiePickaxeChance` | 0.12 | Chance de zumbi mineiro |
 | `zombieLadderChance` | 0.10 | Chance de zumbi carpinteiro |
 | `zombieTntChance` | 0.05 | Chance de zumbi com TNT |
+| `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
+| `turretDetectionRadius` | 64.0 | Raio (blocos) no qual invasores enxergam a torreta como alvo |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -317,6 +354,29 @@ comportamento: falta rodar `runClient`, colocar o Nexus, forcar uma invasao com
 `/dtb forcewave` e ver se a torreta realmente gira e atira. E nessa etapa que
 problemas de mixin (nomes de campo do `MobEntityAccessor`) ou de logica de jogo
 apareceriam, se existirem.
+
+### Mudancas depois do primeiro playtest
+
+As secoes acima ja refletem os ajustes pedidos depois de jogar: redesign da
+torreta com textura por nivel, custo de upgrade variavel, todo mob (inclusive
+creeper) dando dano no Nexus, flecha de esqueleto danificando o Nexus,
+bridging quando o Nexus esta elevado, torreta tratada como alvo a distancia e a
+correcao do delay tiro-antes-de-mirar. **Nada disso passou por um novo
+`buildAll` nem por teste em jogo ainda** — a verificacao continua sendo so
+estrutural (`javac` sem erro), a mesma limitacao de sempre. Os pontos de maior
+risco, por serem os menos comprovados por uso anterior no projeto:
+
+- **`ArrowNexusDamageMixin`** mixina em `ProjectileEntity#onBlockHit`. Se o
+  Loom nao aplicar esse mixin (erro no boot, nao no build), e porque esse
+  metodo esta declarado em outra classe da hierarquia nessa versao especifica
+  — o log do Fabric aponta exatamente onde.
+- **`ModelTransform.of(...)`** (usado para angular os bracos da besta) e uma
+  API que ja existia no projeto de forma indireta, mas nunca tinha sido
+  chamada com argumentos de rotacao aqui; se a assinatura estiver errada e
+  erro de compilacao, facil de achar.
+- **Bridging** e deliberadamente uma heuristica (pular + colocar bloco embaixo
+  dos pes), nao um pathfinder. Pode ficar estranho visualmente em terrenos
+  complicados; o objetivo e so evitar o Nexus ficar impossivel de alcancar.
 
 ---
 

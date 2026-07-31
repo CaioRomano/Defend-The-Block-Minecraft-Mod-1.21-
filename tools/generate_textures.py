@@ -196,8 +196,16 @@ TOTEM_ART = [
 #   pedestal  4x6x4   -> UV (0, 13)   regiao 16x10
 #   cabeca    5x3x5   -> UV (0, 24)   regiao 20x8
 #   coronha   2x2x10  -> UV (0, 34)   regiao 24x12
+#   gatilho   2x2x2   -> UV (34, 22)  regiao 8x4
 #   limbo     6x1x2   -> UV (34, 14)  regiao 16x3
 #   (o segundo limbo reusa o mesmo UV espelhado, ver TurretModel)
+#   trave     12x1x2  -> UV (0, 47)   regiao 28x3
+#   corda     12x1x1  -> UV (0, 51)   regiao 26x2
+#
+# A besta tem uma textura por nivel (0=madeira .. 4=esmeralda): a coronha de
+# madeira e o suporte de pedra ficam iguais em todo nivel (o "detalhe original
+# da besta"), so o mecanismo (trave, bracos, corda, gatilho, calha, faixa do
+# pedestal e a gema) muda de cor para remeter ao material daquele nivel.
 
 STONE = rgba("#6f6f79")
 STONE_D = rgba("#4c4c55")
@@ -205,8 +213,14 @@ IRON = rgba("#c2c2cc")
 IRON_D = rgba("#8b8b96")
 WOOD = rgba("#7d5730")
 WOOD_D = rgba("#5a3d20")
-CRYST = rgba("#16c8d2")
-CRYST_H = rgba("#8ff6fa")
+
+TURRET_TIER_PALETTES = [
+    {"fitting": rgba("#b9b9c4"), "fitting_d": rgba("#7d7d88"), "gem": rgba("#d8d8e0")},  # 0 madeira: ferro neutro
+    {"fitting": rgba("#dcdce4"), "fitting_d": rgba("#9a9aa4"), "gem": rgba("#eaeaf2")},  # 1 ferro: metal polido
+    {"fitting": rgba("#e8c53a"), "fitting_d": rgba("#a37a1e"), "gem": rgba("#fbe98a")},  # 2 ouro
+    {"fitting": rgba("#6be8f2"), "fitting_d": rgba("#16c8d2"), "gem": rgba("#c6f9ff")},  # 3 diamante
+    {"fitting": rgba("#4ee88a"), "fitting_d": rgba("#1f9c52"), "gem": rgba("#a8ffce")},  # 4 esmeralda
+]
 
 
 def fill(px, x0, y0, w, h, color):
@@ -222,38 +236,55 @@ def hatch(px, x0, y0, w, h, color, step=3, offset=0):
                 px[x, y] = color
 
 
-def turret_entity_texture():
+def turret_entity_texture(tier):
+    palette = TURRET_TIER_PALETTES[tier]
+    fitting = palette["fitting"]
+    fitting_d = palette["fitting_d"]
+    gem = palette["gem"]
+
     img = Image.new("RGBA", (64, 64), TRANSPARENT)
     px = img.load()
 
-    # base de pedra
+    # base de pedra: e so o suporte, fica igual em todos os niveis
     fill(px, 0, 0, 32, 12, STONE)
     hatch(px, 0, 0, 32, 12, STONE_D, 4)
     fill(px, 0, 0, 32, 1, STONE_D)
     fill(px, 0, 11, 32, 1, STONE_D)
 
-    # pedestal de ferro
+    # pedestal de ferro, com uma faixa colorida indicando o nivel
     fill(px, 0, 13, 16, 10, IRON_D)
     hatch(px, 0, 13, 16, 10, IRON, 3)
+    fill(px, 0, 20, 16, 2, fitting_d)
 
-    # cabeca giratoria (ferro + cristal na frente)
+    # cabeca giratoria (ferro + gema colorida por nivel na frente)
     fill(px, 0, 24, 20, 8, IRON)
     hatch(px, 0, 24, 20, 8, IRON_D, 5)
-    fill(px, 12, 27, 3, 3, CRYST)
-    px[13, 28] = CRYST_H
+    fill(px, 12, 27, 3, 3, fitting)
+    px[13, 28] = gem
 
-    # coronha de madeira da besta
+    # coronha de madeira: o "detalhe original da besta", igual em todo nivel
     fill(px, 0, 34, 24, 12, WOOD)
     hatch(px, 0, 34, 24, 12, WOOD_D, 3)
     fill(px, 0, 34, 24, 1, WOOD_D)
-    # calha metalica em cima da coronha
-    fill(px, 2, 36, 20, 2, IRON_D)
+    # calha metalica em cima da coronha, colorida por nivel
+    fill(px, 2, 36, 20, 2, fitting_d)
 
-    # limbos do arco
-    fill(px, 34, 14, 16, 3, WOOD_D)
-    hatch(px, 34, 14, 16, 3, WOOD, 2)
-    fill(px, 34, 18, 16, 3, WOOD_D)
-    hatch(px, 34, 18, 16, 3, WOOD, 2, 1)
+    # bracos do arco: o mecanismo em si, recolorido por nivel
+    fill(px, 34, 14, 16, 3, fitting_d)
+    hatch(px, 34, 14, 16, 3, fitting, 2)
+    fill(px, 34, 18, 16, 3, fitting_d)
+    hatch(px, 34, 18, 16, 3, fitting, 2, 1)
+
+    # gatilho / guarda-mao
+    fill(px, 34, 22, 8, 4, WOOD_D)
+    hatch(px, 34, 22, 8, 4, fitting, 3)
+
+    # trave onde os bracos se apoiam
+    fill(px, 0, 47, 28, 3, fitting_d)
+    hatch(px, 0, 47, 28, 3, fitting, 3)
+
+    # corda, fina e discreta
+    fill(px, 0, 51, 26, 2, fitting_d)
 
     return img
 
@@ -278,7 +309,8 @@ def main():
     write(nexus_face("bottom"), "block", "nexus_block_bottom.png")
     write(from_art(TURRET_ITEM_ART, TURRET_ITEM_PALETTE), "item", "arrow_turret.png")
     write(from_art(TOTEM_ART, TOTEM_PALETTE), "item", "gathering_totem.png")
-    write(turret_entity_texture(), "entity", "arrow_turret.png")
+    for tier in range(len(TURRET_TIER_PALETTES)):
+        write(turret_entity_texture(tier), "entity", f"arrow_turret_{tier}.png")
 
     icon_path = os.path.join(ASSETS, "icon.png")
     os.makedirs(os.path.dirname(icon_path), exist_ok=True)

@@ -189,8 +189,15 @@ public class TurretEntity extends MobEntity {
         super.tickMovement();
     }
 
-    /** Gira suavemente a besta em direcao ao alvo. */
-    public void aimAt(LivingEntity target) {
+    /** Graus de tolerancia para considerar a besta "apontada" para o alvo. */
+    private static final float AIM_TOLERANCE_DEGREES = 3.0F;
+
+    /**
+     * Gira suavemente a besta em direcao ao alvo.
+     *
+     * @return true quando a mira ja esta dentro da tolerancia (pode atirar).
+     */
+    public boolean aimAt(LivingEntity target) {
         double dx = target.getX() - getX();
         double dz = target.getZ() - getZ();
         double dy = target.getBodyY(0.5D) - getEyeY();
@@ -203,6 +210,10 @@ public class TurretEntity extends MobEntity {
         bodyYaw = getYaw();
         headYaw = getYaw();
         setPitch(approachAngle(getPitch(), targetPitch, 20.0F));
+
+        float yawError = Math.abs(MathHelper.wrapDegrees(targetYaw - getYaw()));
+        float pitchError = Math.abs(MathHelper.wrapDegrees(targetPitch - getPitch()));
+        return yawError <= AIM_TOLERANCE_DEGREES && pitchError <= AIM_TOLERANCE_DEGREES;
     }
 
     private static float approachAngle(float current, float target, float maxStep) {
@@ -314,16 +325,17 @@ public class TurretEntity extends MobEntity {
             player.sendMessage(Text.translatable("turret.defendtheblock.max_tier"), true);
             return ActionResult.CONSUME;
         }
-        if (!held.isOf(needed)) {
+        int needCount = TurretTier.nextUpgradeCount(tier);
+        if (!held.isOf(needed) || held.getCount() < needCount) {
             player.sendMessage(Text.translatable("turret.defendtheblock.wrong_material",
-                    Text.translatable(needed.getTranslationKey())), true);
+                    needCount, Text.translatable(needed.getTranslationKey())), true);
             return ActionResult.CONSUME;
         }
 
         tier++;
         applyTierAttributes(true);
         if (!player.getAbilities().creativeMode) {
-            held.decrement(1);
+            held.decrement(needCount);
         }
         playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.4F);
         player.sendMessage(Text.translatable("turret.defendtheblock.upgraded", tierName()), false);

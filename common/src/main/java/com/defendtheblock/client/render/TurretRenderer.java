@@ -20,7 +20,14 @@ import net.minecraft.util.math.RotationAxis;
 @Environment(EnvType.CLIENT)
 public class TurretRenderer extends EntityRenderer<TurretEntity> {
 
-    private static final Identifier TEXTURE = DtbCompat.id("textures/entity/arrow_turret.png");
+    /** Uma textura por nivel: o visual da besta muda com cada material aplicado. */
+    private static final Identifier[] TEXTURES = {
+            DtbCompat.id("textures/entity/arrow_turret_0.png"),
+            DtbCompat.id("textures/entity/arrow_turret_1.png"),
+            DtbCompat.id("textures/entity/arrow_turret_2.png"),
+            DtbCompat.id("textures/entity/arrow_turret_3.png"),
+            DtbCompat.id("textures/entity/arrow_turret_4.png"),
+    };
 
     private final ModelPart root;
     private final ModelPart head;
@@ -34,7 +41,7 @@ public class TurretRenderer extends EntityRenderer<TurretEntity> {
 
     @Override
     public Identifier getTexture(TurretEntity entity) {
-        return TEXTURE;
+        return TEXTURES[entity.getTierIndex()];
     }
 
     @Override
@@ -51,7 +58,8 @@ public class TurretRenderer extends EntityRenderer<TurretEntity> {
         float pitch = MathHelper.lerpAngleDegrees(tickDelta, entity.prevPitch, entity.getPitch());
         head.pitch = pitch * ((float) Math.PI / 180.0F);
 
-        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(TEXTURE));
+        Identifier texture = TEXTURES[entity.getTierIndex()];
+        VertexConsumer consumer = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(texture));
         root.render(matrices, consumer, light, OverlayTexture.DEFAULT_UV);
 
         matrices.pop();
