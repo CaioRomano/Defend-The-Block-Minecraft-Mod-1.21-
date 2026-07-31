@@ -17,7 +17,19 @@ import java.util.EnumSet;
  */
 public class TurretShootGoal extends Goal {
 
+    /** Ticks tentando mirar sem sucesso antes de soltar o alvo para o seletor escolher outro. */
+    private static final int AIM_STUCK_LIMIT = 30;
+    /**
+     * Distancia horizontal minima (ao quadrado) para considerar a mira
+     * confiavel. Um alvo quase exatamente embaixo (ou em cima) da torreta deixa
+     * o calculo do angulo (atan2 perto de zero) instavel, e sem essa guarda a
+     * torreta trava tentando acertar em vez de procurar outro alvo melhor
+     * posicionado.
+     */
+    private static final double MIN_HORIZONTAL_DISTANCE_SQ = 0.25D;
+
     private final TurretEntity turret;
+    private int aimStuckTicks;
 
     public TurretShootGoal(TurretEntity turret) {
         this.turret = turret;
@@ -48,13 +60,30 @@ public class TurretShootGoal extends Goal {
     public void tick() {
         LivingEntity target = turret.getTarget();
         if (target == null || !(turret.getWorld() instanceof ServerWorld world)) {
+            aimStuckTicks = 0;
             return;
         }
 
         // So atira quando a besta ja estiver de fato apontada para o alvo: sem
         // isso o tiro saia primeiro e a rotacao seguia depois, visivelmente errado.
         boolean aimed = turret.aimAt(target);
-        if (turret.getCooldown() > 0 || !turret.hasAmmo() || !aimed) {
+        double dx = target.getX() - turret.getX();
+        double dz = target.getZ() - turret.getZ();
+        boolean degenerate = dx * dx + dz * dz < MIN_HORIZONTAL_DISTANCE_SQ;
+
+        if (!aimed || degenerate) {
+            // Alvo impossivel (ou dificil demais) de mirar de verdade: depois
+            // de um tempo tentando, solta o alvo para o ActiveTargetGoal
+            // escolher outro mob melhor posicionado, em vez de ficar inerte.
+            if (++aimStuckTicks > AIM_STUCK_LIMIT) {
+                turret.setTarget(null);
+                aimStuckTicks = 0;
+            }
+            return;
+        }
+        aimStuckTicks = 0;
+
+        if (turret.getCooldown() > 0 || !turret.hasAmmo()) {
             return;
         }
         if (!turret.getVisibilityCache().canSee(target)) {

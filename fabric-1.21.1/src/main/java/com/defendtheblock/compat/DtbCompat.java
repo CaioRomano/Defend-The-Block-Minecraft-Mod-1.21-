@@ -3,6 +3,7 @@ package com.defendtheblock.compat;
 import com.defendtheblock.DefendTheBlock;
 import com.defendtheblock.invasion.InvasionData;
 import com.defendtheblock.network.InvasionSyncData;
+import com.defendtheblock.network.TurretStatsData;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
@@ -146,9 +147,14 @@ public final class DtbCompat {
 
     public static void registerServerNetworking() {
         PayloadTypeRegistry.playS2C().register(InvasionSyncPayload.ID, InvasionSyncPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(TurretStatsPayload.ID, TurretStatsPayload.CODEC);
     }
 
     public static void sendInvasionSync(ServerPlayerEntity player, InvasionSyncData data) {
         ServerPlayNetworking.send(player, new InvasionSyncPayload(data));
+    }
+
+    public static void sendTurretStats(ServerPlayerEntity player, TurretStatsData data) {
+        ServerPlayNetworking.send(player, new TurretStatsPayload(data));
     }
 }

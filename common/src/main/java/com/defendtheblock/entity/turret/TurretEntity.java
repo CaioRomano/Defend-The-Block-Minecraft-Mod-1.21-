@@ -4,6 +4,7 @@ import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.ai.TurretShootGoal;
 import com.defendtheblock.entity.invader.InvaderAccess;
+import com.defendtheblock.network.TurretStatsData;
 import com.defendtheblock.registry.ModItems;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -20,8 +21,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -62,6 +64,8 @@ public class TurretEntity extends MobEntity {
     private int tier;
     private int ammo;
     private ItemStack ammoStack = ItemStack.EMPTY;
+    /** Quantas unidades do material do proximo nivel ja foram inseridas. */
+    private int upgradeProgress;
 
     private int power;
     private int punch;
@@ -91,7 +95,20 @@ public class TurretEntity extends MobEntity {
     protected void initGoals() {
         goalSelector.add(1, new TurretShootGoal(this));
         targetSelector.add(1, new ActiveTargetGoal<>(this, MobEntity.class, 10, true, false,
-                entity -> entity instanceof Monster || InvaderAccess.isInvader(entity)));
+                entity -> (entity instanceof Monster || InvaderAccess.isInvader(entity)) && !isDegenerateAngle(entity)));
+    }
+
+    /**
+     * Mob quase exatamente embaixo (ou em cima) da torreta: o angulo fica
+     * instavel demais para mirar de verdade. Excluir esses candidatos aqui,
+     * na propria selecao de alvo, evita que a torreta "prefira" um mob assim
+     * so por estar mais perto e fique inerte em vez de atirar em quem estiver
+     * se aproximando dentro do campo de visao dela.
+     */
+    private boolean isDegenerateAngle(LivingEntity entity) {
+        double dx = entity.getX() - getX();
+        double dz = entity.getZ() - getZ();
+        return dx * dx + dz * dz < 0.25D;
     }
 
     // ------------------------------------------------------------ atributos
@@ -222,6 +239,11 @@ public class TurretEntity extends MobEntity {
 
     // ------------------------------------------------------------ interacao
 
+    /**
+     * O clique direito de mao vazia agora abre a aba de estatisticas (em vez
+     * do antigo texto no chat). Pegar a torreta de volta e feito socando ela
+     * ({@link #damage}), nao mais com o clique direito.
+     */
     @Override
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack held = player.getStackInHand(hand);
@@ -229,10 +251,6 @@ public class TurretEntity extends MobEntity {
             return ActionResult.SUCCESS;
         }
 
-        if (player.isSneaking() && held.isEmpty()) {
-            pickUp(player);
-            return ActionResult.SUCCESS;
-        }
         if (held.getItem() instanceof ArrowItem) {
             return loadAmmo(player, held);
         }
@@ -240,9 +258,12 @@ public class TurretEntity extends MobEntity {
             return applyBook(player, held);
         }
         if (!held.isEmpty()) {
-            return upgrade(player, held);
+            return feedMaterial(player, held);
         }
-        reportStatus(player);
+
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            sendStats(serverPlayer, true);
+        }
         return ActionResult.SUCCESS;
     }
 
@@ -268,7 +289,9 @@ public class TurretEntity extends MobEntity {
 
         playSound(DtbCompat.CROSSBOW_LOADED, 1.0F, 1.0F);
         updateDisplayName();
-        reportStatus(player);
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            sendStats(serverPlayer, false);
+        }
         return ActionResult.SUCCESS;
     }
 
@@ -319,28 +342,59 @@ public class TurretEntity extends MobEntity {
         return true;
     }
 
-    private ActionResult upgrade(PlayerEntity player, ItemStack held) {
-        Item needed = TurretTier.nextUpgradeItem(tier);
-        if (needed == null) {
+    /**
+     * Um item na mao que nao seja flecha nem livro so faz uma de duas coisas,
+     * na ordem: repara vida (se a torreta estiver ferida e o item for o
+     * material de reparo do nivel atual) ou contribui para o proximo nivel
+     * (se for o material de upgrade e a torreta ja estiver com vida cheia).
+     * O progresso de upgrade e acumulado unidade por unidade — sobe de nivel
+     * sozinha assim que atinge a quantidade necessaria.
+     */
+    private ActionResult feedMaterial(PlayerEntity player, ItemStack held) {
+        Item repairItem = TurretTier.repairItem(tier);
+        if (held.isOf(repairItem) && getHealth() < getMaxHealth()) {
+            heal((float) DtbConfig.get().turretRepairHealthPerItem);
+            if (!player.getAbilities().creativeMode) {
+                held.decrement(1);
+            }
+            playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.6F);
+            player.sendMessage(Text.translatable("turret.defendtheblock.repaired",
+                    (int) getHealth(), (int) getMaxHealth()), true);
+            if (player instanceof ServerPlayerEntity serverPlayer) {
+                sendStats(serverPlayer, false);
+            }
+            return ActionResult.SUCCESS;
+        }
+
+        Item nextItem = TurretTier.nextUpgradeItem(tier);
+        if (nextItem == null) {
             player.sendMessage(Text.translatable("turret.defendtheblock.max_tier"), true);
             return ActionResult.CONSUME;
         }
-        int needCount = TurretTier.nextUpgradeCount(tier);
-        if (!held.isOf(needed) || held.getCount() < needCount) {
+        if (!held.isOf(nextItem)) {
             player.sendMessage(Text.translatable("turret.defendtheblock.wrong_material",
-                    needCount, Text.translatable(needed.getTranslationKey())), true);
+                    TurretTier.nextUpgradeCount(tier), Text.translatable(nextItem.getTranslationKey())), true);
             return ActionResult.CONSUME;
         }
 
-        tier++;
-        applyTierAttributes(true);
+        upgradeProgress++;
         if (!player.getAbilities().creativeMode) {
-            held.decrement(needCount);
+            held.decrement(1);
         }
-        playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.4F);
-        player.sendMessage(Text.translatable("turret.defendtheblock.upgraded", tierName()), false);
-        updateDisplayName();
-        reportStatus(player);
+        int needed = TurretTier.nextUpgradeCount(tier);
+        if (upgradeProgress >= needed) {
+            tier++;
+            upgradeProgress = 0;
+            applyTierAttributes(true);
+            playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.4F);
+            player.sendMessage(Text.translatable("turret.defendtheblock.upgraded", tierName()), false);
+            updateDisplayName();
+        } else {
+            playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 0.7F, 1.2F);
+        }
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            sendStats(serverPlayer, false);
+        }
         return ActionResult.SUCCESS;
     }
 
@@ -360,12 +414,17 @@ public class TurretEntity extends MobEntity {
         discard();
     }
 
-    private void reportStatus(PlayerEntity player) {
-        player.sendMessage(Text.translatable("turret.defendtheblock.ammo", ammo, getMaxAmmo(),
-                getAmmoStack().getName()), false);
-        player.sendMessage(Text.translatable("turret.defendtheblock.stats", tierName(),
-                String.format("%.1f", getArrowDamage()), (int) getRange(),
-                String.format("%.1f", getReloadTicks() / 20.0F)), false);
+    /** Manda o instantaneo completo de estatisticas para o HUD/aba do cliente. */
+    private void sendStats(ServerPlayerEntity player, boolean openScreen) {
+        Item repairItem = TurretTier.repairItem(tier);
+        Item nextItem = TurretTier.nextUpgradeItem(tier);
+        TurretStatsData data = new TurretStatsData(
+                getId(), tier, getHealth(), getMaxHealth(), ammo, getMaxAmmo(),
+                getArrowDamage(), getRange(), getReloadTicks(),
+                Registries.ITEM.getId(repairItem).toString(),
+                nextItem == null ? "" : Registries.ITEM.getId(nextItem).toString(),
+                TurretTier.nextUpgradeCount(tier), upgradeProgress, openScreen);
+        DtbCompat.sendTurretStats(player, data);
     }
 
     public Text tierName() {
@@ -392,6 +451,24 @@ public class TurretEntity extends MobEntity {
     }
 
     // -------------------------------------------------------- comportamento
+
+    /**
+     * Um soco do jogador (qualquer ataque corpo a corpo, na verdade) nao
+     * causa dano: devolve a torreta (e a municao) para as maos de quem bateu,
+     * permitindo reposicionar. Dano de qualquer outra origem (mob, flecha,
+     * explosao) continua funcionando normalmente.
+     */
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        if (getWorld().isClient) {
+            return false;
+        }
+        if (source.getAttacker() instanceof PlayerEntity player) {
+            pickUp(player);
+            return false;
+        }
+        return super.damage(source, amount);
+    }
 
     @Override
     public boolean isPushable() {
@@ -443,6 +520,7 @@ public class TurretEntity extends MobEntity {
         super.writeCustomDataToNbt(nbt);
         nbt.putInt("Tier", tier);
         nbt.putInt("Ammo", ammo);
+        nbt.putInt("UpgradeProgress", upgradeProgress);
         nbt.putInt("Power", power);
         nbt.putInt("Punch", punch);
         nbt.putInt("Flame", flame);
@@ -459,6 +537,7 @@ public class TurretEntity extends MobEntity {
         super.readCustomDataFromNbt(nbt);
         tier = MathHelper.clamp(nbt.getInt("Tier"), 0, TurretTier.MAX_TIER);
         ammo = nbt.getInt("Ammo");
+        upgradeProgress = Math.max(0, nbt.getInt("UpgradeProgress"));
         power = nbt.getInt("Power");
         punch = nbt.getInt("Punch");
         flame = nbt.getInt("Flame");

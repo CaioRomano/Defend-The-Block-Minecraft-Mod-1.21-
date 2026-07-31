@@ -2,6 +2,7 @@ package com.defendtheblock.compat;
 
 import com.defendtheblock.client.TooltipLines;
 import com.defendtheblock.network.InvasionSyncData;
+import com.defendtheblock.network.TurretStatsData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
@@ -19,6 +20,13 @@ public final class DtbClientCompat {
     public static void registerNetworking(Consumer<InvasionSyncData> handler) {
         ClientPlayNetworking.registerGlobalReceiver(DtbCompat.INVASION_SYNC, (client, netHandler, buf, sender) -> {
             InvasionSyncData data = InvasionSyncData.read(buf);
+            client.execute(() -> handler.accept(data));
+        });
+    }
+
+    public static void registerTurretStatsNetworking(Consumer<TurretStatsData> handler) {
+        ClientPlayNetworking.registerGlobalReceiver(DtbCompat.TURRET_STATS, (client, netHandler, buf, sender) -> {
+            TurretStatsData data = TurretStatsData.read(buf);
             client.execute(() -> handler.accept(data));
         });
     }

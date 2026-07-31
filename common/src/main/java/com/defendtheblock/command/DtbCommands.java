@@ -31,7 +31,10 @@ public final class DtbCommands {
                         .executes(DtbCommands::forceWave))
                 .then(CommandManager.literal("stopwave")
                         .requires(source -> source.hasPermissionLevel(2))
-                        .executes(DtbCommands::stopWave)));
+                        .executes(DtbCommands::stopWave))
+                .then(CommandManager.literal("removenexus")
+                        .requires(source -> source.hasPermissionLevel(2))
+                        .executes(DtbCommands::removeNexus)));
     }
 
     private static int status(CommandContext<ServerCommandSource> context) {
@@ -94,6 +97,20 @@ public final class DtbCommands {
         }
         InvasionManager.endWave(source.getServer(), data, false);
         source.sendFeedback(() -> Text.translatable("commands.defendtheblock.wave_stopped"), true);
+        return 1;
+    }
+
+    /** Remove o Nexus sem apagar o mundo — pensado para testes no criativo. */
+    private static int removeNexus(CommandContext<ServerCommandSource> context) {
+        ServerCommandSource source = context.getSource();
+        boolean removed = NexusManager.removeSafely(source.getServer());
+        if (!removed) {
+            source.sendFeedback(() -> Text.translatable("commands.defendtheblock.no_nexus")
+                    .formatted(Formatting.RED), false);
+            return 0;
+        }
+        source.sendFeedback(() -> Text.translatable("commands.defendtheblock.nexus_removed")
+                .formatted(Formatting.AQUA), true);
         return 1;
     }
 }

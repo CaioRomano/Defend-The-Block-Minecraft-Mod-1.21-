@@ -130,6 +130,31 @@ public final class NexusManager {
         }
     }
 
+    /**
+     * Remove o Nexus sem acionar a derrota: nao apaga o mundo, nao desliga o
+     * servidor, so limpa o bloco e o estado da campanha. Pensado para testes
+     * no criativo, via {@code /dtb removenexus}.
+     *
+     * @return true se havia um Nexus para remover.
+     */
+    public static boolean removeSafely(MinecraftServer server) {
+        InvasionData data = getData(server);
+        if (!data.hasNexus()) {
+            return false;
+        }
+
+        BlockPos pos = data.getNexusPos();
+        ServerWorld world = server.getOverworld();
+        NexusChunkLoader.release(world, data);
+        world.setBlockState(pos, Blocks.AIR.getDefaultState());
+        world.playSound(null, pos, SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.BLOCKS, 1.0F, 1.0F);
+
+        InvasionManager.despawnAllInvaders(server);
+        data.clearNexus();
+        DefendTheBlock.LOGGER.info("Nexus removido manualmente (comando admin) em {}", pos.toShortString());
+        return true;
+    }
+
     // ------------------------------------------------ desligamento e delecao
 
     /** Chamado a cada tick do servidor por {@code DefendTheBlock}. */

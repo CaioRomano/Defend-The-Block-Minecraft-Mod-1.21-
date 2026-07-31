@@ -113,6 +113,28 @@ public class InvasionData {
         markDirty();
     }
 
+    /**
+     * Limpa o Nexus e toda a campanha sem passar pelo fluxo de derrota
+     * (usado pelo comando admin {@code /dtb removenexus}): nao apaga o mundo
+     * nem marca {@code gameOver}, apenas deixa o mundo pronto para um novo
+     * Nexus ser colocado.
+     */
+    public void clearNexus() {
+        this.nexusPos = null;
+        this.nexusHealth = 0;
+        this.nexusMaxHealth = 0;
+        this.wavesCompleted = 0;
+        this.currentWave = 0;
+        this.waveActive = false;
+        this.mobsSpawned = 0;
+        this.activeInvaders.clear();
+        this.multiplier = 1.0D;
+        this.lastWaveDay = -1L;
+        this.gameOver = false;
+        this.forcedRadius = -1;
+        markDirty();
+    }
+
     // ------------------------------------------------------------ invasoes
 
     public int getWavesCompleted() {

@@ -90,22 +90,34 @@ public class ClimbLadderGoal extends Goal {
     public void tick() {
         ticksClimbing++;
         Vec3d center = Vec3d.ofCenter(ladder);
+        double dx = mob.getX() - center.x;
+        double dz = mob.getZ() - center.z;
+        boolean closeEnoughToGrab = dx * dx + dz * dz < 0.36D;
 
-        if (mob.isClimbing()) {
-            climb();
+        // Nao espera passivamente a navegacao vanilla decidir entrar na
+        // escada (ela quase nunca escolhe isso sozinha): assim que o mob esta
+        // perto o bastante da coluna, forca a escalada mesmo que
+        // mob.isClimbing() ainda nao tenha sido setado pela colisao.
+        if (mob.isClimbing() || closeEnoughToGrab) {
+            climb(center);
             return;
         }
 
         if (--repathTimer <= 0) {
             repathTimer = 10;
             mob.getNavigation().startMovingTo(center.x, center.y, center.z, speed);
+            mob.getMoveControl().moveTo(center.x, center.y, center.z, speed);
         }
     }
 
-    private void climb() {
+    private void climb(Vec3d center) {
         World world = mob.getWorld();
-        Vec3d velocity = mob.getVelocity();
-        mob.setVelocity(velocity.x * 0.4D, CLIMB_SPEED, velocity.z * 0.4D);
+        // Empurra o mob de volta para o centro da coluna enquanto sobe, senao
+        // ele desgruda da escada e a escalada para no meio do caminho.
+        Vec3d pull = new Vec3d(center.x - mob.getX(), 0.0D, center.z - mob.getZ());
+        Vec3d nudge = pull.lengthSquared() > 1.0E-4D ? pull.normalize().multiply(0.1D) : Vec3d.ZERO;
+
+        mob.setVelocity(nudge.x, CLIMB_SPEED, nudge.z);
         mob.velocityModified = true;
         mob.fallDistance = 0.0F;
 

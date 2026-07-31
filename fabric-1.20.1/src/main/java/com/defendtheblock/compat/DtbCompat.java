@@ -3,6 +3,7 @@ package com.defendtheblock.compat;
 import com.defendtheblock.DefendTheBlock;
 import com.defendtheblock.invasion.InvasionData;
 import com.defendtheblock.network.InvasionSyncData;
+import com.defendtheblock.network.TurretStatsData;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
@@ -46,6 +47,7 @@ import java.util.Map;
 public final class DtbCompat {
 
     public static final Identifier INVASION_SYNC = new Identifier(DefendTheBlock.MOD_ID, "invasion_sync");
+    public static final Identifier TURRET_STATS = new Identifier(DefendTheBlock.MOD_ID, "turret_stats");
 
     /** No 1.21 este som virou {@code RegistryEntry<SoundEvent>}; aqui ainda e direto. */
     public static final SoundEvent CROSSBOW_LOADED = SoundEvents.ITEM_CROSSBOW_LOADING_END;
@@ -156,5 +158,11 @@ public final class DtbCompat {
         PacketByteBuf buf = PacketByteBufs.create();
         data.write(buf);
         ServerPlayNetworking.send(player, INVASION_SYNC, buf);
+    }
+
+    public static void sendTurretStats(ServerPlayerEntity player, TurretStatsData data) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        data.write(buf);
+        ServerPlayNetworking.send(player, TURRET_STATS, buf);
     }
 }

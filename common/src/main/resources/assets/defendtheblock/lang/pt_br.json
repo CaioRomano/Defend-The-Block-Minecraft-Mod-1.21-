@@ -33,8 +33,9 @@
   "message.defendtheblock.totem_teleport": "O Totem de Reuniao puxa todos ate o Nexus.",
   "message.defendtheblock.totem_cooldown": "O totem ainda esta recarregando (%ss).",
   "message.defendtheblock.wrong_dimension": "O Nexus so funciona no Overworld.",
-  "turret.defendtheblock.ammo": "Municao: %s / %s (%s)",
-  "turret.defendtheblock.stats": "Nivel %s - dano %s, alcance %s, recarga %ss",
+  "turret.defendtheblock.stats": "Dano %s | Alcance %s | Recarga %ss",
+  "turret.defendtheblock.ammo_line": "Municao: %s / %s",
+  "turret.defendtheblock.repaired": "Torreta reparada: %s / %s de vida.",
   "turret.defendtheblock.upgraded": "Torreta melhorada para %s.",
   "turret.defendtheblock.max_tier": "Esta torreta ja esta no nivel maximo.",
   "turret.defendtheblock.wrong_material": "Esta torreta precisa de %s %s para melhorar.",
@@ -42,6 +43,10 @@
   "turret.defendtheblock.bad_enchantment": "A torreta nao usa esse encantamento.",
   "turret.defendtheblock.no_ammo": "A torreta esta sem flechas.",
   "turret.defendtheblock.full_ammo": "O carregador da torreta esta cheio.",
+  "screen.defendtheblock.turret_stats": "Estatisticas da Torreta",
+  "screen.defendtheblock.turret_health": "Vida: %s / %s",
+  "screen.defendtheblock.repair_hint": "Reparar: clique direito segurando %s (so com vida incompleta).",
+  "screen.defendtheblock.upgrade_hint": "Melhorar: clique direito segurando %s (%s / %s).",
   "turret.defendtheblock.tier.0": "de Madeira",
   "turret.defendtheblock.tier.1": "de Ferro",
   "turret.defendtheblock.tier.2": "de Ouro",
@@ -51,5 +56,6 @@
   "commands.defendtheblock.no_nexus": "Nenhum Nexus foi colocado neste mundo.",
   "commands.defendtheblock.multiplier_set": "Multiplicador de mobs definido para x%s.",
   "commands.defendtheblock.wave_forced": "Invasao %s iniciada manualmente.",
-  "commands.defendtheblock.wave_stopped": "A invasao atual foi cancelada."
+  "commands.defendtheblock.wave_stopped": "A invasao atual foi cancelada.",
+  "commands.defendtheblock.nexus_removed": "O Nexus foi removido com seguranca (sem apagar o mundo)."
 }

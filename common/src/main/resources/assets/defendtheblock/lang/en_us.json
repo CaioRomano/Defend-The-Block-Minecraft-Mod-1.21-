@@ -33,8 +33,9 @@
   "message.defendtheblock.totem_teleport": "The Gathering Totem pulls everyone to the Nexus.",
   "message.defendtheblock.totem_cooldown": "The totem is still recharging (%ss).",
   "message.defendtheblock.wrong_dimension": "The Nexus only works in the Overworld.",
-  "turret.defendtheblock.ammo": "Ammo: %s / %s (%s)",
-  "turret.defendtheblock.stats": "Tier %s - damage %s, range %s, reload %ss",
+  "turret.defendtheblock.stats": "Damage %s | Range %s | Reload %ss",
+  "turret.defendtheblock.ammo_line": "Ammo: %s / %s",
+  "turret.defendtheblock.repaired": "Turret repaired: %s / %s HP.",
   "turret.defendtheblock.upgraded": "Turret upgraded to %s.",
   "turret.defendtheblock.max_tier": "This turret is already fully upgraded.",
   "turret.defendtheblock.wrong_material": "This turret needs %s %s to be upgraded.",
@@ -42,6 +43,10 @@
   "turret.defendtheblock.bad_enchantment": "The turret cannot use that enchantment.",
   "turret.defendtheblock.no_ammo": "The turret is out of arrows.",
   "turret.defendtheblock.full_ammo": "The turret magazine is full.",
+  "screen.defendtheblock.turret_stats": "Turret Stats",
+  "screen.defendtheblock.turret_health": "Health: %s / %s",
+  "screen.defendtheblock.repair_hint": "Repair: right click holding %s (only while damaged).",
+  "screen.defendtheblock.upgrade_hint": "Upgrade: right click holding %s (%s / %s).",
   "turret.defendtheblock.tier.0": "Wooden",
   "turret.defendtheblock.tier.1": "Iron",
   "turret.defendtheblock.tier.2": "Golden",
@@ -51,5 +56,6 @@
   "commands.defendtheblock.no_nexus": "No Nexus has been placed in this world.",
   "commands.defendtheblock.multiplier_set": "Mob multiplier set to x%s.",
   "commands.defendtheblock.wave_forced": "Invasion %s was started manually.",
-  "commands.defendtheblock.wave_stopped": "The current invasion was cancelled."
+  "commands.defendtheblock.wave_stopped": "The current invasion was cancelled.",
+  "commands.defendtheblock.nexus_removed": "The Nexus was safely removed (no world deletion)."
 }

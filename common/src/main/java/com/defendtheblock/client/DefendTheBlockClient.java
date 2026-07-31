@@ -29,6 +29,7 @@ public class DefendTheBlockClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientInvasionState.reset());
 
         DtbClientCompat.registerNetworking(ClientInvasionState::update);
+        DtbClientCompat.registerTurretStatsNetworking(TurretStatsScreen::accept);
         DtbClientCompat.registerTooltips();
     }
 }

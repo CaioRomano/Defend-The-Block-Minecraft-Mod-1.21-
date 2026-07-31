@@ -101,6 +101,8 @@ public final class DtbConfig {
     public double zombiePickaxeChance = 0.12D;
     public double zombieLadderChance = 0.10D;
     public double zombieTntChance = 0.05D;
+    /** Chance de um zumbi nascer com isqueiro, para incendiar obstaculos de madeira. */
+    public double zombieFireStarterChance = 0.06D;
 
     /** Dureza maxima de bloco que um zumbi mineiro consegue quebrar. */
     public double maxMineHardness = 30.0D;
@@ -113,11 +115,6 @@ public final class DtbConfig {
      * colocando bloco no mundo.
      */
     public boolean invadersCanBridge = true;
-    /**
-     * Raio, em blocos, no qual um invasor enxerga a torreta como um alvo valido
-     * a distancia — nao depende do alcance de perseguicao proprio do mob.
-     */
-    public double turretDetectionRadius = 64.0D;
     /**
      * Alcance, em blocos, dentro do qual um invasor mantem o alvo de combate
      * atual (jogador ou torreta) em vez de esquece-lo e voltar para o Nexus.
@@ -138,6 +135,8 @@ public final class DtbConfig {
     public double turretDamageMultiplier = 1.0D;
     /** Torretas gastam municao? Deixe false para municao infinita. */
     public boolean turretConsumesAmmo = true;
+    /** Vida recuperada por unidade de material usada no reparo (botao direito). */
+    public double turretRepairHealthPerItem = 8.0D;
 
     // --------------------------------------------------------------- totem
     /** Cooldown do Totem de Reuniao, em ticks. */

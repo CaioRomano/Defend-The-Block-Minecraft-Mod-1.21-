@@ -16,6 +16,7 @@ import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -39,6 +40,8 @@ import java.util.EnumSet;
  *   <li>{@link InvaderAbility#TNT_SAPPER} - zumbi planta e acende uma TNT;</li>
  *   <li>{@link InvaderAbility#LADDER_BUILDER} - zumbi monta uma coluna de escadas
  *       (que o resto da horda tambem usa);</li>
+ *   <li>{@link InvaderAbility#FIRE_STARTER} - zumbi ateia fogo em obstaculo de
+ *       madeira em vez de quebra-lo;</li>
  *   <li>{@link InvaderAbility#PICKAXE_MINER} - zumbi minera o bloco.</li>
  * </ul>
  */
@@ -67,7 +70,8 @@ public class BreachObstacleGoal extends Goal {
                 || data.hasAbility(InvaderAbility.SUICIDE_BREACH)
                 || data.hasAbility(InvaderAbility.TNT_SAPPER)
                 || data.hasAbility(InvaderAbility.LADDER_BUILDER)
-                || data.hasAbility(InvaderAbility.PICKAXE_MINER);
+                || data.hasAbility(InvaderAbility.PICKAXE_MINER)
+                || data.hasAbility(InvaderAbility.FIRE_STARTER);
     }
 
     @Override
@@ -150,6 +154,9 @@ public class BreachObstacleGoal extends Goal {
             return;
         }
         if (data.hasAbility(InvaderAbility.LADDER_BUILDER) && buildLadder(world)) {
+            return;
+        }
+        if (data.hasAbility(InvaderAbility.FIRE_STARTER) && igniteWood(world)) {
             return;
         }
         if (data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
@@ -251,8 +258,17 @@ public class BreachObstacleGoal extends Goal {
         Direction towardWall = Direction.getFacing(
                 (target.getX() + 0.5D) - mob.getX(), 0.0D, (target.getZ() + 0.5D) - mob.getZ());
         BlockPos column = mob.getBlockPos();
-        boolean placedAny = false;
+        BlockPos wallBase = column.offset(towardWall);
+        boolean hasWall = world.getBlockState(wallBase).isSolidBlock(world, wallBase);
 
+        return hasWall
+                ? attachToWall(world, column, towardWall, offHand)
+                : buildFreestandingColumn(world, column, towardWall, offHand);
+    }
+
+    /** Ha parede de verdade encostada: a escada gruda nela, ate 5 blocos de altura. */
+    private boolean attachToWall(ServerWorld world, BlockPos column, Direction towardWall, ItemStack offHand) {
+        boolean placedAny = false;
         for (int dy = 0; dy < 5 && !offHand.isEmpty(); dy++) {
             BlockPos pos = column.up(dy);
             if (!world.getBlockState(pos).isReplaceable()) {
@@ -262,13 +278,42 @@ public class BreachObstacleGoal extends Goal {
             if (!world.getBlockState(wall).isSolidBlock(world, wall)) {
                 continue;
             }
-            BlockState ladder = Blocks.LADDER.getDefaultState()
-                    .with(LadderBlock.FACING, towardWall.getOpposite());
-            world.setBlockState(pos, ladder);
+            placeLadder(world, pos, towardWall);
             offHand.decrement(1);
             placedAny = true;
         }
+        return finishLadder(world, column, offHand, placedAny);
+    }
 
+    /**
+     * Sem nenhuma parede para grudar: o zumbi ergue uma colunazinha de 2
+     * blocos ao lado dele mesmo (a "parede" que a escada precisa) e prende as
+     * escadas nela — o suficiente para a horda escalar ate um Nexus suspenso
+     * mesmo sem nenhuma estrutura pronta por perto.
+     */
+    private boolean buildFreestandingColumn(ServerWorld world, BlockPos column, Direction towardWall,
+                                            ItemStack offHand) {
+        boolean placedAny = false;
+        for (int dy = 0; dy < 2 && !offHand.isEmpty(); dy++) {
+            BlockPos pos = column.up(dy);
+            BlockPos wall = pos.offset(towardWall);
+            if (!world.getBlockState(pos).isReplaceable() || !world.getBlockState(wall).isReplaceable()) {
+                continue;
+            }
+            world.setBlockState(wall, Blocks.COBBLESTONE.getDefaultState());
+            placeLadder(world, pos, towardWall);
+            offHand.decrement(1);
+            placedAny = true;
+        }
+        return finishLadder(world, column, offHand, placedAny);
+    }
+
+    private void placeLadder(ServerWorld world, BlockPos pos, Direction towardWall) {
+        BlockState ladder = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, towardWall.getOpposite());
+        world.setBlockState(pos, ladder);
+    }
+
+    private boolean finishLadder(ServerWorld world, BlockPos column, ItemStack offHand, boolean placedAny) {
         if (!placedAny) {
             return false;
         }
@@ -276,6 +321,35 @@ public class BreachObstacleGoal extends Goal {
         mob.swingHand(Hand.OFF_HAND);
         world.playSound(null, column, SoundEvents.BLOCK_LADDER_PLACE, SoundCategory.HOSTILE, 1.0F, 1.0F);
         data.setBreachCooldown(120);
+        data.setObstacle(null);
+        return true;
+    }
+
+    // ------------------------------------------------------------ isqueiro
+
+    /**
+     * Zumbi com isqueiro: em vez de quebrar um obstaculo de madeira, ateia
+     * fogo nele e deixa o proprio fogo do vanilla se espalhar e consumir o
+     * bloco — tambem serve para atrapalhar/incendiar construcoes do jogador.
+     */
+    private boolean igniteWood(ServerWorld world) {
+        BlockState state = world.getBlockState(target);
+        boolean wood = state.isIn(BlockTags.LOGS) || state.isIn(BlockTags.PLANKS)
+                || state.isIn(BlockTags.WOODEN_DOORS) || state.isIn(BlockTags.WOODEN_FENCES)
+                || state.isIn(BlockTags.WOODEN_TRAPDOORS) || state.isIn(BlockTags.WOODEN_STAIRS);
+        if (!wood) {
+            return false;
+        }
+
+        BlockPos above = target.up();
+        if (!world.getBlockState(above).isAir()) {
+            return false;
+        }
+
+        world.setBlockState(above, Blocks.FIRE.getDefaultState());
+        mob.swingHand(Hand.MAIN_HAND);
+        world.playSound(null, target, SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.HOSTILE, 1.0F, 1.0F);
+        data.setBreachCooldown(300);
         data.setObstacle(null);
         return true;
     }

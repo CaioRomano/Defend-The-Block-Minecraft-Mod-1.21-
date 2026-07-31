@@ -8,9 +8,13 @@ import com.defendtheblock.entity.invader.InvaderGoals;
 import com.defendtheblock.network.InvasionSyncData;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,6 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
@@ -96,6 +101,7 @@ public final class InvasionManager {
 
     public static void endWave(MinecraftServer server, InvasionData data, boolean completed) {
         int wave = data.getCurrentWave();
+        BlockPos nexus = data.getNexusPos();
         despawnAllInvaders(server);
         data.finishWave(completed);
 
@@ -103,6 +109,37 @@ public final class InvasionManager {
             Text message = Text.translatable("message.defendtheblock.wave_cleared", wave, data.getNexusHealth())
                     .formatted(Formatting.GREEN);
             server.getPlayerManager().broadcast(message, false);
+            dropWaveLoot(server.getOverworld(), nexus, wave);
+        }
+    }
+
+    /** Pool de recompensa espalhado ao redor do Nexus apos cada noite sobrevivida. */
+    private static final List<Item> LOOT_POOL = List.of(
+            Items.IRON_INGOT, Items.GOLD_INGOT, Items.DIAMOND, Items.EMERALD, Items.COAL, Items.REDSTONE,
+            Items.LAPIS_LAZULI, Items.COPPER_INGOT, Items.BREAD, Items.COOKED_BEEF, Items.APPLE,
+            Items.GOLDEN_APPLE, Items.ARROW, Items.OAK_LOG, Items.COBBLESTONE, Items.STRING, Items.GUNPOWDER,
+            Items.BONE, Items.LEATHER, Items.IRON_BLOCK, Items.EXPERIENCE_BOTTLE);
+
+    /**
+     * Itens valiosos aleatorios (minerios, comida, blocos...) espalhados perto
+     * do Nexus depois de uma invasao repelida — a quantidade de rolagens cresce
+     * (com teto) conforme as invasoes avancam.
+     */
+    private static void dropWaveLoot(ServerWorld world, BlockPos nexus, int wave) {
+        if (nexus == null) {
+            return;
+        }
+        Random random = world.getRandom();
+        int rolls = 3 + random.nextInt(3) + Math.min(6, wave / 3);
+        for (int i = 0; i < rolls; i++) {
+            Item item = LOOT_POOL.get(random.nextInt(LOOT_POOL.size()));
+            int count = 1 + random.nextInt(item.getMaxCount() >= 16 ? 8 : 2);
+            double x = nexus.getX() + 0.5D + (random.nextDouble() - 0.5D) * 5.0D;
+            double y = nexus.getY() + 1.0D;
+            double z = nexus.getZ() + 0.5D + (random.nextDouble() - 0.5D) * 5.0D;
+            ItemEntity entity = new ItemEntity(world, x, y, z, new ItemStack(item, count));
+            entity.setToDefaultPickupDelay();
+            world.spawnEntity(entity);
         }
     }
 

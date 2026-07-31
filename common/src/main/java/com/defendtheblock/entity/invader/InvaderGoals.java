@@ -6,7 +6,6 @@ import com.defendtheblock.entity.ai.BreachObstacleGoal;
 import com.defendtheblock.entity.ai.BridgeToNexusGoal;
 import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
-import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.mob.CreeperEntity;
@@ -70,6 +69,8 @@ public final class InvaderGoals {
                 data.addAbility(InvaderAbility.LADDER_BUILDER);
             } else if (roll < tnt) {
                 data.addAbility(InvaderAbility.TNT_SAPPER);
+            } else if (roll < tnt + config.zombieFireStarterChance) {
+                data.addAbility(InvaderAbility.FIRE_STARTER);
             }
         }
     }
@@ -101,10 +102,11 @@ public final class InvaderGoals {
         }
         accessor.defendtheblock$getGoalSelector().add(4, new AttackNexusGoal(mob, MOVE_SPEED));
 
-        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho — e
-        // agora enxerga a torreta do mesmo jeito que enxergaria um jogador,
-        // nao so depois de levar um tiro dela.
+        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho. A
+        // torreta so vira alvo de campo (RevengeGoal, nativo do vanilla) se
+        // ela de fato acertar o mob primeiro — nunca por deteccao a
+        // distancia. InvaderCombatPriority cuida de nao deixar esse alvo
+        // travado para sempre.
         accessor.defendtheblock$getTargetSelector().add(3, new ActiveTargetGoal<>(mob, PlayerEntity.class, true));
-        accessor.defendtheblock$getTargetSelector().add(4, new TargetTurretGoal(mob));
     }
 }

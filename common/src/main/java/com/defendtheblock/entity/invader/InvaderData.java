@@ -1,5 +1,6 @@
 package com.defendtheblock.entity.invader;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 
@@ -27,6 +28,13 @@ public class InvaderData {
     private int nexusHitCooldown;
     private int stuckTicks;
     private double lastDistanceToNexus = Double.MAX_VALUE;
+
+    // Rastreia o "engajamento" contra uma torreta especifica, para que o
+    // invasor possa desistir dela depois de um tempo sem progresso (ver
+    // InvaderCombatPriority) em vez de ficar preso nela para sempre.
+    private Entity engagedTurret;
+    private int turretEngageTicks;
+    private double lastDistanceToTurret = Double.MAX_VALUE;
 
     public boolean isInvader() {
         return invader;
@@ -131,6 +139,38 @@ public class InvaderData {
 
     public void setLastDistanceToNexus(double lastDistanceToNexus) {
         this.lastDistanceToNexus = lastDistanceToNexus;
+    }
+
+    public Entity getEngagedTurret() {
+        return engagedTurret;
+    }
+
+    public int getTurretEngageTicks() {
+        return turretEngageTicks;
+    }
+
+    public void setTurretEngageTicks(int turretEngageTicks) {
+        this.turretEngageTicks = turretEngageTicks;
+    }
+
+    public double getLastDistanceToTurret() {
+        return lastDistanceToTurret;
+    }
+
+    public void setLastDistanceToTurret(double lastDistanceToTurret) {
+        this.lastDistanceToTurret = lastDistanceToTurret;
+    }
+
+    public void engageTurret(Entity turret, double distance) {
+        this.engagedTurret = turret;
+        this.turretEngageTicks = 0;
+        this.lastDistanceToTurret = distance;
+    }
+
+    public void clearTurretEngagement() {
+        this.engagedTurret = null;
+        this.turretEngageTicks = 0;
+        this.lastDistanceToTurret = Double.MAX_VALUE;
     }
 
     public void writeNbt(NbtCompound root) {

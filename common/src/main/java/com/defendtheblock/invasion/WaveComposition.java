@@ -30,9 +30,13 @@ public final class WaveComposition {
 
     private static final List<Rule> RULES = List.of(
             // --- nucleo do Overworld
-            new Rule(EntityType.ZOMBIE, 1, 30),
-            new Rule(EntityType.SKELETON, 1, 22),
-            new Rule(EntityType.CREEPER, 1, 18),
+            // Creeper foi bem reduzido de proposito: com o peso antigo (18) e
+            // muito comum a horda ser dominada por creepers, que exigem uma
+            // aproximacao suicida (SUICIDE_BREACH) em vez de simplesmente
+            // marchar e bater, o que deixava as invasoes menos dinamicas.
+            new Rule(EntityType.ZOMBIE, 1, 36),
+            new Rule(EntityType.SKELETON, 1, 28),
+            new Rule(EntityType.CREEPER, 1, 6),
             new Rule(EntityType.SPIDER, 2, 12),
             new Rule(EntityType.HUSK, 3, 10),
             new Rule(EntityType.STRAY, 4, 9),
@@ -50,7 +54,7 @@ public final class WaveComposition {
             new Rule(EntityType.ZOMBIFIED_PIGLIN, 3, 9),
             new Rule(EntityType.PIGLIN_BRUTE, 5, 5),
             new Rule(EntityType.HOGLIN, 6, 4),
-            new Rule(EntityType.GHAST, 8, 3));
+            new Rule(EntityType.GHAST, 6, 3));
 
     private WaveComposition() {
     }

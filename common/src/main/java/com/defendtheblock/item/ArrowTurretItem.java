@@ -4,8 +4,6 @@ import com.defendtheblock.entity.turret.TurretEntity;
 import com.defendtheblock.registry.ModEntities;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -39,7 +37,6 @@ public class ArrowTurretItem extends Item {
             return ActionResult.FAIL;
         }
 
-        world.playSound(null, pos, SoundEvents.BLOCK_ANVIL_PLACE, SoundCategory.BLOCKS, 0.8F, 1.2F);
         if (context.getPlayer() == null || !context.getPlayer().getAbilities().creativeMode) {
             context.getStack().decrement(1);
         }

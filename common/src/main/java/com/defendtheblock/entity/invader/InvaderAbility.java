@@ -24,7 +24,9 @@ public enum InvaderAbility {
     /** Zumbi com escadas: constroi uma coluna de escadas para subir o obstaculo. */
     LADDER_BUILDER,
     /** Zumbi com TNT: planta e acende TNT na frente do obstaculo. */
-    TNT_SAPPER;
+    TNT_SAPPER,
+    /** Zumbi com isqueiro: incendeia obstaculos de madeira em vez de quebra-los. */
+    FIRE_STARTER;
 
     private static final InvaderAbility[] VALUES = values();
 

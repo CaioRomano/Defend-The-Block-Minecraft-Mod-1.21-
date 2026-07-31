@@ -46,4 +46,13 @@ public record TurretTier(double damage, double range, int reload, float maxHealt
         int next = currentTier + 1;
         return next > MAX_TIER ? 0 : TIERS[next].upgradeCount();
     }
+
+    /**
+     * Material usado para reparar a torreta neste nivel: o mesmo item que a
+     * trouxe ate aqui (nivel madeira usa o mesmo material do nivel ferro, ja
+     * que madeira nao tem item de upgrade proprio).
+     */
+    public static Item repairItem(int currentTier) {
+        return TIERS[Math.max(1, Math.min(MAX_TIER, currentTier))].upgrade();
+    }
 }

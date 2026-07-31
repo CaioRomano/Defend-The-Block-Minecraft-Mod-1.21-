@@ -71,17 +71,31 @@ I R I      R = Bloco de Redstone
 I I I      I = Barra de Ferro
 ```
 
-Clique com a mao para ver o status. O resto e interacao direta:
-
 | Clique com... | Acontece |
 |---|---|
+| Mao vazia (botao direito) | Abre a **aba de estatisticas** |
+| Soco (ataque, qualquer item na mao) | Recolhe a torreta e as flechas que sobraram, sem dar dano nela |
 | Flechas | Carrega municao (aceita flecha com efeito e espectral) |
-| Ferro → Ouro → Diamante → Esmeralda | Sobe um nivel por vez |
+| Material do nivel atual, com a torreta ferida | **Repara vida** |
+| Material do proximo nivel, com a torreta com vida cheia | Contribui para o upgrade (acumula, sobe de nivel sozinha ao completar) |
 | Livro encantado | Aplica Poder, Impacto, Chama, Perfuracao, Multitiro ou Carga Rapida |
-| Agachado + mao vazia | Recolhe a torreta e as flechas que sobraram |
+
+Nao ha mais texto de status no chat: o botao direito de mao vazia abre uma aba
+mostrando nivel, vida, municao, dano/alcance/recarga, qual material repara a
+torreta e quanto falta para o proximo nivel. O progresso de upgrade e por
+unidade — cada material correto clicado conta um ponto, e a torreta sobe de
+nivel sozinha assim que atinge a quantidade necessaria (nao precisa ter tudo
+na mao de uma vez). A aba **nao e um inventario de verdade** (nenhum slot para
+arrastar item): o material entra do mesmo jeito de sempre, clicando com o
+botao direito na torreta com a aba fechada — reabrir a aba so mostra o
+progresso mais atualizado. Veja "Status de verificacao" para o porque dessa
+escolha.
 
 Ela **so atira quando esta de fato apontada para o alvo** — gira primeiro, dispara
-depois, nunca o contrario.
+depois, nunca o contrario. Ela tambem **so mira em mobs fora do seu proprio eixo
+vertical**: um mob bem embaixo (ou em cima) dela nunca vira alvo, exatamente para
+não ficar inerte tentando acertar quem esta debaixo dela em vez de quem esta se
+aproximando dentro do campo de visao.
 
 | Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
 |---|---|---|---|---|---|---|
@@ -92,7 +106,10 @@ depois, nunca o contrario.
 | Esmeralda | 7.0 | 32 | 0.5s | 75 | 256 | 2x Esmeralda |
 
 O custo cai conforme o material fica mais raro: ferro (facil de juntar em
-quantidade) pede bem mais unidades, esmeralda (o mais raro) pede so 2.
+quantidade) pede bem mais unidades, esmeralda (o mais raro) pede so 2. O
+material que **repara** a torreta e o mesmo que a trouxe ate o nivel atual —
+ferro tanto para o nivel madeira quanto para o ferro, ja que madeira nao tem
+material de upgrade proprio.
 
 O nivel e a municao aparecem no nome, acima da torreta. O **visual muda a cada
 upgrade**: a coronha de madeira e o suporte de pedra sao o "detalhe original da
@@ -139,8 +156,15 @@ spawner ou ovo — e recrutado pela invasao e marcha ate o bloco. **Enderman e a
 unica excecao.**
 
 Reforcos do **Nether** entram cedo: magma cube e wither skeleton na invasao 2,
-blaze e zombified piglin na 3, piglin brute na 5, hoglin na 6, ghast na 8. Da
-invasao 3 em diante eles sao cerca de um quarto da horda.
+blaze e zombified piglin na 3, piglin brute na 5, hoglin na 6, **ghast na 6**
+(antes era so na 8). Da invasao 3 em diante eles sao cerca de um quarto da
+horda.
+
+O **creeper foi bem reduzido** no sorteio de mobs (peso 6, contra 30+ de zumbi
+e esqueleto): com o peso antigo, a horda ficava facilmente dominada por
+creepers, que so avancam ate o Nexus para se explodir em vez de marchar e
+bater normalmente — deixava as invasoes menos dinamicas e escondia os outros
+mobs.
 
 ### Eles nao sao burros
 
@@ -159,10 +183,17 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda | 35% |
 | Zumbi | **Picareta**: minera o bloco que atrapalha | 12% |
 | Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 10% |
-| Zumbi | **TNT**: planta e acende TNT na frente do muro | 5% |
+| Zumbi | **TNT**: planta e acende TNT (ja gatilhada) na frente do muro | 5% |
+| Zumbi | **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 6% |
 
 As chances baixas sao de proposito: a maior parte da horda continua sendo de
 mobs comuns, e o encontro com um zumbi carregando TNT vira um evento.
+
+O zumbi com escadas **nao precisa de uma parede pronta**: se nao houver bloco
+solido para grudar a escada, ele constroi uma colunazinha de 2 blocos de
+cobblestone do proprio lado e prende as escadas nela — o suficiente para a
+horda escalar ate um Nexus suspenso mesmo sem nenhuma construcao por perto
+(contra uma parede de verdade, a escada sobe ate 5 blocos).
 
 ### Portas: arrombadas, nunca so abertas
 
@@ -197,21 +228,56 @@ heuristica simples para nao deixar o Nexus inalcancavel so por estar no ar.
 Desligue com `invadersCanBridge: false` se preferir que mobs nunca coloquem
 bloco no mundo.
 
+**Subir escada tambem ficou mais insistente.** Antes, o mob so ganhava
+velocidade de escalada depois que a propria colisao do vanilla marcava
+`isClimbing()` — o que raramente acontecia perto o bastante de uma torre com
+escada, e a horda ficava parada na base sem nunca subir. Agora, assim que o mob
+chega perto o bastante da coluna da escada, ele e empurrado para o centro dela
+e ganha velocidade de escalada mesmo antes do vanilla marcar a colisao, e
+continua sendo puxado de volta ao centro da coluna a cada tick para nao
+"desgrudar" da escada no meio da subida.
+
+### Depois de cada noite: saque ao redor do Nexus
+
+Toda invasao repelida (o jogador aguentou ate o amanhecer) derruba um punhado
+de itens aleatorios perto do Nexus: minerios, comida, blocos, flechas... A
+quantidade de rolagens cresce (com teto) conforme as invasoes avancam.
+
 ### Jogador e torreta sao alvos — mas o Nexus e a prioridade
 
-Os invasores **enxergam a torreta a distancia**, do mesmo jeito que enxergariam
-um jogador — nao precisam levar um tiro dela primeiro para reagir. E, assim como
-o jogador, atacam o que estiver **no caminho** ate o Nexus.
+Um invasor so passa a brigar com a torreta se **ela acertar ele primeiro** —
+nao existe mais deteccao a distancia (isso ja foi tentado numa rodada anterior
+e causou o bug descrito abaixo). O gatilho e o `RevengeGoal` do proprio
+vanilla, nativo de todo mob hostil: levar uma flechada da torreta e exatamente
+o mesmo estimulo que levar uma flechada de um jogador. O jogador continua
+sendo alvo do jeito vanilla de sempre (ele ataca, o mob revida).
 
-O importante e que isso nao vira uma cacada: **o Nexus continua sendo a
-prioridade real**. Um invasor so briga de verdade com um jogador ou uma torreta
-quando ela esta genuinamente perto (por padrao, dentro de 6 blocos) — se estiver
-mais longe que isso, o mob simplesmente esquece aquele alvo e volta a caminhar
-para o bloco. Isso evita a situacao de, por exemplo, 3 torretas em fila
-separadas por 5 blocos cada: o invasor nao precisa matar as tres em sequencia
-antes de sequer tentar o Nexus — ele so briga com o que estiver bloqueando a
-passagem no momento, sem sair do caminho para cacar algo distante. Ajustavel em
-`nexusPriorityEngageRange`.
+Mesmo depois de ser alvejado, o foco na torreta **nunca e permanente**, por
+duas regras que trabalham juntas:
+
+- **Alcance de engajamento** (`nexusPriorityEngageRange`, 6 blocos por padrao):
+  se o alvo atual (jogador ou torreta) esta mais longe que isso, o mob esquece
+  ele a cada tick e volta a caminhar para o Nexus. E o que evita a situacao de
+  3 torretas em fila separadas por 5 blocos cada obrigarem o invasor a mata-las
+  todas antes de sequer tentar o bloco.
+- **Desistencia por falta de progresso**: mesmo perto o bastante, se o mob
+  passa 60 ticks engajado numa torreta sem reduzir a distancia ate ela (sinal
+  de que o pathfinding nao da conta — por exemplo, uma torreta num pilar
+  isolado), ele solta o alvo e volta para o Nexus. Reusa a mesma logica de
+  "distancia nao diminuiu" que ja detecta o mob preso perto do bloco
+  (`AttackNexusGoal`), em vez de depender de uma checagem de pathfinding
+  separada e nao testada.
+
+**Bug corrigido nesta rodada:** antes, uma goal dedicada varria um raio de 64
+blocos a cada segundo e forcava o alvo do mob para a torreta mais proxima
+visivel — o que fazia a horda inteira ficar permanentemente grudada nas
+torretas, nunca soltando o alvo, nunca voltando a atacar o Nexus. Isso
+explicava varios sintomas juntos: creeper que nunca explodia (preso perseguindo
+a torreta em vez de chegar no Nexus), zumbi com TNT que nunca plantava a bomba,
+e aranha em cima do Nexus sem causar dano (o alvo dela ainda era uma torreta
+distante, nao o bloco embaixo dela). Removendo essa goal e deixando o combate
+com torreta ser puramente reativo, os quatro sintomas somem juntos, porque a
+causa era uma so.
 
 ---
 
@@ -227,6 +293,7 @@ Nexus.
 | `/dtb multiplier <valor>` | 2 | Multiplicador de mobs (0.1 a 20) |
 | `/dtb forcewave` | 2 | Comeca a proxima invasao agora — otimo para testar |
 | `/dtb stopwave` | 2 | Cancela a invasao atual |
+| `/dtb removenexus` | 2 | Remove o Nexus **sem apagar o mundo** — para testar no criativo |
 
 ---
 
@@ -313,10 +380,11 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `zombiePickaxeChance` | 0.12 | Chance de zumbi mineiro |
 | `zombieLadderChance` | 0.10 | Chance de zumbi carpinteiro |
 | `zombieTntChance` | 0.05 | Chance de zumbi com TNT |
+| `zombieFireStarterChance` | 0.06 | Chance de zumbi com isqueiro (incendeia madeira) |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
-| `turretDetectionRadius` | 64.0 | Raio (blocos) no qual invasores enxergam a torreta como alvo |
 | `nexusPriorityEngageRange` | 6.0 | Raio (blocos) para brigar com jogador/torreta antes de voltar ao Nexus |
 | `doorBreakTicksPerHardness` | 10 | Ritmo de arrombamento de portas (ferro demora mais que madeira) |
+| `turretRepairHealthPerItem` | 8.0 | Vida recuperada por unidade de material usada no reparo |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -423,6 +491,50 @@ invasor exceto creeper, e a aba propria no inventario. Pontos de maior risco:
   nao testada aqui.
 - **Deteccao de porta fechada** usa `DoorBlock`/`DoubleBlockHalf`, API estavel
   desde a introducao de portas em duas metades (Minecraft 1.13) — risco baixo.
+
+**Terceira rodada:** o playtest de verdade revelou o bug do foco eterno na
+torreta (ver secao "Jogador e torreta sao alvos" acima) e trouxe a aba de
+estatisticas, o reparo de torreta, o saque pos-invasao, o `/dtb removenexus`,
+o zumbi com isqueiro e a correcao da escalada de escada. Igual as rodadas
+anteriores, **nada disso passou por `buildAll` nem por teste em jogo ainda**.
+Pontos de risco, do maior para o menor:
+
+- **A aba de estatisticas da torreta e a maior area de risco do projeto.** E a
+  primeira vez que o codigo usa `Screen`/`DrawContext` fora do HUD (que so
+  desenha overlay, nunca abre uma tela) e a primeira rede **S2C dedicada**
+  alem da sincronizacao do HUD. Por isso ela foi deliberadamente simplificada:
+  **nao existe `ScreenHandler`/`Slot`/`ScreenHandlerRegistry`** — familia de
+  API sem nenhum precedente testado neste projeto, e que exigiria registrar um
+  tipo de menu por versao. Em vez de um slot de inventario sincronizado, o
+  material continua entrando do jeito que ja funcionava (clique direito na
+  torreta), e a aba so mostra o estado mais recente. Isso reduz o risco, mas
+  `TurretStatsScreen`, `TurretStatsPayload` (1.21) e o registro
+  `ClientPlayNetworking`/`ServerPlayNetworking` (1.20.1) continuam sem nenhum
+  teste em jogo.
+- **`TurretEntity#damage(DamageSource, float)`** e a primeira vez que o mod
+  sobrescreve esse metodo (em vez de so chama-lo, como o `WebShotEntity` ja
+  fazia). A assinatura `boolean damage(DamageSource, float)` e uma das mais
+  estaveis da API de entidade — nao mudou nem no salto 1.20.1 → 1.21 — mas
+  "sobrescrever" e "chamar" sao coisas diferentes, e isso nunca tinha sido
+  testado num build de verdade aqui.
+- **Interpretacao de um pedido ambiguo:** o playtest pediu tanto "clique
+  esquerdo abre a aba" quanto "soco devolve a torreta" — como soco *e* o
+  clique esquerdo no Minecraft, as duas frases se contradizem. Foi
+  interpretado como: **botao direito de mao vazia** abre a aba (convencao
+  normal de interagir/abrir GUI) e **soco (ataque)** devolve a torreta. Se nao
+  for o que fazia sentido, e so pedir a troca.
+- **Predicado de angulo degenerado** (`TurretEntity#isDegenerateAngle`) exclui
+  da propria selecao de alvo qualquer mob quase exatamente embaixo/em cima da
+  torreta, resolvendo a causa raiz do "torreta inerte" em vez de so tratar o
+  sintoma. Risco baixo (e so matematica sobre coordenadas), mas o
+  comportamento resultante (torreta ignorando mobs no proprio eixo vertical)
+  ainda nao foi visto em jogo.
+- **Saque pos-invasao** usa `ItemEntity` com uma lista fixa de itens vanilla —
+  API de entidade basica, risco baixo.
+- **Zumbi com isqueiro** so ateia `Blocks.FIRE` acima do bloco de madeira (deixa
+  o fogo vanilla se espalhar) em vez de queimar o bloco diretamente — mais
+  simples e mais barato que simular combustao a mao, mas depende do fogo
+  vanilla realmente pegar no bloco de baixo, o que nao foi visto em jogo ainda.
 
 ---
 
