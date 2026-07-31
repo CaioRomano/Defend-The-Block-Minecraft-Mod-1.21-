@@ -222,31 +222,25 @@ public final class InvasionManager {
     }
 
     /**
-     * Um lugar valido dentro da area de ativacao, medida <b>em chunks</b> a
-     * partir do chunk do Nexus. A distancia e de Chebyshev (quadrada), que e
-     * como o jogo enxerga vizinhanca de chunk.
+     * Um lugar valido dentro do <b>anel de invasao</b>: fora do quadrado livre
+     * de spawn em volta do Nexus e dentro do circulo externo. A geometria toda
+     * mora em {@link NexusZones}, compartilhada com a checagem que impede o
+     * spawn natural perto do bloco.
      *
-     * <p>Só os chunks da area de ativacao spawnam invasor; fora dela o mundo
-     * segue com o spawn normal do vanilla. O <b>chunk do Nexus nunca spawna</b>,
-     * independente da config: e uma regra fixa, nao um efeito colateral do raio
-     * minimo.
+     * <p>Fora desse anel o mundo segue com o spawn normal do vanilla.
      */
     private static BlockPos findSpawnPos(ServerWorld world, BlockPos nexus) {
-        DtbConfig config = DtbConfig.get();
-        int min = Math.max(0, config.spawnChunkRadiusMin);
-        int max = Math.max(min, config.spawnChunkRadiusMax);
+        int outer = NexusZones.outerRadius();
         ChunkPos origin = new ChunkPos(nexus);
 
         for (int attempt = 0; attempt < 32; attempt++) {
-            int dx = world.getRandom().nextInt(max * 2 + 1) - max;
-            int dz = world.getRandom().nextInt(max * 2 + 1) - max;
-            int chunkDistance = Math.max(Math.abs(dx), Math.abs(dz));
-            // Regra fixa: nada nasce no chunk onde o bloco esta.
-            if (chunkDistance == 0 || chunkDistance < min) {
-                continue;
-            }
+            int dx = world.getRandom().nextInt(outer * 2 + 1) - outer;
+            int dz = world.getRandom().nextInt(outer * 2 + 1) - outer;
 
             ChunkPos chunk = new ChunkPos(origin.x + dx, origin.z + dz);
+            if (!NexusZones.isInvasionSpawnZone(nexus, chunk)) {
+                continue;
+            }
             if (!world.getChunkManager().isChunkLoaded(chunk.x, chunk.z)) {
                 continue;
             }
@@ -308,20 +302,30 @@ public final class InvasionManager {
         if (!(mob instanceof Monster) || !world.getRegistryKey().equals(World.OVERWORLD)) {
             return;
         }
-        // Enderman e a unica excecao: ele nunca e recrutado pela invasao.
-        if (mob instanceof EndermanEntity) {
-            return;
-        }
 
         InvasionData data = NexusManager.getData(world);
         if (!data.hasNexus() || data.isGameOver()) {
             return;
         }
 
-        ChunkPos nexusChunk = new ChunkPos(data.getNexusPos());
         ChunkPos mobChunk = new ChunkPos(mob.getBlockPos());
-        int chunkDistance = Math.max(Math.abs(mobChunk.x - nexusChunk.x), Math.abs(mobChunk.z - nexusChunk.z));
-        if (chunkDistance > DtbConfig.get().attractionChunkRadius) {
+
+        // Zona livre de spawn: o quintal em volta do Nexus fica limpo. Vale
+        // ate para o enderman, que e excecao so na hora de ser recrutado.
+        // Nao e um escudo que apaga mob por perto: isto so roda quando a
+        // entidade entra no mundo, entao quem VEIO andando de fora continua
+        // valendo — some so o que tentar nascer aqui dentro.
+        if (NexusZones.isNoSpawnZone(data.getNexusPos(), mobChunk)) {
+            entity.discard();
+            return;
+        }
+
+        // Enderman e a unica excecao: ele nunca e recrutado pela invasao.
+        if (mob instanceof EndermanEntity) {
+            return;
+        }
+        if (NexusZones.chunkDistance(new ChunkPos(data.getNexusPos()), mobChunk)
+                > DtbConfig.get().attractionChunkRadius) {
             return;
         }
         // Mobs atraidos nao entram na contagem oficial da onda.

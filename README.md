@@ -158,13 +158,38 @@ tempo — que tambem sobe a cada noite.
 | 8 | 6 | 1.4s | 70 | 28% |
 | 14+ | 9+ | 0.5s | 100 | 26% |
 
-Os invasores nascem **so dentro da area de ativacao**, de 1 a 3 chunks a partir
-do chunk do Nexus. O chunk do Nexus em si nunca spawna nada. Fora dessa area, o
-mundo segue com o spawn normal do vanilla.
+### O quintal seguro e o anel de invasao
 
-**Todo mob hostil que nascer dentro de 3 chunks do Nexus** — spawn natural,
+Em volta do Nexus existem duas regioes concentricas, com formatos diferentes de
+proposito:
+
+```
+         . . . . . . . . .        .  anel de invasao (circular)
+       . . . . . . . . . . .         raio 2 a 4 chunks
+     . . . . # # # . . . . .
+     . . . . # N # . . . . .     #  zona livre de spawn (quadrada)
+     . . . . # # # . . . . .        o chunk do Nexus + os adjacentes
+       . . . . . . . . . . .
+         . . . . . . . . .       N  Nexus
+```
+
+**Zona livre de spawn** — o chunk do Nexus **mais todos os adjacentes** (3x3
+chunks, `noSpawnChunkRadius = 1`). Ali **nada hostil nasce**: nem a invasao
+spawna, nem o spawn natural do vanilla. E o quintal da base — o que aparecer
+perto do Nexus veio marchando de fora, nunca brotou do lado.
+
+Nao e um escudo que apaga mob por perto: a regra vale no momento em que a
+entidade entra no mundo, entao quem **veio andando** de fora continua chegando
+normalmente. O que some e so o que tentaria nascer ali dentro.
+
+**Anel de invasao** — comeca onde o quadrado seguro termina e se estende por
+mais 3 chunks (`spawnRingChunks`), com o limite externo **circular**. Com os
+padroes, os invasores nascem entre o chunk 2 e o chunk 4 a partir do Nexus.
+Fora dele o mundo segue com o spawn normal do vanilla.
+
+**Todo mob hostil que nascer dentro de 4 chunks do Nexus** — spawn natural,
 spawner ou ovo — e recrutado pela invasao e marcha ate o bloco. **Enderman e a
-unica excecao.**
+unica excecao** (mas nem ele nasce dentro do quintal seguro).
 
 Reforcos do **Nether** entram cedo: magma cube e wither skeleton na invasao 2,
 blaze e zombified piglin na 3, piglin brute na 5, hoglin na 6, **ghast na 6**
@@ -449,9 +474,10 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `nexusDamagePerHit` | 3 | Dano por golpe de mob |
 | `deleteWorldOnNexusDestroyed` | `true` | Apaga o mundo na derrota |
 | `keepNexusChunksLoaded` | `true` | Mantem os chunks do Nexus carregados |
-| `forcedChunkRadius` | 3 | Raio carregado, em chunks (7x7) |
-| `spawnChunkRadiusMin` / `Max` | 1 / 3 | Area de spawn, em chunks |
-| `attractionChunkRadius` | 3 | Raio de recrutamento, em chunks |
+| `forcedChunkRadius` | 4 | Raio carregado, em chunks (9x9) |
+| `noSpawnChunkRadius` | 1 | Raio (chunks) do quadrado livre de spawn em volta do Nexus |
+| `spawnRingChunks` | 3 | Largura (chunks) do anel circular onde a invasao nasce |
+| `attractionChunkRadius` | 4 | Raio de recrutamento, em chunks |
 | `maxConcurrentInvaders` | 100 | Teto absoluto de invasores vivos |
 | `zombieExtraSpawnCount` | 2 | Zumbis extras que nascem junto a cada zumbi sorteado |
 | `invadersDropLoot` | `false` | Invasores dropam itens ao morrer |
@@ -876,6 +902,29 @@ A correcao reduz a superficie de risco em vez de so trocar a assinatura:
   Mixin loga um aviso e segue — o mod carrega normalmente e so os itens da
   loot table voltam a cair, em vez de o jogo nao abrir. Nenhum outro mixin do
   mod (que sao os que realmente sustentam a invasao) fica exposto a isso.
+
+**Nona rodada — zona livre de spawn.** As duas regioes em volta do Nexus
+(quadrado seguro + anel circular de invasao, descritas em "O quintal seguro e
+o anel de invasao") passaram a viver numa classe unica,
+`NexusZones`, usada tanto pelo spawn da invasao quanto pela supressao do
+spawn natural. Ter as duas regras no mesmo lugar evita o erro classico de o
+spawner da invasao e a checagem da zona segura discordarem por meio chunk e um
+mob nascer dentro do quintal que deveria estar limpo.
+
+As chaves `spawnChunkRadiusMin`/`spawnChunkRadiusMax` foram substituidas por
+`noSpawnChunkRadius` (raio do quadrado seguro) e `spawnRingChunks` (largura do
+anel), que descrevem a intencao em vez de dois raios soltos. `forcedChunkRadius`
+e `attractionChunkRadius` subiram para 4, para continuarem cobrindo exatamente
+a area onde a invasao acontece.
+
+Nota de implementacao: a supressao do spawn natural e feita **descartando a
+entidade no `ServerEntityEvents.ENTITY_LOAD`**, nao interceptando o
+`SpawnHelper` do vanilla. E um evento do Fabric ja usado com sucesso neste
+projeto (e o mesmo que recruta os mobs atraidos), enquanto mexer no
+`SpawnHelper` exigiria um mixin com assinatura que eu nao tenho como verificar
+aqui — e assinatura assumida ja derrubou este mod duas vezes. O custo e que o
+mob chega a ser criado antes de sumir, em vez de a tentativa de spawn ser
+barrada antes; na pratica isso e invisivel em jogo.
 
 ---
 

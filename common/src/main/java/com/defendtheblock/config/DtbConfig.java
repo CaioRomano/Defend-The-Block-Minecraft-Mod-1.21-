@@ -45,31 +45,46 @@ public final class DtbConfig {
     /**
      * Raio, <b>em chunks</b>, da area mantida carregada em volta do Nexus.
      *
-     * <p>0 = so o chunk do Nexus, 1 = 3x3, 3 = 7x7 (o padrao). O padrao cobre
+     * <p>0 = so o chunk do Nexus, 1 = 3x3, 4 = 9x9 (o padrao). O padrao cobre
      * exatamente a area de spawn e de atracao, para que a invasao rode inteira
      * mesmo sem jogador por perto.
      */
-    public int forcedChunkRadius = 3;
+    public int forcedChunkRadius = 4;
 
     // ----------------------------------------------------------- invasoes
     /** Multiplicador global do ritmo de spawn da invasao. */
     public double mobMultiplier = 1.0D;
     /**
-     * Distancia minima de spawn, <b>em chunks</b>, contada a partir do chunk do
-     * Nexus. Com 1, toda a area de ativacao e usada menos o chunk do Nexus.
+     * Raio, <b>em chunks</b>, da <b>zona livre de spawn</b> em volta do Nexus.
      *
-     * <p>O chunk do Nexus (distancia 0) <b>nunca</b> spawna invasor, mesmo que
-     * este valor seja colocado em 0: e uma regra fixa do mod.
+     * <p>Medido em distancia de Chebyshev (quadrada), que e como o jogo enxerga
+     * vizinhanca de chunk: 0 = so o chunk do Nexus, <b>1 = o chunk do Nexus
+     * mais todos os adjacentes (3x3)</b>, que e o padrao.
+     *
+     * <p>Dentro dessa area <b>nenhum mob hostil nasce</b> — nem a invasao
+     * spawna ali, nem o spawn natural do vanilla. E o quintal seguro da base:
+     * o que aparecer perto do Nexus veio marchando de fora, nao brotou do lado.
      */
-    public int spawnChunkRadiusMin = 1;
-    /** Distancia maxima de spawn, em chunks, a partir do chunk do Nexus. */
-    public int spawnChunkRadiusMax = 3;
+    public int noSpawnChunkRadius = 1;
+    /**
+     * Largura, <b>em chunks</b>, do anel onde a invasao nasce, contada a partir
+     * da borda da zona livre de spawn.
+     *
+     * <p>Com os padroes (zona livre de raio 1 + anel de 3), os invasores nascem
+     * entre o chunk 2 e o chunk 4 a partir do Nexus. O limite externo e
+     * <b>circular</b> (distancia euclidiana), entao a area de spawn e uma coroa
+     * em volta do quadrado seguro, nao outro quadrado.
+     */
+    public int spawnRingChunks = 3;
     /**
      * Raio, <b>em chunks</b>, no qual qualquer mob hostil que nascer (spawn
      * natural, spawner ou ovo) e atraido pelo Nexus e ganha as habilidades de
      * invasor. Endermen sao a unica excecao.
+     *
+     * <p>Vale so fora da zona livre de spawn: dentro dela nada nasce para ser
+     * recrutado.
      */
-    public int attractionChunkRadius = 3;
+    public int attractionChunkRadius = 4;
     /** Ticks entre cada lote de spawn na invasao 1. Diminui a cada invasao. */
     public int baseSpawnInterval = 60;
     /** Quanto o intervalo entre lotes encolhe a cada invasao, em ticks. */
