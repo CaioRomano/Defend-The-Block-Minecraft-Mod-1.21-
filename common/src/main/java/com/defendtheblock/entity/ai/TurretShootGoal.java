@@ -44,9 +44,24 @@ public class TurretShootGoal extends Goal {
     private static final double SWITCH_MARGIN_SQ = 4.0D;
     /** Folga vertical da varredura: cobre torres bem altas, o alcance real e so no plano horizontal. */
     private static final double VERTICAL_SCAN_MARGIN = 64.0D;
+    /**
+     * Rede de seguranca: se a torreta passa esse tempo com o mesmo alvo sem
+     * conseguir disparar nenhuma vez, ela desiste dele e o ignora por um tempo.
+     *
+     * <p>As checagens de cone/alcance/visada ja deveriam impedir isso, mas
+     * qualquer caso nao previsto (mob pulando dentro e fora do cone, alvo
+     * inalcancavel por geometria estranha) faria a torreta ficar parada de
+     * novo — entao aqui a regra e absoluta: nao atirou nesse tempo, troca.
+     */
+    private static final int NO_FIRE_TIMEOUT = 40;
+    /** Por quantos ticks um alvo abandonado por timeout fica fora da escolha. */
+    private static final int REJECT_MEMORY = 100;
 
     private final TurretEntity turret;
     private int rescanTimer;
+    private int ticksOnTarget;
+    private LivingEntity rejectedTarget;
+    private int rejectedTimer;
 
     public TurretShootGoal(TurretEntity turret) {
         this.turret = turret;
@@ -70,13 +85,32 @@ public class TurretShootGoal extends Goal {
 
     @Override
     public void tick() {
+        if (rejectedTimer > 0 && --rejectedTimer == 0) {
+            rejectedTarget = null;
+        }
+
+        LivingEntity previous = turret.getTarget();
         if (--rescanTimer <= 0) {
             rescanTimer = RESCAN_INTERVAL;
             retarget();
         }
 
         LivingEntity target = turret.getTarget();
+        if (target != previous) {
+            ticksOnTarget = 0;
+        }
         if (target == null || !(turret.getWorld() instanceof ServerWorld world) || !isEngageable(target)) {
+            return;
+        }
+
+        // Rede de seguranca: tempo demais no mesmo alvo sem disparar significa
+        // que algo o torna inatingivel na pratica — desiste e ignora por um
+        // tempo, em vez de ficar parada mirando nele para sempre.
+        if (++ticksOnTarget > NO_FIRE_TIMEOUT) {
+            rejectedTarget = target;
+            rejectedTimer = REJECT_MEMORY;
+            turret.setTarget(null);
+            ticksOnTarget = 0;
             return;
         }
 
@@ -95,6 +129,8 @@ public class TurretShootGoal extends Goal {
             fire(world, target, i, shots);
         }
         turret.consumeAmmo();
+        // Disparou: o alvo esta funcionando, zera o relogio da rede de seguranca.
+        ticksOnTarget = 0;
 
         world.playSound(null, turret.getBlockPos(), SoundEvents.ITEM_CROSSBOW_SHOOT, SoundCategory.NEUTRAL,
                 1.0F, 1.0F / (world.getRandom().nextFloat() * 0.4F + 1.2F) + 0.3F);
@@ -121,14 +157,14 @@ public class TurretShootGoal extends Goal {
         }
     }
 
-    /** Alvo valido, dentro de alcance (no plano horizontal), fora do proprio eixo vertical e visivel. */
+    /** Alvo valido, dentro de alcance (no plano horizontal), dentro do cone de visao e visivel. */
     private boolean isEngageable(LivingEntity target) {
-        if (target == null || !target.isAlive()) {
+        if (target == null || !target.isAlive() || target == rejectedTarget) {
             return false;
         }
         double range = turret.getRange();
         return turret.horizontalSquaredDistanceTo(target) <= range * range
-                && !turret.isDegenerateAngle(target)
+                && turret.isInVisionCone(target)
                 && turret.getVisibilityCache().canSee(target);
     }
 

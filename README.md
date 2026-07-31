@@ -92,17 +92,21 @@ progresso mais atualizado. Veja "Status de verificacao" para o porque dessa
 escolha.
 
 Ela **so atira quando esta de fato apontada para o alvo** — gira primeiro, dispara
-depois, nunca o contrario. Ela tambem **so mira em mobs fora do seu proprio eixo
-vertical**: um mob bem embaixo (ou em cima) dela nunca vira alvo, exatamente para
-não ficar inerte tentando acertar quem esta debaixo dela em vez de quem esta se
-aproximando dentro do campo de visao.
+depois, nunca o contrario.
 
-O alcance dela e medido **so no plano horizontal**, nao em linha reta 3D — uma
+**Cone de visao.** A besta gira 360 graus na horizontal, mas so inclina ate 60
+graus para cima e para baixo (`turretVerticalFovDegrees`). Isso deixa dois
+**pontos cegos** naturais: um cone logo acima e outro logo abaixo dela. Um mob
+dentro desses cones nunca e escolhido como alvo — e por isso ela nunca trava
+mirando algo que jamais conseguiria apontar.
+
+O alcance e medido **so no plano horizontal**, nao em linha reta 3D — uma
 torreta no topo de uma torre nao perde alcance efetivo contra quem se aproxima
-pelo chao. E ela **reavalia o proprio alvo a cada poucos ticks**: se o atual
-sair de alcance, ficar sem visada ou virar impossivel de mirar, ela troca por
-outro mob de verdade alcancavel em vez de ficar grudada olhando pro mesmo
-lugar enquanto outros passam na frente.
+pelo chao. Ela **reavalia o proprio alvo a cada poucos ticks**: se o atual sair
+de alcance, ficar sem visada ou sair do cone, ela troca por outro mob de
+verdade alcancavel em vez de ficar grudada olhando pro mesmo lugar. E, como
+rede de seguranca final, **se passar 2 segundos com um alvo sem conseguir
+disparar nenhuma vez, ela abandona esse alvo** e o ignora por um tempo.
 
 | Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
 |---|---|---|---|---|---|---|
@@ -187,7 +191,7 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Todos, exceto creeper | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
 | Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
-| Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda | 35% |
+| Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender) | 100% |
 | Zumbi | **Picareta**: minera o bloco que atrapalha | 12% |
 | Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 10% |
 | Zumbi | **TNT**: planta e acende TNT (ja gatilhada) na frente do muro | 5% |
@@ -252,12 +256,20 @@ quantidade de rolagens cresce (com teto) conforme as invasoes avancam.
 
 ### Jogador e torreta sao alvos — mas o Nexus e a prioridade
 
-Um invasor so passa a brigar com a torreta se **ela acertar ele primeiro** —
-nao existe mais deteccao a distancia (isso ja foi tentado numa rodada anterior
-e causou o bug descrito abaixo). O gatilho e o `RevengeGoal` do proprio
-vanilla, nativo de todo mob hostil: levar uma flechada da torreta e exatamente
-o mesmo estimulo que levar uma flechada de um jogador. O jogador continua
-sendo alvo do jeito vanilla de sempre (ele ataca, o mob revida).
+Um invasor **corpo a corpo** so passa a brigar com a torreta se **ela acertar
+ele primeiro** — para esses nao existe deteccao a distancia (isso ja foi
+tentado numa rodada anterior e causou o bug descrito abaixo). O gatilho e o
+`RevengeGoal` do proprio vanilla, nativo de todo mob hostil: levar uma
+flechada da torreta e exatamente o mesmo estimulo que levar uma flechada de um
+jogador. O jogador continua sendo alvo do jeito vanilla de sempre (ele ataca,
+o mob revida).
+
+**Esqueletos sao a excecao, de proposito:** eles *procuram* as torretas e
+priorizam derruba-las a ate 20 blocos (`rangedTurretPriorityRange`). O
+problema que fez a deteccao a distancia ser removida — mob saindo do caminho
+atras de uma torreta que nao consegue alcancar — simplesmente nao existe para
+quem atira parado de onde esta. Na pratica, as torretas viram alvo de fogo
+concentrado da linha de esqueletos, o que da a elas um contrapeso real.
 
 Mesmo depois de ser alvejado, o foco na torreta **nunca e permanente**, por
 duas regras que trabalham juntas:
@@ -393,16 +405,21 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `attractionChunkRadius` | 3 | Raio de recrutamento, em chunks |
 | `maxConcurrentInvaders` | 100 | Teto absoluto de invasores vivos |
 | `mobMultiplier` | 1.0 | Multiplicador global do ritmo |
-| `creeperBreachChance` | 0.35 | Chance de creeper arrombador |
+| `creeperBreachChance` | 1.0 | Chance de creeper arrombador |
 | `spiderWebChance` | 0.25 | Chance de aranha com teia |
 | `zombiePickaxeChance` | 0.12 | Chance de zumbi mineiro |
 | `zombieLadderChance` | 0.10 | Chance de zumbi carpinteiro |
 | `zombieTntChance` | 0.05 | Chance de zumbi com TNT |
 | `zombieFireStarterChance` | 0.06 | Chance de zumbi com isqueiro (incendeia madeira) |
+| `creeperBreachTimeoutTicks` | 100 | Prazo maximo (5s) ate o creeper acender diante de um obstaculo |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
 | `nexusPriorityEngageRange` | 6.0 | Raio (blocos) para brigar com jogador/torreta antes de voltar ao Nexus |
+| `rangedTurretPriorityRange` | 20.0 | Raio no qual esqueletos priorizam atirar nas torretas |
+| `maxTurretEngageTicks` | 200 | Teto de tempo focado numa torreta antes de voltar ao Nexus |
+| `turretIgnoreTicksAfterGiveUp` | 120 | Carencia antes de poder mirar em outra torreta |
 | `doorBreakTicksPerHardness` | 10 | Ritmo de arrombamento de portas (ferro demora mais que madeira) |
 | `turretRepairHealthPerItem` | 8.0 | Vida recuperada por unidade de material usada no reparo |
+| `turretVerticalFovDegrees` | 60.0 | Abertura vertical do cone de visao da torreta (define os pontos cegos) |
 
 Se o servidor sofrer nas invasoes altas, `maxConcurrentInvaders` e o botao certo.
 
@@ -623,6 +640,65 @@ Como sempre, **nada disso passou por `buildAll` nem por teste em jogo ainda**
 — e a rodada com mais mudancas de comportamento de goal (prioridades
 negativas, torreta escolhendo o proprio alvo) desde o inicio do projeto, entao
 vale prestar atencao especial nela no proximo playtest.
+
+**Quinta rodada — a causa raiz de verdade da torreta.** O playtest seguinte
+mostrou que a torreta *continuava* travada num alvo sem atirar, mesmo depois
+de toda a reescrita de selecao de alvo da rodada anterior. O motivo era bem
+mais embaixo, e nao tinha nada a ver com escolha de alvo:
+
+> O `LookControl` do vanilla roda **depois** das goals, dentro de
+> `MobEntity#tickNewAi`, e como `shouldStayHorizontal()` e `true` por padrao
+> ele executa `setPitch(0)` a cada tick. Ou seja: a torreta calculava a
+> inclinacao certa na goal e o vanilla zerava logo em seguida, todo tick. Ela
+> nunca conseguia apontar para cima nem para baixo — e como o disparo so
+> acontece quando a mira converge dentro da tolerancia, qualquer alvo que nao
+> estivesse exatamente na altura dos olhos dela **jamais** era acertado, e o
+> foco nunca era liberado.
+
+Isso explica de uma vez todos os sintomas que sobraram: "fica focada num mob
+que nao consegue disparar", "nao atira em quem esta abaixo", "torreta no alto
+nao acerta nada la embaixo" e ate o "funcionou no comeco e depois parou" (o
+primeiro alvo calhou de estar na altura certa). A correcao guarda a mira em
+campos proprios (`aimYaw`/`aimPitch`) e os **reaplica depois do
+`super.tick()`**, ou seja, depois do `LookControl` ter feito o estrago —
+sem depender de sobrescrever `LookControl`, cuja API varia entre versoes.
+
+Outras mudancas desta rodada:
+
+- **Cone de visao de verdade.** O remendo anterior so excluia mobs
+  exatamente no eixo vertical. Agora a torreta tem uma abertura vertical real
+  (`turretVerticalFovDegrees`, 60 graus por padrao): gira 360 graus na
+  horizontal, mas so inclina ate esse limite, o que cria dois **pontos cegos**
+  naturais (um cone acima e outro abaixo). Alvo fora do cone nunca e
+  escolhido.
+- **Rede de seguranca absoluta contra travamento.** Independente de qualquer
+  checagem de cone/alcance/visada, se a torreta passa 40 ticks com o mesmo
+  alvo **sem conseguir disparar nenhuma vez**, ela abandona esse alvo e o
+  ignora por 5 segundos. Se algum caso nao previsto aparecer no futuro, ele
+  vira no maximo 2 segundos de pausa em vez de um travamento permanente.
+- **A aba estava borrada por causa do proprio vanilla.** Nao era falta de
+  contraste: `Screen#render` comeca chamando `renderBackground`, que no
+  1.20.5+ aplica **blur** no framebuffer inteiro. Como a chamada a
+  `super.render(...)` estava no fim do metodo, o desfoque caia por cima do
+  painel e do texto ja desenhados. Como a tela nao registra nenhum widget (o
+  botao tambem e desenhado a mao), a correcao foi simplesmente **nao chamar o
+  super** e fazer o escurecimento com um `fill` proprio.
+- **Creeper com prazo de 5 segundos.** Antes ele so acendia depois de
+  conseguir encostar no obstaculo (3.2 blocos), o que podia demorar muito ou
+  nunca acontecer. Agora ele e avaliado antes da fase de aproximacao: acende
+  na hora se ja estiver perto, e tem no maximo `creeperBreachTimeoutTicks`
+  (100 ticks = 5s) preso tentando chegar antes de acender de qualquer jeito.
+  O padrao de `creeperBreachChance` tambem subiu para 1.0 — com o peso de
+  spawn do creeper agora baixo, um creeper que nao sabe abrir passagem nao
+  contribui em nada.
+- **Esqueleto prioriza torreta.** Voltou uma versao da `TargetTurretGoal`,
+  agora **restrita a mobs de ataque a distancia** (`RangedAttackMob`). O
+  motivo de ela ter sido removida antes — mobs corpo a corpo saindo atras de
+  torretas que nao conseguiam alcancar — nao se aplica a quem atira parado. O
+  alcance dessa prioridade e proprio (`rangedTurretPriorityRange`, 20 blocos),
+  e o foco continua tendo teto: `maxTurretEngageTicks` (200 ticks) para
+  qualquer invasor, seguido de uma carencia antes de poder mirar em outra
+  torreta.
 
 ---
 

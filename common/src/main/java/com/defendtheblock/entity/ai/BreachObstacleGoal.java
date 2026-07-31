@@ -57,6 +57,8 @@ public class BreachObstacleGoal extends Goal {
     private int mineTicks;
     private int requiredMineTicks;
     private int approachTimer;
+    /** Ticks desde que este mob comecou a lidar com o obstaculo atual. */
+    private int goalTicks;
 
     public BreachObstacleGoal(MobEntity mob, double speed) {
         this.mob = mob;
@@ -98,6 +100,7 @@ public class BreachObstacleGoal extends Goal {
         target = data.getObstacle();
         mineTicks = 0;
         approachTimer = 0;
+        goalTicks = 0;
         BlockState state = mob.getWorld().getBlockState(target);
         float hardness = Math.max(0.2F, state.getHardness(mob.getWorld(), target));
         // Porta usa seu proprio ritmo (mais rapido que minerar parede de verdade);
@@ -128,10 +131,27 @@ public class BreachObstacleGoal extends Goal {
         if (target == null || !(mob.getWorld() instanceof ServerWorld world)) {
             return;
         }
+        goalTicks++;
         Vec3d center = Vec3d.ofCenter(target);
         mob.getLookControl().lookAt(center.x, center.y, center.z);
 
-        if (mob.squaredDistanceTo(center) > WORK_RANGE * WORK_RANGE) {
+        boolean inWorkRange = mob.squaredDistanceTo(center) <= WORK_RANGE * WORK_RANGE;
+
+        // O creeper e checado ANTES da fase de aproximacao: ele nao precisa
+        // encostar no obstaculo para ser util. Se ja chegou perto, explode na
+        // hora; se ficou preso tentando chegar, tem no maximo
+        // creeperBreachTimeoutTicks (5s por padrao) antes de acender de
+        // qualquer jeito. Antes ele so acendia depois de conseguir chegar a
+        // menos de 3.2 blocos, o que podia demorar muito — ou nunca acontecer.
+        if (data.hasAbility(InvaderAbility.SUICIDE_BREACH) && mob instanceof CreeperEntity creeper) {
+            if (inWorkRange || goalTicks >= DtbConfig.get().creeperBreachTimeoutTicks) {
+                creeper.ignite();
+                data.setBreachCooldown(200);
+                return;
+            }
+        }
+
+        if (!inWorkRange) {
             if (--approachTimer <= 0) {
                 approachTimer = 10;
                 mob.getNavigation().startMovingTo(center.x, center.y, center.z, speed);
@@ -145,11 +165,6 @@ public class BreachObstacleGoal extends Goal {
             return;
         }
 
-        if (data.hasAbility(InvaderAbility.SUICIDE_BREACH) && mob instanceof CreeperEntity creeper) {
-            creeper.ignite();
-            data.setBreachCooldown(200);
-            return;
-        }
         if (data.hasAbility(InvaderAbility.TNT_SAPPER) && placeTnt(world)) {
             return;
         }

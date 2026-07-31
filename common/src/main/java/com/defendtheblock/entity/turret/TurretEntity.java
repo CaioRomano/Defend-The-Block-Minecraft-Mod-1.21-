@@ -73,6 +73,27 @@ public class TurretEntity extends MobEntity {
 
     private int cooldown;
 
+    /**
+     * Mira propria da torreta, reaplicada todo tick depois do {@code super.tick()}.
+     *
+     * <p><b>Por que isso existe:</b> o {@code LookControl} do vanilla roda
+     * DEPOIS das goals dentro de {@code MobEntity#tickNewAi} e, como
+     * {@code shouldStayHorizontal()} e true por padrao, ele forcava
+     * {@code setPitch(0)} a cada tick. Ou seja: a torreta reescrevia a
+     * inclinacao que a {@code TurretShootGoal} tinha acabado de calcular e
+     * nunca conseguia apontar para cima nem para baixo. Como o disparo so
+     * acontece quando a mira converge, ela ficava eternamente "focada" num mob
+     * fora da altura exata dos olhos dela sem nunca atirar — a causa raiz de
+     * "torreta parada mirando um alvo que nao consegue acertar", "nao atira em
+     * quem esta abaixo" e "torreta em cima de uma torre nao acerta nada".
+     *
+     * <p>Guardar a mira aqui e reaplicar em {@link #tick()} resolve sem
+     * depender de sobrescrever {@code LookControl}, cuja API varia entre
+     * versoes.
+     */
+    private float aimYaw;
+    private float aimPitch;
+
     public TurretEntity(EntityType<? extends TurretEntity> type, World world) {
         super(type, world);
         setPersistent();
@@ -105,8 +126,26 @@ public class TurretEntity extends MobEntity {
      * so por estar mais perto e fique inerte em vez de atirar em quem estiver
      * se aproximando dentro do campo de visao dela.
      */
-    public boolean isDegenerateAngle(LivingEntity entity) {
-        return horizontalSquaredDistanceTo(entity) < 0.25D;
+    /**
+     * O alvo esta dentro do <b>cone de visao</b> da torreta?
+     *
+     * <p>A besta e montada num trepe: ela gira 360 graus na horizontal, mas so
+     * inclina ate {@code turretVerticalFovDegrees} para cima ou para baixo.
+     * Isso deixa dois <b>pontos cegos</b> naturais — um cone logo acima e outro
+     * logo abaixo dela — em vez do antigo remendo que so excluia quem estava
+     * exatamente no eixo vertical. Um alvo fora do cone nunca e escolhido, o
+     * que impede a torreta de travar mirando algo que ela nunca conseguiria
+     * apontar.
+     */
+    public boolean isInVisionCone(LivingEntity entity) {
+        double horizontal = Math.sqrt(horizontalSquaredDistanceTo(entity));
+        if (horizontal < 0.35D) {
+            // Praticamente em cima/embaixo: o angulo fica indefinido.
+            return false;
+        }
+        double dy = entity.getBodyY(0.5D) - getEyeY();
+        double pitch = Math.toDegrees(Math.atan2(dy, horizontal));
+        return Math.abs(pitch) <= DtbConfig.get().turretVerticalFovDegrees;
     }
 
     /**
@@ -201,6 +240,13 @@ public class TurretEntity extends MobEntity {
     @Override
     public void tick() {
         super.tick();
+        // Reaplica a mira DEPOIS do super.tick(): e la dentro que o
+        // LookControl do vanilla zera o pitch (ver o javadoc de aimYaw/aimPitch).
+        setYaw(aimYaw);
+        bodyYaw = aimYaw;
+        headYaw = aimYaw;
+        setPitch(aimPitch);
+
         if (cooldown > 0) {
             cooldown--;
         }
@@ -234,13 +280,15 @@ public class TurretEntity extends MobEntity {
         float targetYaw = (float) (MathHelper.atan2(dz, dx) * 57.2957763671875D) - 90.0F;
         float targetPitch = (float) (-(MathHelper.atan2(dy, horizontal) * 57.2957763671875D));
 
-        setYaw(approachAngle(getYaw(), targetYaw, 20.0F));
-        bodyYaw = getYaw();
-        headYaw = getYaw();
-        setPitch(approachAngle(getPitch(), targetPitch, 20.0F));
+        aimYaw = approachAngle(aimYaw, targetYaw, 20.0F);
+        aimPitch = approachAngle(aimPitch, targetPitch, 20.0F);
+        setYaw(aimYaw);
+        bodyYaw = aimYaw;
+        headYaw = aimYaw;
+        setPitch(aimPitch);
 
-        float yawError = Math.abs(MathHelper.wrapDegrees(targetYaw - getYaw()));
-        float pitchError = Math.abs(MathHelper.wrapDegrees(targetPitch - getPitch()));
+        float yawError = Math.abs(MathHelper.wrapDegrees(targetYaw - aimYaw));
+        float pitchError = Math.abs(MathHelper.wrapDegrees(targetPitch - aimPitch));
         return yawError <= AIM_TOLERANCE_DEGREES && pitchError <= AIM_TOLERANCE_DEGREES;
     }
 

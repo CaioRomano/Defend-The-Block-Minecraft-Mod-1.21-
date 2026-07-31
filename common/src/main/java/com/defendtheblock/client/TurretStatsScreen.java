@@ -79,12 +79,25 @@ public final class TurretStatsScreen extends Screen {
         return false;
     }
 
+    /**
+     * Desenha tudo a mao e <b>nao chama {@code super.render(...)}</b>.
+     *
+     * <p>Esse era o motivo da aba sair borrada: {@code Screen#render} do
+     * vanilla comeca chamando {@code renderBackground}, que no 1.20.5+ aplica
+     * um efeito de <em>blur</em> em cima de todo o framebuffer. Como a chamada
+     * ao super vinha no fim deste metodo, o blur caia por cima do painel e do
+     * texto que acabaram de ser desenhados — nao era falta de contraste, era
+     * literalmente o desfoque do menu do vanilla aplicado sobre a aba.
+     *
+     * <p>Como esta tela nao registra nenhum widget (o botao "Fechar" tambem e
+     * desenhado a mao, ver o javadoc da classe), pular o super nao perde nada:
+     * ele so renderizaria o fundo borrado e a lista vazia de filhos. O
+     * escurecimento do mundo passa a ser feito por um {@code fill} simples,
+     * que da contraste sem desfocar.
+     */
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Escurece o mundo atras da aba primeiro: sem isso o painel ficava com
-        // pouco contraste (e "apagado") contra um ceu claro ou uma area bem
-        // iluminada atras do jogador.
-        context.fill(0, 0, width, height, 0x9A000000);
+        context.fill(0, 0, width, height, 0xC0000000);
 
         int left = width / 2 - WIDTH / 2;
 
@@ -122,8 +135,6 @@ public final class TurretStatsScreen extends Screen {
                 hovered ? 0xFF3A3252 : 0xFF241E38);
         context.drawCenteredTextWithShadow(textRenderer, ScreenTexts.DONE,
                 buttonLeft + BUTTON_WIDTH / 2, buttonTop + (BUTTON_HEIGHT - 8) / 2, 0xFFE3E3EC);
-
-        super.render(context, mouseX, mouseY, delta);
     }
 
     @Override

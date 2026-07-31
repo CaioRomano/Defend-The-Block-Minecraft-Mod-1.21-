@@ -6,7 +6,9 @@ import com.defendtheblock.entity.ai.BreachObstacleGoal;
 import com.defendtheblock.entity.ai.BridgeToNexusGoal;
 import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
+import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
+import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -108,11 +110,19 @@ public final class InvaderGoals {
         }
         accessor.defendtheblock$getGoalSelector().add(0, new AttackNexusGoal(mob, MOVE_SPEED));
 
-        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho. A
-        // torreta so vira alvo de campo (RevengeGoal, nativo do vanilla) se
-        // ela de fato acertar o mob primeiro — nunca por deteccao a
-        // distancia. InvaderCombatPriority cuida de nao deixar esse alvo
-        // travado para sempre.
+        // Mesmo indo atras do Nexus, o invasor mata quem cruzar o caminho. Para
+        // quem luta corpo a corpo, a torreta so vira alvo de campo
+        // (RevengeGoal, nativo do vanilla) se ela de fato acertar o mob
+        // primeiro — nunca por deteccao a distancia, que foi o que travou a
+        // horda numa rodada anterior.
         accessor.defendtheblock$getTargetSelector().add(3, new ActiveTargetGoal<>(mob, PlayerEntity.class, true));
+
+        // Ja quem ataca de longe (esqueleto e afins) prioriza derrubar as
+        // torretas: ele atira de onde esta, entao nao corre o risco de sair do
+        // caminho atras de uma torreta inalcancavel. InvaderCombatPriority
+        // continua garantindo que esse foco nao vira eterno.
+        if (mob instanceof RangedAttackMob) {
+            accessor.defendtheblock$getTargetSelector().add(2, new TargetTurretGoal(mob));
+        }
     }
 }

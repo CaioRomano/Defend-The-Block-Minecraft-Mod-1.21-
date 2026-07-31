@@ -96,7 +96,21 @@ public final class DtbConfig {
     // ------------------------------------------------- chances de habilidade
     // Sempre abaixo dos mobs "normais": a soma das habilidades especiais de um
     // tipo de mob nunca chega perto de 100%.
-    public double creeperBreachChance = 0.35D;
+    /**
+     * Chance de um creeper receber a habilidade de se explodir no obstaculo.
+     *
+     * <p>Padrao 1.0 (todos): desde que o peso de spawn do creeper caiu muito,
+     * um creeper que nao sabe abrir passagem simplesmente nao contribui em
+     * nada quando a horda encontra um muro.
+     */
+    public double creeperBreachChance = 1.0D;
+    /**
+     * Tempo maximo, em ticks, entre um creeper marcar um obstaculo e acender.
+     *
+     * <p>Ele acende na hora se ja estiver encostado no obstaculo; este valor e
+     * o teto para o caso de ficar preso tentando chegar la. 100 ticks = 5s.
+     */
+    public int creeperBreachTimeoutTicks = 100;
     public double spiderWebChance = 0.25D;
     public double zombiePickaxeChance = 0.12D;
     public double zombieLadderChance = 0.10D;
@@ -127,6 +141,22 @@ public final class DtbConfig {
      * bloco.
      */
     public double nexusPriorityEngageRange = 6.0D;
+    /**
+     * Alcance, em blocos, no qual um invasor <b>de ataque a distancia</b>
+     * (esqueleto e afins) prioriza atirar numa torreta.
+     *
+     * <p>E bem maior que {@code nexusPriorityEngageRange} de proposito: ele
+     * atira parado, sem sair do caminho, entao priorizar a torreta de longe
+     * nao atrapalha a marcha ate o Nexus.
+     */
+    public double rangedTurretPriorityRange = 20.0D;
+    /**
+     * Teto de tempo, em ticks, que qualquer invasor fica focado numa torreta
+     * antes de desistir e voltar para o Nexus.
+     */
+    public int maxTurretEngageTicks = 200;
+    /** Carencia, em ticks, antes do invasor poder mirar em outra torreta. */
+    public int turretIgnoreTicksAfterGiveUp = 120;
     /** Ticks por ponto de dureza para arrombar uma porta fechada. */
     public int doorBreakTicksPerHardness = 10;
 
@@ -137,6 +167,17 @@ public final class DtbConfig {
     public boolean turretConsumesAmmo = true;
     /** Vida recuperada por unidade de material usada no reparo (botao direito). */
     public double turretRepairHealthPerItem = 8.0D;
+    /**
+     * Abertura vertical do cone de visao da torreta, em graus para cima e para
+     * baixo.
+     *
+     * <p>Ela gira 360 graus na horizontal, mas so inclina ate este limite —
+     * o que deixa dois pontos cegos, um logo acima e outro logo abaixo dela.
+     * Mobs fora do cone nunca sao escolhidos como alvo, entao ela nunca trava
+     * mirando algo que jamais conseguiria apontar. Suba para 80+ se quiser
+     * pontos cegos bem pequenos.
+     */
+    public double turretVerticalFovDegrees = 60.0D;
 
     // --------------------------------------------------------------- totem
     /** Cooldown do Totem de Reuniao, em ticks. */

@@ -35,6 +35,8 @@ public class InvaderData {
     private Entity engagedTurret;
     private int turretEngageTicks;
     private double lastDistanceToTurret = Double.MAX_VALUE;
+    /** Carencia depois de desistir de uma torreta, para nao remirar na mesma na hora. */
+    private int turretIgnoreTicks;
 
     public boolean isInvader() {
         return invader;
@@ -115,6 +117,9 @@ public class InvaderData {
         if (nexusHitCooldown > 0) {
             nexusHitCooldown--;
         }
+        if (turretIgnoreTicks > 0) {
+            turretIgnoreTicks--;
+        }
     }
 
     public boolean canHitNexus() {
@@ -171,6 +176,16 @@ public class InvaderData {
         this.engagedTurret = null;
         this.turretEngageTicks = 0;
         this.lastDistanceToTurret = Double.MAX_VALUE;
+    }
+
+    public int getTurretIgnoreTicks() {
+        return turretIgnoreTicks;
+    }
+
+    /** Desiste da torreta atual e nao mira em nenhuma outra pelos proximos ticks. */
+    public void giveUpOnTurret(int ignoreTicks) {
+        clearTurretEngagement();
+        this.turretIgnoreTicks = ignoreTicks;
     }
 
     public void writeNbt(NbtCompound root) {
