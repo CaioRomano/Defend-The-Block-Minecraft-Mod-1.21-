@@ -24,9 +24,9 @@ public record TurretTier(double damage, double range, int reload, float maxHealt
 
     public static final TurretTier[] TIERS = {
             new TurretTier(2.0D, 12.0D, 40, 20.0F, 64, null, 0),
-            new TurretTier(3.0D, 16.0D, 32, 30.0F, 96, Items.IRON_INGOT, 6),
-            new TurretTier(4.0D, 20.0D, 24, 40.0F, 128, Items.GOLD_INGOT, 4),
-            new TurretTier(5.5D, 26.0D, 16, 55.0F, 192, Items.DIAMOND, 3),
+            new TurretTier(3.0D, 16.0D, 32, 30.0F, 96, Items.IRON_INGOT, 20),
+            new TurretTier(4.0D, 20.0D, 24, 40.0F, 128, Items.GOLD_INGOT, 7),
+            new TurretTier(5.5D, 26.0D, 16, 55.0F, 192, Items.DIAMOND, 4),
             new TurretTier(7.0D, 32.0D, 10, 75.0F, 256, Items.EMERALD, 2)};
 
     public static final int MAX_TIER = TIERS.length - 1;

@@ -61,7 +61,9 @@ O D O      E = Olho do Ender
 ![Textura da torreta](docs/images/textura_torreta.png)
 
 Uma besta montada num trepe que **gira sozinha para o alvo** e atira. E uma
-entidade, nao um bloco. Craft:
+entidade, nao um bloco. O icone do item e **visto de cima**: a besta deitada
+sobre a base, corda e bracos para cima na imagem, coronha de madeira descendo
+ate o topo da base metalica. Craft:
 
 ```
  C         C = Besta
@@ -84,13 +86,13 @@ depois, nunca o contrario.
 | Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
 |---|---|---|---|---|---|---|
 | Madeira | 2.0 | 12 | 2.0s | 20 | 64 | — |
-| Ferro | 3.0 | 16 | 1.6s | 30 | 96 | 6x Barra de Ferro |
-| Ouro | 4.0 | 20 | 1.2s | 40 | 128 | 4x Barra de Ouro |
-| Diamante | 5.5 | 26 | 0.8s | 55 | 192 | 3x Diamante |
+| Ferro | 3.0 | 16 | 1.6s | 30 | 96 | 20x Barra de Ferro |
+| Ouro | 4.0 | 20 | 1.2s | 40 | 128 | 7x Barra de Ouro |
+| Diamante | 5.5 | 26 | 0.8s | 55 | 192 | 4x Diamante |
 | Esmeralda | 7.0 | 32 | 0.5s | 75 | 256 | 2x Esmeralda |
 
 O custo cai conforme o material fica mais raro: ferro (facil de juntar em
-quantidade) pede mais unidades, esmeralda (o mais raro) pede menos.
+quantidade) pede bem mais unidades, esmeralda (o mais raro) pede so 2.
 
 O nivel e a municao aparecem no nome, acima da torreta. O **visual muda a cada
 upgrade**: a coronha de madeira e o suporte de pedra sao o "detalhe original da

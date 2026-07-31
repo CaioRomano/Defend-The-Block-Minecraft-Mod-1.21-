@@ -131,34 +131,35 @@ def nexus_face(kind):
 
 # ------------------------------------------------------------- itens (16x16)
 
+# O icone do item e visto de cima: a besta deitada sobre a base, com a
+# coronha apontando para baixo no icone e os bracos/corda para cima.
 TURRET_ITEM_PALETTE = {
-    "A": rgba("#6b4a2a"),  # madeira escura do arco
-    "W": rgba("#8a6236"),  # madeira clara
-    "I": rgba("#b9b9c4"),  # ferro
-    "i": rgba("#7d7d88"),  # ferro sombra
+    "A": rgba("#6b4a2a"),  # madeira escura da coronha
+    "W": rgba("#8a6236"),  # madeira clara da coronha
+    "I": rgba("#b9b9c4"),  # ferro dos bracos
+    "i": rgba("#7d7d88"),  # ferro sombra (pontas dos bracos)
     "S": rgba("#e9e2d2"),  # corda
-    "M": rgba("#8f8f9b"),  # pernas de metal
-    "m": rgba("#5f5f6b"),  # metal sombra
-    "C": rgba("#16c8d2"),  # cristal
+    "M": rgba("#8f8f9b"),  # base, vista de cima
+    "m": rgba("#5f5f6b"),  # base, sombra/borda
 }
 
 TURRET_ITEM_ART = [
     "................",
-    "..A..........A..",
-    "..AA........AA..",
-    "...AA......AA...",
-    "....AAWWWWAA....",
-    "...SAAWIIWAAS...",
-    "....SWWIIWWS....",
-    ".....SSIISS.....",
-    ".......IIi......",
-    "......ICCIi.....",
-    "......MMMMi.....",
-    ".....mMM.MMm....",
-    "....mM.....Mm...",
-    "...mM.......Mm..",
-    "..mM.........Mm.",
-    "..m...........m.",
+    ".....SSSSSS.....",
+    "..IIIIIIIIIIII..",
+    "..iiIIIIIIIIii..",
+    "......IIII......",
+    "......AWWA......",
+    "......AWWA......",
+    "......AWWA......",
+    "......AWWA......",
+    "......AWWA......",
+    "...mMMAWWAMMm...",
+    "...mMMAWWAMMm...",
+    "...mMMAWWAMMm...",
+    "...mMMMMMMMMm...",
+    "...mMMMMMMMMm...",
+    "....mmmmmmmm....",
 ]
 
 TOTEM_PALETTE = {
