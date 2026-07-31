@@ -92,6 +92,24 @@ public final class DtbConfig {
      * servidor sofrer nas invasoes altas.
      */
     public int maxConcurrentInvaders = 100;
+    /**
+     * Quantos zumbis <b>extras</b> nascem junto sempre que o sorteio tira um
+     * zumbi.
+     *
+     * <p>E diferente de so aumentar o peso no sorteio: o peso muda a
+     * proporcao, isto aqui muda a <i>quantidade</i>. O zumbi e a base da
+     * horda, entao ele chega em grupo enquanto os outros tipos chegam um a um.
+     */
+    public int zombieExtraSpawnCount = 2;
+    /**
+     * Invasores dropam item quando morrem?
+     *
+     * <p>Padrao false: a invasao spawna centenas de mobs por noite, entao os
+     * drops viravam uma montanha de itens (e de lag) que nao tem nada a ver
+     * com o desafio. A recompensa da noite vem do saque que o Nexus solta ao
+     * amanhecer, nao de farmar a horda.
+     */
+    public boolean invadersDropLoot = false;
 
     // ------------------------------------------------- chances de habilidade
     // Sempre abaixo dos mobs "normais": a soma das habilidades especiais de um
@@ -112,11 +130,26 @@ public final class DtbConfig {
      */
     public int creeperBreachTimeoutTicks = 100;
     public double spiderWebChance = 0.25D;
-    public double zombiePickaxeChance = 0.12D;
-    public double zombieLadderChance = 0.10D;
-    public double zombieTntChance = 0.05D;
-    /** Chance de um zumbi nascer com isqueiro, para incendiar obstaculos de madeira. */
-    public double zombieFireStarterChance = 0.06D;
+    public double zombiePickaxeChance = 0.18D;
+    public double zombieLadderChance = 0.16D;
+    public double zombieTntChance = 0.07D;
+    /**
+     * Chance de um zumbi nascer com isqueiro. Ele nao depende de haver
+     * construcao de madeira por perto para nascer — a habilidade e sorteada
+     * como qualquer outra, e so o <i>uso</i> dela e que precisa de um
+     * obstaculo de madeira.
+     */
+    public double zombieFireStarterChance = 0.10D;
+    /** Chance de um zumbi nascer construtor (ergue caminho/pilar ate o Nexus). */
+    public double zombieBuilderChance = 0.12D;
+    /**
+     * Multiplicador aplicado as chances de zumbi com escada e de zumbi
+     * construtor quando o Nexus esta suspenso no ar ou bem acima do chao.
+     *
+     * <p>Sao justamente as duas habilidades que resolvem esse cenario, entao
+     * faz sentido a horda trazer mais delas quando ele acontece.
+     */
+    public double elevatedNexusBuilderBonus = 2.5D;
 
     /** Dureza maxima de bloco que um zumbi mineiro consegue quebrar. */
     public double maxMineHardness = 30.0D;

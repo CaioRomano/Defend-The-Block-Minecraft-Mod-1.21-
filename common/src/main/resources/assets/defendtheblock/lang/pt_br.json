@@ -3,6 +3,11 @@
   "block.defendtheblock.nexus_block": "Bloco Nexus",
   "item.defendtheblock.arrow_turret": "Torreta de Flechas",
   "item.defendtheblock.gathering_totem": "Totem de Reuniao",
+  "item.defendtheblock.ladder_zombie_egg": "Ovo de Zumbi das Escadas",
+  "item.defendtheblock.tnt_zombie_egg": "Ovo de Zumbi da TNT",
+  "item.defendtheblock.builder_zombie_egg": "Ovo de Zumbi Construtor",
+  "item.defendtheblock.fire_zombie_egg": "Ovo de Zumbi do Isqueiro",
+  "item.defendtheblock.miner_zombie_egg": "Ovo de Zumbi Mineiro",
   "entity.defendtheblock.arrow_turret": "Torreta de Flechas",
   "entity.defendtheblock.web_shot": "Teia",
   "tooltip.defendtheblock.nexus_block.1": "Depois de colocado nunca mais pode ser retirado.",
@@ -57,5 +62,7 @@
   "commands.defendtheblock.multiplier_set": "Multiplicador de mobs definido para x%s.",
   "commands.defendtheblock.wave_forced": "Invasao %s iniciada manualmente.",
   "commands.defendtheblock.wave_stopped": "A invasao atual foi cancelada.",
-  "commands.defendtheblock.nexus_removed": "O Nexus foi removido com seguranca (sem apagar o mundo)."
+  "commands.defendtheblock.nexus_removed": "O Nexus foi removido com seguranca (sem apagar o mundo).",
+  "tooltip.defendtheblock.invader_egg.1": "Invoca um invasor com essa habilidade ja garantida.",
+  "tooltip.defendtheblock.invader_egg.2": "Ele marcha ate o Nexus, mas nao conta na contagem da onda."
 }

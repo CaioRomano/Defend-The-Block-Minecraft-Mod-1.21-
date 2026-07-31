@@ -22,12 +22,18 @@ import net.minecraft.item.Items;
 public record TurretTier(double damage, double range, int reload, float maxHealth, int maxAmmo,
                          Item upgrade, int upgradeCount) {
 
+    // O alcance sobe bastante por nivel de proposito: e o atributo que muda o
+    // *papel* da torreta no mapa. Uma torreta de madeira cobre so o entorno
+    // imediato do Nexus; uma de esmeralda vira artilharia, cobrindo boa parte
+    // da area de ativacao da invasao. Note que o alcance e medido no plano
+    // horizontal (ver TurretEntity#horizontalSquaredDistanceTo), entao esses
+    // numeros valem por igual no chao ou no alto de uma torre.
     public static final TurretTier[] TIERS = {
-            new TurretTier(2.0D, 12.0D, 40, 20.0F, 64, null, 0),
-            new TurretTier(3.0D, 16.0D, 32, 30.0F, 96, Items.IRON_INGOT, 20),
-            new TurretTier(4.0D, 20.0D, 24, 40.0F, 128, Items.GOLD_INGOT, 7),
-            new TurretTier(5.5D, 26.0D, 16, 55.0F, 192, Items.DIAMOND, 4),
-            new TurretTier(7.0D, 32.0D, 10, 75.0F, 256, Items.EMERALD, 2)};
+            new TurretTier(2.0D, 14.0D, 40, 20.0F, 64, null, 0),
+            new TurretTier(3.0D, 21.0D, 32, 30.0F, 96, Items.IRON_INGOT, 20),
+            new TurretTier(4.0D, 28.0D, 24, 40.0F, 128, Items.GOLD_INGOT, 7),
+            new TurretTier(5.5D, 36.0D, 16, 55.0F, 192, Items.DIAMOND, 4),
+            new TurretTier(7.0D, 46.0D, 10, 75.0F, 256, Items.EMERALD, 2)};
 
     public static final int MAX_TIER = TIERS.length - 1;
 

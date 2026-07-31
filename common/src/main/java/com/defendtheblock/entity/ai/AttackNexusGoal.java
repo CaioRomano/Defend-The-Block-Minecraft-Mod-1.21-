@@ -6,6 +6,7 @@ import com.defendtheblock.entity.invader.InvaderData;
 import com.defendtheblock.invasion.NexusManager;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.ai.pathing.Path;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -35,6 +36,10 @@ public class AttackNexusGoal extends Goal {
     private static final double ATTACK_RANGE = 2.8D;
     private static final int REPATH_INTERVAL = 20;
     private static final int STUCK_CHECK_INTERVAL = 40;
+    /** Raio, em blocos, varrido em busca de um desvio quando o mob empaca. */
+    private static final int DETOUR_RADIUS = 4;
+    /** O desvio precisa aproximar pelo menos isso do Nexus para valer a pena. */
+    private static final double MIN_DETOUR_GAIN = 1.5D;
 
     private final MobEntity mob;
     private final InvaderData data;
@@ -145,16 +150,72 @@ public class AttackNexusGoal extends Goal {
             stuckTimer = 0;
             double previous = data.getLastDistanceToNexus();
             if (distance > previous - 0.75D) {
-                markBlocked(nexus);
-                // Sinal compartilhado com BridgeToNexusGoal: quantos ciclos seguidos
-                // o mob nao avancou. Um Nexus suspenso no ar e o caso tipico.
-                data.setStuckTicks(data.getStuckTicks() + 1);
+                // Antes de assumir que o caminho esta bloqueado e chamar as IAs
+                // de arrombar/construir, tenta um desvio: talvez exista um
+                // caminho limpo a poucos blocos daqui que ja aproxima do Nexus.
+                if (!tryDetour(nexus, distance)) {
+                    markBlocked(nexus);
+                    // Sinal compartilhado com BridgeToNexusGoal: quantos ciclos seguidos
+                    // o mob nao avancou. Um Nexus suspenso no ar e o caso tipico.
+                    data.setStuckTicks(data.getStuckTicks() + 1);
+                }
             } else {
                 data.setObstacle(null);
                 data.setStuckTicks(0);
             }
             data.setLastDistanceToNexus(distance);
         }
+    }
+
+    /**
+     * Reavaliacao de rota: procura, num raio curto em volta do mob, algum
+     * ponto que (a) fique mais perto do Nexus do que ele esta agora e (b) o
+     * pathfinding vanilla consiga alcancar de verdade. Se achar, anda para la
+     * em vez de tratar o obstaculo a frente como intransponivel.
+     *
+     * <p>E o que resolve o caso "tem uma passagem limpa tres blocos ao lado,
+     * mas o mob fica batendo na parede porque ela esta exatamente na linha
+     * reta ate o Nexus". Sem isso o invasor so tinha dois caminhos: quebrar o
+     * que estava na frente ou empilhar bloco para subir — nunca simplesmente
+     * contornar.
+     *
+     * @return true se um desvio foi encontrado e o mob ja esta indo para la
+     */
+    private boolean tryDetour(BlockPos nexus, double currentDistance) {
+        Vec3d center = NexusPathing.center(nexus);
+        BlockPos origin = mob.getBlockPos();
+
+        BlockPos best = null;
+        double bestDistance = currentDistance - MIN_DETOUR_GAIN;
+
+        for (int dx = -DETOUR_RADIUS; dx <= DETOUR_RADIUS; dx++) {
+            for (int dz = -DETOUR_RADIUS; dz <= DETOUR_RADIUS; dz++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    if (dx == 0 && dz == 0) {
+                        continue;
+                    }
+                    BlockPos candidate = origin.add(dx, dy, dz);
+                    double candidateDistance = Math.sqrt(NexusPathing.center(candidate).squaredDistanceTo(center));
+                    if (candidateDistance >= bestDistance) {
+                        continue;
+                    }
+                    bestDistance = candidateDistance;
+                    best = candidate;
+                }
+            }
+        }
+
+        if (best == null) {
+            return false;
+        }
+        // So agora paga o custo da busca de caminho, e so para o melhor
+        // candidato: fazer isso para cada posicao do cubo seria caro demais
+        // rodando em dezenas de mobs ao mesmo tempo.
+        Path path = mob.getNavigation().findPathTo(best, 0);
+        if (path == null || !path.reachesTarget()) {
+            return false;
+        }
+        return mob.getNavigation().startMovingAlong(path, speed);
     }
 
     private void markBlocked(BlockPos nexus) {

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "defendtheblock:item/ladder_zombie_egg"
+  }
+}

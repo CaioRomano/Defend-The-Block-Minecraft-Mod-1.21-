@@ -3,6 +3,11 @@
   "block.defendtheblock.nexus_block": "Nexus Block",
   "item.defendtheblock.arrow_turret": "Arrow Turret",
   "item.defendtheblock.gathering_totem": "Gathering Totem",
+  "item.defendtheblock.ladder_zombie_egg": "Ladder Zombie Egg",
+  "item.defendtheblock.tnt_zombie_egg": "TNT Zombie Egg",
+  "item.defendtheblock.builder_zombie_egg": "Builder Zombie Egg",
+  "item.defendtheblock.fire_zombie_egg": "Firestarter Zombie Egg",
+  "item.defendtheblock.miner_zombie_egg": "Miner Zombie Egg",
   "entity.defendtheblock.arrow_turret": "Arrow Turret",
   "entity.defendtheblock.web_shot": "Web Shot",
   "tooltip.defendtheblock.nexus_block.1": "Once placed it can never be picked up again.",
@@ -57,5 +62,7 @@
   "commands.defendtheblock.multiplier_set": "Mob multiplier set to x%s.",
   "commands.defendtheblock.wave_forced": "Invasion %s was started manually.",
   "commands.defendtheblock.wave_stopped": "The current invasion was cancelled.",
-  "commands.defendtheblock.nexus_removed": "The Nexus was safely removed (no world deletion)."
+  "commands.defendtheblock.nexus_removed": "The Nexus was safely removed (no world deletion).",
+  "tooltip.defendtheblock.invader_egg.1": "Summons an invader with this ability already guaranteed.",
+  "tooltip.defendtheblock.invader_egg.2": "It marches on the Nexus, but does not count toward the wave."
 }

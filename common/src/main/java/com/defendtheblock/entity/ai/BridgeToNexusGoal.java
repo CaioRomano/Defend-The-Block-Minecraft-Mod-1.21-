@@ -1,5 +1,6 @@
 package com.defendtheblock.entity.ai;
 
+import com.defendtheblock.entity.invader.InvaderAbility;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.invader.InvaderData;
 import com.defendtheblock.invasion.NexusManager;
@@ -37,8 +38,17 @@ public class BridgeToNexusGoal extends Goal {
     private static final int MAX_BLOCKS_PLACED = 48;
     private static final int PLACE_INTERVAL = 6;
 
+    // O zumbi construtor faz a mesma coisa, so que muito melhor: comeca quase
+    // imediatamente, coloca bloco em ritmo bem mais rapido e nao para tao
+    // cedo. E a diferenca entre "qualquer invasor eventualmente improvisa uma
+    // rampa" e "este mob aqui veio para construir".
+    private static final int BUILDER_STUCK_THRESHOLD = 1;
+    private static final int BUILDER_MAX_BLOCKS_PLACED = 128;
+    private static final int BUILDER_PLACE_INTERVAL = 2;
+
     private final MobEntity mob;
     private final InvaderData data;
+    private final boolean builder;
 
     private int blocksPlaced;
     private int placeCooldown;
@@ -46,7 +56,20 @@ public class BridgeToNexusGoal extends Goal {
     public BridgeToNexusGoal(MobEntity mob) {
         this.mob = mob;
         this.data = InvaderAccess.of(mob);
+        this.builder = data != null && data.hasAbility(InvaderAbility.BLOCK_BUILDER);
         setControls(EnumSet.of(Control.JUMP));
+    }
+
+    private int stuckThreshold() {
+        return builder ? BUILDER_STUCK_THRESHOLD : STUCK_THRESHOLD;
+    }
+
+    private int maxBlocks() {
+        return builder ? BUILDER_MAX_BLOCKS_PLACED : MAX_BLOCKS_PLACED;
+    }
+
+    private int placeInterval() {
+        return builder ? BUILDER_PLACE_INTERVAL : PLACE_INTERVAL;
     }
 
     @Override
@@ -57,7 +80,7 @@ public class BridgeToNexusGoal extends Goal {
         if (!(mob.getWorld() instanceof ServerWorld world) || NexusManager.getData(world).isGameOver()) {
             return false;
         }
-        if (data.getStuckTicks() < STUCK_THRESHOLD) {
+        if (data.getStuckTicks() < stuckThreshold()) {
             return false;
         }
         // So faz sentido quando o Nexus esta visivelmente acima do mob: e o
@@ -67,7 +90,7 @@ public class BridgeToNexusGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return canStart() && blocksPlaced < MAX_BLOCKS_PLACED;
+        return canStart() && blocksPlaced < maxBlocks();
     }
 
     @Override
@@ -104,7 +127,7 @@ public class BridgeToNexusGoal extends Goal {
         }
         world.setBlockState(below, Blocks.COBBLESTONE.getDefaultState());
         blocksPlaced++;
-        placeCooldown = PLACE_INTERVAL;
+        placeCooldown = placeInterval();
         world.playSound(null, below, SoundEvents.BLOCK_STONE_PLACE, SoundCategory.HOSTILE, 1.0F, 1.0F);
     }
 }

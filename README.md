@@ -110,11 +110,11 @@ disparar nenhuma vez, ela abandona esse alvo** e o ignora por um tempo.
 
 | Nivel | Dano | Alcance | Recarga | Vida | Municao | Custo do upgrade |
 |---|---|---|---|---|---|---|
-| Madeira | 2.0 | 12 | 2.0s | 20 | 64 | — |
-| Ferro | 3.0 | 16 | 1.6s | 30 | 96 | 20x Barra de Ferro |
-| Ouro | 4.0 | 20 | 1.2s | 40 | 128 | 7x Barra de Ouro |
-| Diamante | 5.5 | 26 | 0.8s | 55 | 192 | 4x Diamante |
-| Esmeralda | 7.0 | 32 | 0.5s | 75 | 256 | 2x Esmeralda |
+| Madeira | 2.0 | 14 | 2.0s | 20 | 64 | — |
+| Ferro | 3.0 | 21 | 1.6s | 30 | 96 | 20x Barra de Ferro |
+| Ouro | 4.0 | 28 | 1.2s | 40 | 128 | 7x Barra de Ouro |
+| Diamante | 5.5 | 36 | 0.8s | 55 | 192 | 4x Diamante |
+| Esmeralda | 7.0 | 46 | 0.5s | 75 | 256 | 2x Esmeralda |
 
 O custo cai conforme o material fica mais raro: ferro (facil de juntar em
 quantidade) pede bem mais unidades, esmeralda (o mais raro) pede so 2. O
@@ -171,11 +171,16 @@ blaze e zombified piglin na 3, piglin brute na 5, hoglin na 6, **ghast na 6**
 (antes era so na 8). Da invasao 3 em diante eles sao cerca de um quarto da
 horda.
 
-O **creeper foi bem reduzido** no sorteio de mobs (peso 6, contra 30+ de zumbi
-e esqueleto): com o peso antigo, a horda ficava facilmente dominada por
+O **creeper foi bem reduzido** no sorteio de mobs (peso 6, contra 48 do zumbi
+e 28 do esqueleto): com o peso antigo, a horda ficava facilmente dominada por
 creepers, que so avancam ate o Nexus para se explodir em vez de marchar e
 bater normalmente — deixava as invasoes menos dinamicas e escondia os outros
 mobs.
+
+O **zumbi e a base da horda em dois sentidos diferentes**: alem do maior peso
+no sorteio (que muda a *proporcao*), cada zumbi sorteado nasce acompanhado de
+mais 2 (`zombieExtraSpawnCount`), o que muda a *quantidade*. Na pratica ele
+chega em grupo enquanto os outros tipos chegam um a um.
 
 ### Eles nao sao burros
 
@@ -192,19 +197,54 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
 | Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender) | 100% |
-| Zumbi | **Picareta**: minera o bloco que atrapalha | 12% |
-| Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 10% |
-| Zumbi | **TNT**: planta e acende TNT (ja gatilhada) na frente do muro | 5% |
-| Zumbi | **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 6% |
+| Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 16% |
+| Zumbi | **Construtor**: ergue caminho/pilar de blocos ate o Nexus, muito mais rapido que um invasor comum | 12% |
+| Zumbi | **Picareta**: minera o bloco que atrapalha | 18% |
+| Zumbi | **TNT**: **arremessa** uma unica TNT em arco, como um projetil | 7% |
+| Zumbi | **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 10% |
 
-As chances baixas sao de proposito: a maior parte da horda continua sendo de
-mobs comuns, e o encontro com um zumbi carregando TNT vira um evento.
+Cada zumbi recebe **no maximo uma** dessas habilidades — os sorteios sao
+intervalos exclusivos. E cada uma delas e sorteada por conta propria, sem
+depender do cenario: o zumbi com isqueiro, por exemplo, nasce com a chance
+acima em qualquer invasao; o que depende de haver madeira por perto e so o
+*uso* da habilidade, nao o nascimento dele.
+
+**Quando o Nexus esta suspenso no ar ou bem acima do chao**, as chances de
+zumbi com escadas e de zumbi construtor sao multiplicadas por 2.5
+(`elevatedNexusBuilderBonus`) — sao justamente as duas habilidades que
+resolvem esse cenario, entao a horda passa a trazer bem mais delas.
 
 O zumbi com escadas **nao precisa de uma parede pronta**: se nao houver bloco
 solido para grudar a escada, ele constroi uma colunazinha de 2 blocos de
 cobblestone do proprio lado e prende as escadas nela — o suficiente para a
 horda escalar ate um Nexus suspenso mesmo sem nenhuma construcao por perto
 (contra uma parede de verdade, a escada sobe ate 5 blocos).
+
+O **zumbi bombardeiro** carrega uma unica TNT e a **arremessa em arco**, como
+um projetil, contra o inimigo que estiver perseguindo (jogador ou torreta) ou
+contra o proprio Nexus, a ate 16 blocos. Ela sai ja acesa, entao explode logo
+depois de aterrissar. Como e so uma, depois disso ele vira um zumbi comum.
+
+O **zumbi construtor** faz o que qualquer invasor preso eventualmente faz
+(empilhar bloco para subir), so que muito melhor: comeca quase de imediato,
+coloca bloco em ritmo tres vezes mais rapido e nao para tao cedo.
+
+### Ovos de invasor
+
+A aba do mod tem um **ovo para cada zumbi especial** — escadas, TNT,
+construtor, isqueiro e picareta. O mob nasce com aquela habilidade garantida
+(sem depender do sorteio), ja recrutado pela invasao, e marcha para o Nexus
+normalmente. Ele **nao entra na contagem oficial da onda**, entao invocar
+varios nao bagunca o HUD nem o fechamento da noite — servem para testar cada
+comportamento isoladamente.
+
+### Invasores nao dropam itens
+
+A invasao spawna centenas de mobs por noite. Se cada um dropasse, o chao em
+volta do Nexus viraria uma montanha de carne podre, ossos e equipamento —
+mais lag do que recompensa. A recompensa da noite vem do **saque que o Nexus
+solta ao amanhecer**, nao de farmar a horda. O XP continua caindo normalmente.
+Desligavel em `invadersDropLoot`.
 
 ### Portas: arrombadas, nunca so abertas
 
@@ -231,6 +271,15 @@ outro mob) nao fica perambulando a toa em vez de seguir ate o alvo.
 
 **Esqueletos atiram flechas que danificam o Nexus** quando o acertam
 diretamente, alem do golpe corpo a corpo quando ficam perto.
+
+**Reavaliacao de rota.** Antes de tratar o que esta na frente como um muro a
+ser quebrado, o invasor que empaca procura um **desvio**: varre um cubo de 4
+blocos em volta atras de um ponto que fique mais perto do Nexus *e* que o
+pathfinding vanilla consiga alcancar de verdade. Se achar, ele contorna. E o
+que resolve o caso "existe uma passagem limpa tres blocos ao lado, mas o mob
+fica batendo na parede porque ela esta exatamente na linha reta ate o bloco" —
+antes ele so tinha duas saidas, quebrar o que estava na frente ou empilhar
+bloco para subir, nunca simplesmente dar a volta.
 
 **Se o Nexus estiver num lugar alto ou suspenso no ar**, o invasor que ficar
 preso por tempo demais comeca a **construir um caminho de blocos** (cobblestone)
@@ -404,13 +453,17 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `spawnChunkRadiusMin` / `Max` | 1 / 3 | Area de spawn, em chunks |
 | `attractionChunkRadius` | 3 | Raio de recrutamento, em chunks |
 | `maxConcurrentInvaders` | 100 | Teto absoluto de invasores vivos |
+| `zombieExtraSpawnCount` | 2 | Zumbis extras que nascem junto a cada zumbi sorteado |
+| `invadersDropLoot` | `false` | Invasores dropam itens ao morrer |
 | `mobMultiplier` | 1.0 | Multiplicador global do ritmo |
 | `creeperBreachChance` | 1.0 | Chance de creeper arrombador |
 | `spiderWebChance` | 0.25 | Chance de aranha com teia |
-| `zombiePickaxeChance` | 0.12 | Chance de zumbi mineiro |
-| `zombieLadderChance` | 0.10 | Chance de zumbi carpinteiro |
-| `zombieTntChance` | 0.05 | Chance de zumbi com TNT |
-| `zombieFireStarterChance` | 0.06 | Chance de zumbi com isqueiro (incendeia madeira) |
+| `zombiePickaxeChance` | 0.18 | Chance de zumbi mineiro |
+| `zombieLadderChance` | 0.16 | Chance de zumbi carpinteiro |
+| `zombieTntChance` | 0.07 | Chance de zumbi bombardeiro (arremessa TNT) |
+| `zombieBuilderChance` | 0.12 | Chance de zumbi construtor |
+| `elevatedNexusBuilderBonus` | 2.5 | Multiplicador de escada/construtor com o Nexus suspenso |
+| `zombieFireStarterChance` | 0.10 | Chance de zumbi com isqueiro (incendeia madeira) |
 | `creeperBreachTimeoutTicks` | 100 | Prazo maximo (5s) ate o creeper acender diante de um obstaculo |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
 | `nexusPriorityEngageRange` | 6.0 | Raio (blocos) para brigar com jogador/torreta antes de voltar ao Nexus |
@@ -699,6 +752,63 @@ Outras mudancas desta rodada:
   e o foco continua tendo teto: `maxTurretEngageTicks` (200 ticks) para
   qualquer invasor, seguido de uma carencia antes de poder mirar em outra
   torreta.
+
+**Sexta rodada — conteudo novo e ajustes de balanceamento.** Esta rodada
+mexeu menos em bugs e mais em conteudo:
+
+- **Zumbi como base da horda, de dois jeitos.** O peso no sorteio subiu (36 →
+  48), o que muda a *proporcao*; e cada zumbi sorteado agora nasce com mais 2
+  junto (`zombieExtraSpawnCount`), o que muda a *quantidade*. Sao coisas
+  diferentes de proposito — so mexer no peso deixaria a horda com a mesma
+  densidade, so que mais monotona.
+- **Mais zumbis especiais.** Picareta 12% → 18%, escadas 10% → 16%, isqueiro
+  6% → 10%, TNT 5% → 7%, mais o novo construtor com 12%. O zumbi com isqueiro
+  ja era sorteado independente de haver madeira por perto — o cenario so
+  decide se a habilidade *serve* para alguma coisa, nao se ele nasce.
+- **Zumbi construtor** (`BLOCK_BUILDER`): faz o que qualquer invasor preso
+  eventualmente faz, so que muito melhor — comeca com 1 ciclo de travamento em
+  vez de 3, coloca bloco a cada 2 ticks em vez de 6, e vai ate 128 blocos em
+  vez de 48. Reusa a `BridgeToNexusGoal` ja existente em vez de duplicar a
+  logica.
+- **Nexus suspenso puxa quem resolve o problema.** As chances de zumbi com
+  escada e de construtor sao multiplicadas por `elevatedNexusBuilderBonus`
+  (2.5) quando o Nexus esta flutuando ou bem acima do chao onde a horda nasce.
+- **TNT arremessada.** O zumbi bombardeiro passou a ter **uma unica** TNT e a
+  **arremessa em arco** ate 16 blocos, contra o alvo perseguido ou contra o
+  proprio Nexus, com o pavio ja correndo. E uma `TntEntity` normal com
+  velocidade inicial — nao precisou de entidade nova.
+- **Invasores nao dropam mais itens** (`invadersDropLoot`, padrao false), via
+  dois cortes: `InvaderDropsMixin` cancela `dropLoot` (a loot table) e o
+  `MobEntityMixin` cancela `dropEquipment` (armadura/arma sorteada). O XP
+  continua caindo. Nota de versao: `dropLoot(DamageSource, boolean)` tem a
+  mesma assinatura no 1.20.1 e no 1.21.1 — o parametro `ServerWorld` so entrou
+  no 1.21.2 — entao o mixin pode viver no codigo compartilhado.
+- **Alcance da torreta virou o atributo que define o papel dela.** A
+  progressao era timida (12→32); agora e 14→46. Como o alcance passou a ser
+  medido no plano horizontal, esses numeros valem por igual no chao ou no alto
+  de uma torre.
+- **Ovos de invasor**: cinco itens novos (`InvaderEggItem`), um por
+  habilidade, que invocam o zumbi com aquela habilidade garantida e ja
+  recrutado pela invasao, mas fora da contagem da onda.
+- **Reavaliacao de rota** (`AttackNexusGoal#tryDetour`): antes de marcar o
+  caminho como bloqueado, o mob varre um cubo de raio 4 procurando um ponto
+  mais perto do Nexus que o pathfinding vanilla alcance de verdade
+  (`findPathTo` + `Path#reachesTarget`), e vai para la. O custo da busca de
+  caminho so e pago para o melhor candidato, uma vez a cada ciclo de
+  travamento — fazer isso para cada posicao do cubo, em dezenas de mobs, seria
+  caro demais.
+
+**Sobre "os mobs ficavam menos inertes conforme a noite avancava":** a
+explicacao mais provavel e um efeito colateral do bug de prioridade de goal
+descrito na quarta rodada, combinado com a municao das torretas. Enquanto as
+torretas tinham flecha, elas acertavam mobs, o `RevengeGoal` dava um alvo a
+eles, e com esse alvo por perto a `AttackNexusGoal` cedia o controle de
+movimento — mob parado. Conforme a noite avancava e as torretas iam ficando
+sem municao, cada vez menos mobs recebiam alvo, e a horda voltava a andar
+normalmente. As correcoes da quarta e da quinta rodada (prioridades negativas
+e o `LookControl` zerando o pitch) atacam exatamente essa cadeia, entao o
+sintoma deve sumir junto — mas isso e uma hipotese raciocinada, nao algo que
+eu tenha conseguido observar rodando o jogo.
 
 ---
 

@@ -128,7 +128,15 @@ public final class InvaderEquipment {
             return new ItemStack(Items.LADDER, 16);
         }
         if (data.hasAbility(InvaderAbility.TNT_SAPPER)) {
-            return new ItemStack(Items.TNT, 3);
+            // Uma unica TNT: ele arremessa uma vez (ThrowTntGoal) ou planta uma
+            // vez num obstaculo, e depois vira um zumbi comum.
+            return new ItemStack(Items.TNT, 1);
+        }
+        if (data.hasAbility(InvaderAbility.BLOCK_BUILDER)) {
+            return new ItemStack(Items.COBBLESTONE, 64);
+        }
+        if (data.hasAbility(InvaderAbility.FIRE_STARTER)) {
+            return new ItemStack(Items.FLINT_AND_STEEL);
         }
         return ItemStack.EMPTY;
     }

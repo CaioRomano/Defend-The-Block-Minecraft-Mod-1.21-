@@ -34,7 +34,7 @@ public final class WaveComposition {
             // muito comum a horda ser dominada por creepers, que exigem uma
             // aproximacao suicida (SUICIDE_BREACH) em vez de simplesmente
             // marchar e bater, o que deixava as invasoes menos dinamicas.
-            new Rule(EntityType.ZOMBIE, 1, 36),
+            new Rule(EntityType.ZOMBIE, 1, 48),
             new Rule(EntityType.SKELETON, 1, 28),
             new Rule(EntityType.CREEPER, 1, 6),
             new Rule(EntityType.SPIDER, 2, 12),

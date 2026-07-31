@@ -170,6 +170,55 @@ TURRET_ITEM_ART = [
     "....GGGGGGGG....",
 ]
 
+# ------------------------------------------------------- ovos dos invasores
+#
+# Formato classico de ovo de spawn (mesma silhueta do vanilla), com a casca na
+# cor da carne de zumbi e as manchas na cor da habilidade — o mesmo codigo de
+# cor que o jogador ja associa ao item da habilidade (escada = madeira,
+# TNT = vermelho, construtor = pedra, isqueiro = laranja, picareta = ferro).
+EGG_ART = [
+    "................",
+    "................",
+    ".....SSSSSS.....",
+    "....SbbSSbbS....",
+    "...SbbbSSbbbS...",
+    "...SbbSSSSbbS...",
+    "..SSSSSSSSSSSS..",
+    "..SSbbSSSSbbSS..",
+    "..SSbbSSSSbbSS..",
+    "..SSSSSSSSSSSS..",
+    "...SbbSSSSbbS...",
+    "...SbbbSSbbbS...",
+    "....SSbbbbSS....",
+    ".....SSSSSS.....",
+    "................",
+    "................",
+]
+
+ZOMBIE_SHELL = rgba("#4b7a44")
+ZOMBIE_SHELL_D = rgba("#31552d")
+
+EGG_SPOTS = {
+    "ladder_zombie_egg": rgba("#a9773f"),   # madeira da escada
+    "tnt_zombie_egg": rgba("#d33b30"),      # vermelho da TNT
+    "builder_zombie_egg": rgba("#8d8d94"),  # cinza da pedra
+    "fire_zombie_egg": rgba("#f08a25"),     # laranja do fogo
+    "miner_zombie_egg": rgba("#c2c2cc"),    # ferro da picareta
+}
+
+
+def invader_egg(spot_color):
+    palette = {"S": ZOMBIE_SHELL, "b": spot_color}
+    img = from_art(EGG_ART, palette)
+    px = img.load()
+    # Sombra na metade de baixo, para o ovo nao ficar chapado.
+    for y in range(9, 16):
+        for x in range(16):
+            if px[x, y] == ZOMBIE_SHELL:
+                px[x, y] = ZOMBIE_SHELL_D
+    return img
+
+
 TOTEM_PALETTE = {
     "D": rgba("#6d4f10"),
     "G": rgba("#a37a1e"),
@@ -318,6 +367,8 @@ def main():
     write(nexus_face("bottom"), "block", "nexus_block_bottom.png")
     write(from_art(TURRET_ITEM_ART, TURRET_ITEM_PALETTE), "item", "arrow_turret.png")
     write(from_art(TOTEM_ART, TOTEM_PALETTE), "item", "gathering_totem.png")
+    for name, spot in EGG_SPOTS.items():
+        write(invader_egg(spot), "item", f"{name}.png")
     for tier in range(len(TURRET_TIER_PALETTES)):
         write(turret_entity_texture(tier), "entity", f"arrow_turret_{tier}.png")
 

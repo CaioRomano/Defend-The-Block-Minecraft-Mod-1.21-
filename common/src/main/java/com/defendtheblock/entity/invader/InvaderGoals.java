@@ -7,9 +7,11 @@ import com.defendtheblock.entity.ai.BridgeToNexusGoal;
 import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
 import com.defendtheblock.entity.ai.TargetTurretGoal;
+import com.defendtheblock.entity.ai.ThrowTntGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
 import net.minecraft.entity.ai.RangedAttackMob;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.SpiderEntity;
@@ -60,21 +62,46 @@ public final class InvaderGoals {
 
         if (mob instanceof ZombieEntity) {
             // Uma habilidade por zumbi, no maximo: os intervalos sao exclusivos.
-            double roll = random.nextDouble();
-            double pickaxe = config.zombiePickaxeChance;
-            double ladder = pickaxe + config.zombieLadderChance;
-            double tnt = ladder + config.zombieTntChance;
+            // Escada e construtor vem primeiro na fila justamente porque sao as
+            // duas que ganham bonus quando o Nexus esta suspenso.
+            double bonus = isNexusElevated(mob, data) ? config.elevatedNexusBuilderBonus : 1.0D;
+            double ladder = Math.min(0.5D, config.zombieLadderChance * bonus);
+            double builder = ladder + Math.min(0.5D, config.zombieBuilderChance * bonus);
+            double pickaxe = builder + config.zombiePickaxeChance;
+            double tnt = pickaxe + config.zombieTntChance;
+            double fire = tnt + config.zombieFireStarterChance;
 
-            if (roll < pickaxe) {
-                data.addAbility(InvaderAbility.PICKAXE_MINER);
-            } else if (roll < ladder) {
+            double roll = random.nextDouble();
+            if (roll < ladder) {
                 data.addAbility(InvaderAbility.LADDER_BUILDER);
+            } else if (roll < builder) {
+                data.addAbility(InvaderAbility.BLOCK_BUILDER);
+            } else if (roll < pickaxe) {
+                data.addAbility(InvaderAbility.PICKAXE_MINER);
             } else if (roll < tnt) {
                 data.addAbility(InvaderAbility.TNT_SAPPER);
-            } else if (roll < tnt + config.zombieFireStarterChance) {
+            } else if (roll < fire) {
                 data.addAbility(InvaderAbility.FIRE_STARTER);
             }
         }
+    }
+
+    /**
+     * O Nexus esta suspenso no ar ou bem acima do chao onde a horda nasce?
+     *
+     * <p>Duas evidencias servem: ar logo abaixo do bloco (literalmente
+     * flutuando) ou o bloco estar varios blocos acima de onde o invasor
+     * apareceu (topo de uma torre, por exemplo).
+     */
+    private static boolean isNexusElevated(MobEntity mob, InvaderData data) {
+        BlockPos nexus = data.getNexusPos();
+        if (nexus == null) {
+            return false;
+        }
+        if (mob.getWorld().getBlockState(nexus.down()).isAir()) {
+            return true;
+        }
+        return nexus.getY() - mob.getBlockY() >= 4;
     }
 
     /**
@@ -107,6 +134,11 @@ public final class InvaderGoals {
         }
         if (data.hasAbility(InvaderAbility.WEB_SHOT)) {
             accessor.defendtheblock$getGoalSelector().add(-1, new SpiderWebShotGoal(mob));
+        }
+        if (data.hasAbility(InvaderAbility.TNT_SAPPER)) {
+            // Arremesso vem antes de tudo: ele so acontece uma vez (o zumbi
+            // carrega uma unica TNT) e resolve alvo ou obstaculo a distancia.
+            accessor.defendtheblock$getGoalSelector().add(-4, new ThrowTntGoal(mob));
         }
         accessor.defendtheblock$getGoalSelector().add(0, new AttackNexusGoal(mob, MOVE_SPEED));
 

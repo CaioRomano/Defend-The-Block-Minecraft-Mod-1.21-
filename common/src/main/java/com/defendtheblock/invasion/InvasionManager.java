@@ -177,6 +177,17 @@ public final class InvasionManager {
             if (!spawnInvader(world, data, type, wave)) {
                 break;
             }
+            // O zumbi e a base da horda: ele chega em grupo, os outros tipos
+            // chegam um a um. Isso e diferente de so aumentar o peso no
+            // sorteio (que mudaria a proporcao) — aqui muda a quantidade.
+            if (type == EntityType.ZOMBIE) {
+                for (int extra = 0; extra < DtbConfig.get().zombieExtraSpawnCount; extra++) {
+                    if (data.getActiveInvaders().size() >= cap
+                            || !spawnInvader(world, data, EntityType.ZOMBIE, wave)) {
+                        break;
+                    }
+                }
+            }
         }
     }
 

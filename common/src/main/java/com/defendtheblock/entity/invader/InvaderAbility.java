@@ -26,7 +26,12 @@ public enum InvaderAbility {
     /** Zumbi com TNT: planta e acende TNT na frente do obstaculo. */
     TNT_SAPPER,
     /** Zumbi com isqueiro: incendeia obstaculos de madeira em vez de quebra-los. */
-    FIRE_STARTER;
+    FIRE_STARTER,
+    /**
+     * Zumbi construtor: carrega blocos e ergue caminho/pilar ate o Nexus muito
+     * mais rapido e mais cedo que um invasor comum.
+     */
+    BLOCK_BUILDER;
 
     private static final InvaderAbility[] VALUES = values();
 

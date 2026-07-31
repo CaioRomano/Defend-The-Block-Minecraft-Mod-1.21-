@@ -1,5 +1,6 @@
 package com.defendtheblock.client;
 
+import com.defendtheblock.item.InvaderEggItem;
 import com.defendtheblock.registry.ModItems;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -32,6 +33,9 @@ public final class TooltipLines {
             lines.add(Text.translatable("tooltip.defendtheblock.arrow_turret.4").formatted(Formatting.DARK_GRAY));
         } else if (stack.isOf(ModItems.GATHERING_TOTEM)) {
             lines.add(Text.translatable("tooltip.defendtheblock.gathering_totem.1").formatted(Formatting.GRAY));
+        } else if (stack.getItem() instanceof InvaderEggItem) {
+            lines.add(Text.translatable("tooltip.defendtheblock.invader_egg.1").formatted(Formatting.GRAY));
+            lines.add(Text.translatable("tooltip.defendtheblock.invader_egg.2").formatted(Formatting.DARK_GRAY));
         }
     }
 }
