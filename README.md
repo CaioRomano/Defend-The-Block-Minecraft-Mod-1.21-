@@ -1171,6 +1171,80 @@ aqui — e assinatura assumida ja derrubou este mod duas vezes. O custo e que o
 mob chega a ser criado antes de sumir, em vez de a tentativa de spawn ser
 barrada antes; na pratica isso e invisivel em jogo.
 
+**Decima terceira rodada — auditoria de codigo morto e dos caminhos quentes.**
+Esta rodada nao adiciona nenhuma feature: e uma varredura pedida sobre o codigo
+existente, atras de otimizacao, simplificacao e coisa orfa. Saiu em dois
+commits de proposito, para que o de risco zero pudesse ser separado do que
+mexe em IA.
+
+O que a varredura *nao* achou, e vale registrar: das 53 chaves de
+`DtbConfig`, **nenhuma** esta orfa — todas sao lidas em algum lugar. Tambem
+nao havia nenhum import sem uso nem nenhum campo privado escrito e nunca
+lido.
+
+**Commit 1 — remocao de codigo morto** (sem mudanca de comportamento):
+`InvaderAbility.VALUES`/`toMask()`/`all()`, `InvaderData.getAbilityMask()`
+/`setAbilityMask()`, `InvasionData.removeInvader()`, `TurretEntity.getAmmo()`,
+`WaveComposition.unlocked()`. `NexusZones.noSpawnRadius()` virou `private`, que
+e todo o uso que ela tem.
+
+O caso que exigiu decisao foi `countsForWave`: era escrito, **persistido no
+NBT** e nao tinha nenhum leitor. O ultimo sumiu quando `despawnAllInvaders`
+passou a limpar todo invasor em vez de apenas os contados. Havia duas saidas —
+voltar a usa-la ou remover o conceito. Removida, porque quem realmente
+expressa "conta para a onda" e o conjunto `activeInvaders`: ele e alimentado
+so pelo lote de `spawnInvader` (nunca por mob atraido ou por ovo) e e o que o
+HUD le via `getMobsAlive()`. Ter as duas coisas era ter duas fontes para a
+mesma resposta, e uma delas sem consumidor. Consequencia de save: a chave
+`"Counts"` deixa de ser escrita, e saves antigos que a tenham simplesmente a
+ignoram ao carregar.
+
+**Commit 2 — caminhos quentes e duplicacoes.** O achado mais serio foi na
+`TurretShootGoal`: `blockedByTurret` fazia a sua propria busca de entidades e
+e chamado de dentro de `isEngageable`, que por sua vez roda para **cada
+candidato** dentro de `findBestTarget`. Ou seja, uma varredura de N mobs
+custava N buscas de entidade, por rescan, por torreta — o pior laco do mod, e
+justamente numa base cheia de torretas com uma horda em cima. Agora a lista de
+torretas vizinhas e buscada uma vez por rescan e reusada; torreta nao anda,
+entao ficar ate 5 ticks desatualizada e inofensivo, e o javadoc antigo ja
+prometia a desobstrucao so "no proximo rescan". `findBestTarget` tambem passou
+a medir a distancia **antes** de chamar `isEngageable`, porque quem ja esta
+mais longe que o melhor ate agora nao pode vencer e nao precisa pagar
+cone/visada/raycast.
+
+Alocacao em laco de tick, os outros dois pontos: `NexusPathing#findCover` roda
+todo tick para cada invasor em alcance do Nexus e criava um `Vec3d` mais um
+`BlockPos` a cada 0.25 bloco de linha; virou aritmetica escalar com um
+`BlockPos.Mutable`. `AttackNexusGoal#tryDetour` varre 243 posicoes e alocava
+dois objetos por posicao so para medir distancia; virou escalar comparado ao
+quadrado, com objeto so para o melhor candidato.
+
+Duplicacoes que agora tem fonte unica: o alcance de golpe no Nexus (2.8) era
+uma constante em `AttackNexusGoal` e outra igual em `YieldToWorkerGoal` —
+duas copias abriam a possibilidade de uma faixa em que o mob recuaria
+exatamente onde deveria atacar, que e a classe de bug que a nona e a decima
+segunda rodada ja pagaram para aprender. O `Math.floorDiv(timeOfDay, 24000)`
+estava em tres lugares e virou `NexusManager#currentDay`. E
+`NexusPathing#center` passou a delegar para `Vec3d.ofCenter`, que faz
+exatamente a mesma conta.
+
+Simplificacoes menores: `announceCountdown` tinha tres condicoes onde uma
+basta (passado o dia da estreia, a carencia acabou e a contagem ja e zero por
+definicao); `YieldToWorkerGoal.shouldContinue` chamava `clearance()` duas
+vezes na mesma expressao; e `InvasionData.getPlacedBlocks()` devolvia o
+conjunto vivo, o que deixava qualquer chamador furar em silencio o teto de
+20000 posicoes e o `markDirty()` de `addPlacedBlock`/`clearPlacedBlocks` —
+agora e uma view imutavel.
+
+Verificacao desta rodada: `javac` estrutural nas duas versoes, sem erro, sem
+simbolo removido ainda referenciado e sem import orfao. **Igual as rodadas
+anteriores, nao passou por `buildAll` nem por teste em jogo.** Como o commit 2
+mexe em IA, o que conferir em jogo e: torreta com outra torreta na frente
+continua sem atirar atraves dela e volta a atirar quando a da frente e
+destruida; mob empacado continua contornando parede; Nexus emparedado continua
+sem tomar dano; e a horda continua abrindo espaco para quem trabalha sem
+deixar de bater no bloco quando ja esta em alcance.
+
 ---
 
 ## Licenca
