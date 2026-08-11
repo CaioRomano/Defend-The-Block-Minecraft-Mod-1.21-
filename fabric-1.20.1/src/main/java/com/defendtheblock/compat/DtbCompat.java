@@ -14,6 +14,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
@@ -146,6 +147,31 @@ public final class DtbCompat {
 
     public static void applySlowness(LivingEntity target, int duration, int amplifier) {
         target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, duration, amplifier));
+    }
+
+    /**
+     * Faz a flecha carregar um efeito, como uma flecha com pocao.
+     *
+     * <p>Aqui no 1.20.1 {@code StatusEffects.X} e um {@code StatusEffect}
+     * direto; no 1.21 e {@code RegistryEntry<StatusEffect>}. Por isso quem
+     * chama passa so o <b>nome</b> do efeito e cada versao monta o seu.
+     *
+     * @param effect nome curto vindo de {@code TurretModifier#arrowEffect()}
+     */
+    public static void applyArrowEffect(PersistentProjectileEntity arrow, String effect,
+                                        int duration, int amplifier) {
+        if (!(arrow instanceof ArrowEntity tipped)) {
+            // Flecha espectral nao carrega efeito: ela tem o brilho dela.
+            return;
+        }
+        StatusEffect type = switch (effect) {
+            case "slowness" -> StatusEffects.SLOWNESS;
+            case "poison" -> StatusEffects.POISON;
+            default -> null;
+        };
+        if (type != null) {
+            tipped.addEffect(new StatusEffectInstance(type, duration, Math.max(0, amplifier)));
+        }
     }
 
     // ------------------------------------------------------------------- rede

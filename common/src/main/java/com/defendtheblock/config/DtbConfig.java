@@ -328,6 +328,36 @@ public final class DtbConfig {
      */
     public double turretVerticalFovDegrees = 60.0D;
 
+    // ------------------------------------------------- modulos da torreta
+    // Cada valor e o ganho POR GRAU do modulo correspondente, e cada torreta
+    // so aceita dois tipos de modulo — entao o teto real de qualquer um deles
+    // e "valor x grau maximo", nao a soma de todos. Ver TurretModifier.
+    /** Alcance a mais por grau do modulo de Alcance (0.15 = +15%). */
+    public double turretModuleRangePerGrade = 0.15D;
+    /** Dano a mais por grau do modulo de Dano. */
+    public double turretModuleDamagePerGrade = 0.20D;
+    /** Vida maxima a mais por grau do modulo de Fortificacao. */
+    public double turretModuleHealthPerGrade = 0.25D;
+    /** Capacidade de municao a mais por grau do modulo de Aljava. */
+    public double turretModuleAmmoPerGrade = 0.50D;
+    /** Reducao do tempo de recarga por grau do modulo de Cadencia (0.15 = -15%). */
+    public double turretModuleReloadPerGrade = 0.15D;
+    /**
+     * Chance por grau de o modulo de Catador poupar a flecha do disparo.
+     *
+     * <p>Tem teto de 0.9 no codigo: mesmo com uma config exagerada a torreta
+     * nunca vira municao infinita, senao o carregador (e o modulo de Aljava
+     * junto) perderia o sentido.
+     */
+    public double turretModuleSavePerGrade = 0.20D;
+    /**
+     * Segundos de efeito por grau dos modulos de Gelo e Veneno.
+     *
+     * <p>O nivel do efeito acompanha o grau: grau 1 aplica o efeito I, grau 3
+     * aplica o III.
+     */
+    public double turretModuleEffectSeconds = 2.0D;
+
     // --------------------------------------------------------------- totem
     /** Cooldown do Totem de Reuniao, em ticks. */
     public int totemCooldown = 600;

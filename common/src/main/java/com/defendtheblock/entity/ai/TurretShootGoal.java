@@ -3,6 +3,8 @@ package com.defendtheblock.entity.ai;
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.entity.invader.InvaderAccess;
 import com.defendtheblock.entity.turret.TurretEntity;
+import com.defendtheblock.entity.turret.TurretModifier;
+import com.defendtheblock.entity.turret.TurretModifiers;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.Monster;
@@ -15,6 +17,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Mira, dispara <b>e escolhe o proprio alvo</b> da torreta.
@@ -141,10 +144,12 @@ public class TurretShootGoal extends Goal {
         }
 
         turret.setCooldown(turret.getReloadTicks());
-        int shots = turret.getMultishot() > 0 ? 3 : 1;
+        int shots = turret.getShotCount();
         for (int i = 0; i < shots; i++) {
             fire(world, target, i, shots);
         }
+        // Uma unica chamada para o disparo inteiro: e isto que faz Multitiro e o
+        // modulo de Salva sairem de graca em municao, por design.
         turret.consumeAmmo();
         // Disparou: o alvo esta funcionando, zera o relogio da rede de seguranca.
         ticksOnTarget = 0;
@@ -255,6 +260,32 @@ public class TurretShootGoal extends Goal {
         return best;
     }
 
+    /**
+     * Carrega a flecha com os efeitos dos modulos instalados (Gelo, Veneno).
+     *
+     * <p>Isto e independente da <b>flecha com efeito do vanilla</b>: se o
+     * carregador estiver com flecha de poção, ela ja chega aqui com o efeito
+     * dela vindo do proprio {@code ItemStack} de municao. Os modulos somam por
+     * cima, entao uma torreta de Veneno atirando flecha de lentidao aplica os
+     * dois.
+     *
+     * <p>Quem monta o {@code StatusEffectInstance} e a camada de compat: no
+     * 1.20.1 {@code StatusEffects.SLOWNESS} e um {@code StatusEffect} direto, no
+     * 1.21 e um {@code RegistryEntry<StatusEffect>} — a mesma divergencia que ja
+     * derrubou este mod com os sons de besta, entao o codigo compartilhado nao
+     * toca nesses tipos.
+     */
+    private void applyModuleEffects(PersistentProjectileEntity arrow) {
+        for (Map.Entry<TurretModifier, Integer> entry : turret.modules().installed().entrySet()) {
+            String effect = entry.getKey().arrowEffect();
+            if (effect == null) {
+                continue;
+            }
+            int grade = entry.getValue();
+            DtbCompat.applyArrowEffect(arrow, effect, TurretModifiers.effectDuration(grade), grade - 1);
+        }
+    }
+
     private void fire(ServerWorld world, LivingEntity target, int index, int shots) {
         PersistentProjectileEntity arrow = DtbCompat.createArrow(world, turret, turret.getAmmoStack());
         arrow.setPosition(turret.getX(), turret.getEyeY() + 0.25D, turret.getZ());
@@ -275,6 +306,7 @@ public class TurretShootGoal extends Goal {
         if (turret.getFlame() > 0) {
             arrow.setFireTicks(100);
         }
+        applyModuleEffects(arrow);
         world.spawnEntity(arrow);
     }
 }

@@ -1,6 +1,7 @@
 package com.defendtheblock.registry;
 
 import com.defendtheblock.compat.DtbCompat;
+import com.defendtheblock.entity.turret.TurretModifier;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -32,6 +33,11 @@ public final class ModItemGroups {
                 entries.add(ModItems.BUILDER_ZOMBIE_EGG);
                 entries.add(ModItems.FIRE_ZOMBIE_EGG);
                 entries.add(ModItems.MINER_ZOMBIE_EGG);
+                // Os livros de modulo entram na ordem do enum, entao a aba
+                // sempre reflete a ordem em que eles estao documentados.
+                for (TurretModifier modifier : TurretModifier.values()) {
+                    entries.add(ModItems.TURRET_MODULES.get(modifier));
+                }
             })
             .build();
 

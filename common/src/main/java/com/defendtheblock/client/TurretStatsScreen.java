@@ -1,5 +1,7 @@
 package com.defendtheblock.client;
 
+import com.defendtheblock.entity.turret.TurretModifier;
+import com.defendtheblock.entity.turret.TurretModifiers;
 import com.defendtheblock.network.TurretStatsData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -162,6 +164,16 @@ public final class TurretStatsScreen extends Screen {
         lines.add(new TextLine(Text.translatable("turret.defendtheblock.ammo_line", data.ammo, data.maxAmmo),
                 0xFFE3E3EC));
         lines.add(new SpacerLine());
+        lines.add(new TextLine(Text.translatable("screen.defendtheblock.modules_title",
+                data.modules.size(), TurretModifiers.MAX_SLOTS), 0xFFC9A6FF));
+        if (data.modules.isEmpty()) {
+            lines.add(new TextLine(Text.translatable("screen.defendtheblock.modules_empty"), 0xFF9A93AD));
+        } else {
+            for (String entry : data.modules) {
+                lines.add(new TextLine(moduleLabel(entry), 0xFFE3E3EC));
+            }
+        }
+        lines.add(new SpacerLine());
         lines.add(new TextLine(Text.translatable("screen.defendtheblock.repair_hint", itemName(data.repairItemId)),
                 0xFFAFD8FF));
         lines.add(data.nextUpgradeItemId.isEmpty()
@@ -258,6 +270,32 @@ public final class TurretStatsScreen extends Screen {
             context.fill(left, y, left + filled, y + 6, barColor);
             return super.draw(context, left, y + 8);
         }
+    }
+
+    /**
+     * Transforma o {@code "id:grau"} que veio pela rede em "Nome III".
+     *
+     * <p>Um id desconhecido (cliente com versao diferente do mod) aparece cru
+     * em vez de derrubar a aba.
+     */
+    private static Text moduleLabel(String entry) {
+        int split = entry.lastIndexOf(':');
+        if (split <= 0) {
+            return Text.literal(entry);
+        }
+        TurretModifier modifier = TurretModifier.byId(entry.substring(0, split));
+        if (modifier == null) {
+            return Text.literal(entry);
+        }
+        String grade = switch (entry.substring(split + 1)) {
+            case "1" -> "I";
+            case "2" -> "II";
+            case "3" -> "III";
+            case "4" -> "IV";
+            default -> entry.substring(split + 1);
+        };
+        return Text.translatable("screen.defendtheblock.module_entry",
+                Text.translatable(modifier.translationKey()), grade);
     }
 
     private static Text itemName(String itemId) {

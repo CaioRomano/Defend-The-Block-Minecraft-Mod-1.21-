@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " S ",
+    "FBF",
+    " S "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:spider_eye"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "F": {
+      "item": "minecraft:fermented_spider_eye"
+    }
+  },
+  "result": {
+    "item": "defendtheblock:turret_module_venom",
+    "count": 1
+  }
+}

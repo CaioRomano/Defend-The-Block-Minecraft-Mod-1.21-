@@ -79,6 +79,8 @@ I I I      I = Barra de Ferro
 | Material do nivel atual, com a torreta ferida | **Repara vida** |
 | Material do proximo nivel, com a torreta com vida cheia | Contribui para o upgrade (acumula, sobe de nivel sozinha ao completar) |
 | Livro encantado | Aplica Poder, Impacto, Chama, Perfuracao, Multitiro ou Carga Rapida |
+| **Livro de modulo** | Instala ou sobe o grau de um modulo (veja abaixo) |
+| **Rebolo** | Desmonta todos os modulos (o rebolo nao e gasto) |
 
 Nao ha mais texto de status no chat: o botao direito de mao vazia abre uma aba
 mostrando nivel, vida, municao, dano/alcance/recarga, qual material repara a
@@ -93,6 +95,57 @@ escolha.
 
 Ela **so atira quando esta de fato apontada para o alvo** — gira primeiro, dispara
 depois, nunca o contrario.
+
+#### Modulos: personalizar em vez de so subir de nivel
+
+O **nivel** sobe tudo junto — dano, alcance, vida, recarga e carregador — e por
+isso nao permite escolha nenhuma: duas torretas de esmeralda sao identicas. Os
+**modulos** existem para o outro lado. Cada um e um livro proprio do mod, com
+receita propria, e mexe em **um** eixo so.
+
+A regra que faz isso virar decisao em vez de checklist: **cada torreta aceita
+no maximo 2 tipos de modulo**. Montar uma torreta e escolher o que ela faz de
+melhor — alcance+cadencia vira artilharia de apoio, dano+veneno vira posto de
+execucao, aljava+catador quase nao precisa de reabastecimento.
+
+| Modulo | Graus | Por grau |
+|---|---|---|
+| **Alcance** | 3 | +15% de alcance |
+| **Dano** | 3 | +20% de dano por flecha |
+| **Fortificacao** | 3 | +25% de vida maxima da torreta |
+| **Cadencia** | 3 | −15% no tempo de recarga |
+| **Aljava** | 3 | +50% na capacidade do carregador |
+| **Salva** | 2 | +1 flecha por disparo, **sem gastar municao extra** |
+| **Catador** | 3 | +20% de chance de atirar **sem gastar flecha** |
+| **Gelo** | 3 | as flechas aplicam Lentidao |
+| **Veneno** | 3 | as flechas aplicam Veneno |
+
+O **grau nao e um item separado**: aplicar o mesmo livro de novo na mesma
+torreta sobe o grau ate o maximo daquele modulo. Isso mantem **uma receita por
+tipo** em vez de uma receita por combinacao de tipo e grau — a alternativa
+seriam 25 itens em vez de 9.
+
+Detalhes que valem saber:
+
+- **Salva e Catador nao se anulam.** O disparo inteiro sempre custou uma flecha
+  so, independente de quantas saem (o Multitiro do vanilla ja funcionava
+  assim); a Salva aumenta quantas saem, o Catador as vezes nao cobra nem essa
+  uma.
+- **Gelo e Veneno somam com a flecha do carregador.** Se a torreta estiver
+  carregada com flecha de pocao, o efeito dela continua valendo e o do modulo
+  entra por cima.
+- **Modulo errado nao e permanente.** Clicar com um **rebolo** desmonta tudo —
+  os livros nao voltam, igual ao rebolo do vanilla, mas os slots ficam livres.
+  Sem isso, instalar o modulo errado condenaria a torreta.
+- **O livro so e consumido quando algo muda.** Recusa por falta de slot ou por
+  grau maximo devolve o item.
+- **Cadencia soma com Carga Rapida**, nao substitui: o modulo multiplica o
+  tempo que ja saiu do encantamento.
+- Os graus aparecem na aba de estatisticas, junto com quantos slots estao em
+  uso.
+
+Tudo configuravel em `turretModule*PerGrade` — pondo um deles em `0.0` aquele
+modulo deixa de ter efeito sem sumir do jogo.
 
 **Cone de visao.** A besta gira 360 graus na horizontal, mas so inclina ate 60
 graus para cima e para baixo (`turretVerticalFovDegrees`). Isso deixa dois
@@ -655,6 +708,13 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `doorBreakTicksPerHardness` | 10 | Ritmo de arrombamento de portas (ferro demora mais que madeira) |
 | `turretRepairHealthPerItem` | 8.0 | Vida recuperada por unidade de material usada no reparo |
 | `turretVerticalFovDegrees` | 60.0 | Abertura vertical do cone de visao da torreta (define os pontos cegos) |
+| `turretModuleRangePerGrade` | 0.15 | Alcance a mais por grau do modulo de Alcance |
+| `turretModuleDamagePerGrade` | 0.20 | Dano a mais por grau do modulo de Dano |
+| `turretModuleHealthPerGrade` | 0.25 | Vida a mais por grau do modulo de Fortificacao |
+| `turretModuleAmmoPerGrade` | 0.50 | Municao a mais por grau do modulo de Aljava |
+| `turretModuleReloadPerGrade` | 0.15 | Recarga a menos por grau do modulo de Cadencia |
+| `turretModuleSavePerGrade` | 0.20 | Chance por grau de o Catador poupar a flecha (teto 0.9) |
+| `turretModuleEffectSeconds` | 2.0 | Segundos de efeito por grau dos modulos de Gelo e Veneno |
 | `invaderFieldOfViewDegrees` | 120.0 | Campo de visao do invasor para escolher jogador/torreta como alvo |
 | `workerClearanceRadius` | 3.0 | Espaco que a horda desocupa em volta de quem cava/constroi |
 | `gracePeriodDays` | 3 | Dias de carencia entre colocar o Nexus e a primeira invasao |
@@ -1331,6 +1391,69 @@ realmente enche e mantem o teto, se o servidor aguenta 100 vivos, e se 3x de
 vida com 90% de armadura de diamante nao deixou a torreta incapaz de matar
 qualquer coisa — esse ultimo e o risco de balanceamento mais provavel, e
 `invaderHealthMultiplierMax` e o botao para ajustar.
+
+**Decima quinta rodada — modulos da torreta.** O pedido foi separar
+*personalizacao* de *upgrade*: alem de subir de nivel, poder escolher atributos
+isolados via livro, com graus e receita propria por tipo, ate 2 por torreta.
+
+O desenho central e o **teto de 2 tipos**. Sem ele o sistema viraria mais uma
+barra de progresso — uma torreta de fim de jogo simplesmente teria todos os
+nove modulos. Com ele, montar torreta vira decisao, e duas torretas de
+esmeralda lado a lado podem ter papeis diferentes.
+
+Duas escolhas de modelagem que mereciam alternativa e nao a tem por bons
+motivos:
+
+- **O grau nao e um item.** Aplicar o mesmo livro de novo sobe o grau. A
+  alternativa (um item por combinacao tipo+grau) daria 25 itens, 25 receitas e
+  25 texturas para expressar a mesma coisa. Assim sao 9 de cada, e a progressao
+  de grau reaproveita o gesto que o jogador ja usa para dar material de upgrade
+  a torreta.
+- **O livro nao e um `EnchantedBookItem` de verdade.** Encantamento proprio
+  exigiria registrar `Enchantment`s, e o registro mudou completamente entre
+  1.20.1 (registro simples) e 1.21 (registry dinamico via datapack) — dois
+  caminhos inteiramente diferentes para um sistema que a torreta ja consegue
+  ler por conta propria. Aqui o livro e um item comum e quem entende o efeito e
+  a torreta.
+
+Detalhe que ja estava certo e so foi generalizado: o disparo **sempre** custou
+uma flecha so, independente de quantas saem — o Multitiro vanilla ja se
+comportava assim porque `consumeAmmo()` e chamado uma vez por disparo, nao uma
+por flecha. O modulo de Salva entra nessa mesma regra, entao "atirar mais de
+uma flecha sem gastar mais de uma" nao precisou de nenhuma excecao.
+
+Foi preciso um caminho de saida: sem ele, instalar o modulo errado ocuparia um
+dos dois slots para sempre e a unica solucao seria destruir a torreta. Clicar
+com **rebolo** desmonta tudo (os livros nao voltam, igual ao vanilla).
+
+Riscos e mitigacoes, na ordem:
+
+- **`ArrowEntity#addEffect` e a maior aposta desta rodada.** E a primeira vez
+  que o mod faz uma flecha carregar efeito, e `StatusEffects.X` e
+  `StatusEffect` no 1.20.1 mas `RegistryEntry<StatusEffect>` no 1.21 — a mesma
+  divergencia que ja derrubou este mod com os sons de besta. Por isso a
+  chamada vive em `DtbCompat.applyArrowEffect`, uma por versao: se a assinatura
+  estiver errada e **erro de compilacao numa versao so**, nao crash de mixin em
+  jogo. O codigo compartilhado passa apenas o nome do efeito como texto e nunca
+  toca nesses tipos.
+- **Brilho de encantado nao e forcado por codigo.** `Item#hasGlint` existia no
+  1.20.1 e sumiu no 1.20.5, que passou a usar o componente
+  `enchantment_glint_override`. Sao dois caminhos incompativeis para um detalhe
+  cosmetico, entao quem faz o livro parecer encantado e a textura.
+- **Som do rebolo trocado por precaucao.** `BLOCK_GRINDSTONE_USE` seria o
+  natural, mas parte dos campos de `SoundEvents` virou `RegistryEntry` no 1.21
+  e nao da para saber quais sem compilar. Usei `BLOCK_ANVIL_USE` grave, que ja
+  e usado neste mesmo arquivo e portanto e comprovadamente seguro nas duas.
+- **As nove texturas sao geradas por script e foram inspecionadas** (livro de
+  capa escura, lombada e brasao central na cor do modulo). Passaram por duas
+  revisoes: a segunda versao ficou pior que a primeira — virou listras
+  coloridas em vez de livro — e foi refeita.
+
+Verificacao: `javac` estrutural nas duas versoes sem erro, sem import orfao, os
+45 JSON validos, e conferido que os 9 modulos tem lang (3 chaves cada), modelo,
+textura e receita nas duas versoes — com o campo de resultado certo em cada
+(`item` no 1.20.1, `id` no 1.21.1). `en_us` e `pt_br` tem exatamente o mesmo
+conjunto de chaves. **Nao passou por `buildAll` nem por teste em jogo.**
 
 ---
 

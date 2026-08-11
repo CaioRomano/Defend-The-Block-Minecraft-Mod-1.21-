@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " S ",
+    "SBS",
+    " E "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    }
+  },
+  "result": {
+    "id": "defendtheblock:turret_module_range",
+    "count": 1
+  }
+}

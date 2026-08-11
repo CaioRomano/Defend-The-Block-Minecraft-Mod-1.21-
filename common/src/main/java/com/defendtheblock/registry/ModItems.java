@@ -2,15 +2,20 @@ package com.defendtheblock.registry;
 
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.entity.invader.InvaderAbility;
+import com.defendtheblock.entity.turret.TurretModifier;
 import com.defendtheblock.item.ArrowTurretItem;
 import com.defendtheblock.item.GatheringTotemItem;
 import com.defendtheblock.item.InvaderEggItem;
+import com.defendtheblock.item.TurretModuleItem;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Rarity;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 public final class ModItems {
 
@@ -34,6 +39,20 @@ public final class ModItems {
                 EntityType.ZOMBIE, ability);
     }
 
+    /**
+     * Um livro por modulo de torreta, criado direto a partir do enum: acrescentar
+     * um modulo novo em {@link TurretModifier} ja cria, registra e poe na aba o
+     * item dele, sem tocar em mais nada aqui.
+     */
+    public static final Map<TurretModifier, Item> TURRET_MODULES = new EnumMap<>(TurretModifier.class);
+
+    static {
+        for (TurretModifier modifier : TurretModifier.values()) {
+            TURRET_MODULES.put(modifier,
+                    new TurretModuleItem(new Item.Settings().maxCount(16).rarity(Rarity.UNCOMMON), modifier));
+        }
+    }
+
     private ModItems() {
     }
 
@@ -46,6 +65,10 @@ public final class ModItems {
         Registry.register(Registries.ITEM, DtbCompat.id("builder_zombie_egg"), BUILDER_ZOMBIE_EGG);
         Registry.register(Registries.ITEM, DtbCompat.id("fire_zombie_egg"), FIRE_ZOMBIE_EGG);
         Registry.register(Registries.ITEM, DtbCompat.id("miner_zombie_egg"), MINER_ZOMBIE_EGG);
+
+        for (Map.Entry<TurretModifier, Item> entry : TURRET_MODULES.entrySet()) {
+            Registry.register(Registries.ITEM, DtbCompat.id(entry.getKey().itemId()), entry.getValue());
+        }
 
         // Faz Block#asItem() devolver o BlockItem certo (pick block, drops...).
         Item.BLOCK_ITEMS.put(ModBlocks.NEXUS_BLOCK, NEXUS_BLOCK);

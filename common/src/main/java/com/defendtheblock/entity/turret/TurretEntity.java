@@ -3,6 +3,7 @@ package com.defendtheblock.entity.turret;
 import com.defendtheblock.compat.DtbCompat;
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.ai.TurretShootGoal;
+import com.defendtheblock.item.TurretModuleItem;
 import com.defendtheblock.network.TurretStatsData;
 import com.defendtheblock.registry.ModItems;
 import net.minecraft.entity.EntityType;
@@ -29,7 +30,9 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +73,9 @@ public class TurretEntity extends MobEntity {
     private int piercing;
     private int multishot;
     private int quickCharge;
+
+    /** Personalizacao por modulo, paralela e independente do nivel. */
+    private final TurretModifiers modules = new TurretModifiers();
 
     private int cooldown;
 
@@ -171,22 +177,38 @@ public class TurretEntity extends MobEntity {
         return tier;
     }
 
+    /** Os modulos instalados. Nunca null; vazio quando a torreta e "pura". */
+    public TurretModifiers modules() {
+        return modules;
+    }
+
     public double getRange() {
-        return tier().range();
+        return tier().range() * modules.rangeMultiplier();
     }
 
     public double getArrowDamage() {
-        double base = tier().damage() * (1.0D + power * 0.25D);
+        double base = tier().damage() * (1.0D + power * 0.25D) * modules.damageMultiplier();
         return base * DtbConfig.get().turretDamageMultiplier;
     }
 
     public int getReloadTicks() {
+        // O modulo de Cadencia multiplica DEPOIS da Carga Rapida vanilla, entao
+        // os dois se somam em vez de um substituir o outro.
         int reload = tier().reload() - quickCharge * 3;
-        return Math.max(4, reload);
+        return Math.max(3, (int) Math.round(reload * modules.reloadMultiplier()));
     }
 
     public int getMaxAmmo() {
-        return tier().maxAmmo();
+        return (int) Math.max(1L, Math.round(tier().maxAmmo() * modules.ammoMultiplier()));
+    }
+
+    /**
+     * Quantas flechas saem por disparo. Multitiro do vanilla vale 3, e cada grau
+     * do modulo de Salva soma mais uma — todas custando <b>uma</b> flecha so
+     * (ver {@link #consumeAmmo()}, chamado uma unica vez por disparo).
+     */
+    public int getShotCount() {
+        return (multishot > 0 ? 3 : 1) + modules.extraArrows();
     }
 
     public boolean hasAmmo() {
@@ -215,6 +237,11 @@ public class TurretEntity extends MobEntity {
 
     public void consumeAmmo() {
         if (DtbConfig.get().turretConsumesAmmo && ammo > 0) {
+            // Catador: as vezes o disparo simplesmente nao gasta flecha.
+            double save = modules.ammoSaveChance();
+            if (save > 0.0D && getRandom().nextDouble() < save) {
+                return;
+            }
             ammo--;
             if (ammo == 0) {
                 ammoStack = ItemStack.EMPTY;
@@ -312,6 +339,12 @@ public class TurretEntity extends MobEntity {
         if (held.isOf(Items.ENCHANTED_BOOK)) {
             return applyBook(player, held);
         }
+        if (held.getItem() instanceof TurretModuleItem module) {
+            return applyModule(player, held, module.modifier());
+        }
+        if (held.isOf(Items.GRINDSTONE)) {
+            return stripModules(player);
+        }
         if (!held.isEmpty()) {
             return feedMaterial(player, held);
         }
@@ -383,6 +416,102 @@ public class TurretEntity extends MobEntity {
         player.sendMessage(Text.translatable("turret.defendtheblock.enchanted",
                 Text.literal(String.join(", ", stored.keySet()))), false);
         return ActionResult.SUCCESS;
+    }
+
+    /**
+     * Instala um modulo, ou sobe o grau dele se ja estiver instalado.
+     *
+     * <p>O livro so e consumido quando algo de fato mudou: recusar por falta de
+     * slot ou por grau maximo devolve o item, senao um clique distraido custaria
+     * um livro caro sem nenhum efeito.
+     */
+    private ActionResult applyModule(PlayerEntity player, ItemStack book, TurretModifier modifier) {
+        TurretModifiers.Result result = modules.install(modifier);
+        Text name = Text.translatable(modifier.translationKey());
+
+        switch (result) {
+            case NO_SLOT -> {
+                player.sendMessage(Text.translatable("turret.defendtheblock.module_no_slot",
+                        TurretModifiers.MAX_SLOTS), true);
+                return ActionResult.CONSUME;
+            }
+            case MAX_GRADE -> {
+                player.sendMessage(Text.translatable("turret.defendtheblock.module_max_grade", name), true);
+                return ActionResult.CONSUME;
+            }
+            default -> {
+            }
+        }
+
+        int grade = modules.grade(modifier);
+        // Fortificacao mexe no atributo de vida: precisa reaplicar, e o ganho
+        // entra como vida a mais em vez de cura total.
+        if (modifier == TurretModifier.FORTITUDE) {
+            float before = getMaxHealth();
+            applyTierAttributes(false);
+            heal(getMaxHealth() - before);
+        } else {
+            // Aljava pode ter mudado o teto de municao para baixo (config nova).
+            applyTierAttributes(false);
+        }
+
+        if (!player.getAbilities().creativeMode) {
+            book.decrement(1);
+        }
+        playSound(SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE, 1.0F, 1.4F);
+        player.sendMessage(Text.translatable(
+                result == TurretModifiers.Result.INSTALLED
+                        ? "turret.defendtheblock.module_installed"
+                        : "turret.defendtheblock.module_upgraded",
+                name, roman(grade)), false);
+        updateDisplayName();
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            sendStats(serverPlayer, false);
+        }
+        return ActionResult.SUCCESS;
+    }
+
+    /**
+     * Desmonta todos os modulos com um rebolo na mao — o mesmo item que o
+     * vanilla usa para tirar encantamento.
+     *
+     * <p>Sem isto, instalar o modulo errado seria permanente: os dois slots
+     * ficariam ocupados para sempre e a unica saida seria destruir a torreta.
+     * O rebolo nao e consumido, e os livros <b>nao</b> voltam — desmontar custa
+     * o investimento, igual ao rebolo do vanilla.
+     */
+    private ActionResult stripModules(PlayerEntity player) {
+        if (modules.isEmpty()) {
+            player.sendMessage(Text.translatable("turret.defendtheblock.module_none"), true);
+            return ActionResult.CONSUME;
+        }
+        modules.clear();
+        // A vida maxima pode cair junto com a Fortificacao: reaplica e deixa o
+        // setHealth interno cortar o excedente.
+        applyTierAttributes(false);
+        setHealth(Math.min(getHealth(), getMaxHealth()));
+        // BLOCK_ANVIL_USE grave em vez de BLOCK_GRINDSTONE_USE: no 1.21 parte
+        // dos campos de SoundEvents virou RegistryEntry<SoundEvent> e nao da
+        // para saber quais sem compilar contra a versao. Este ja e usado neste
+        // mesmo arquivo, entao e um som comprovadamente seguro nas duas.
+        playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.6F);
+        player.sendMessage(Text.translatable("turret.defendtheblock.module_stripped"), false);
+        updateDisplayName();
+        if (player instanceof ServerPlayerEntity serverPlayer) {
+            sendStats(serverPlayer, false);
+        }
+        return ActionResult.SUCCESS;
+    }
+
+    /** I, II, III... para o grau aparecer como num encantamento. */
+    private static Text roman(int grade) {
+        return Text.literal(switch (grade) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            default -> String.valueOf(grade);
+        });
     }
 
     private interface LevelSetter {
@@ -477,12 +606,16 @@ public class TurretEntity extends MobEntity {
     private void sendStats(ServerPlayerEntity player, boolean openScreen) {
         Item repairItem = TurretTier.repairItem(tier);
         Item nextItem = TurretTier.nextUpgradeItem(tier);
+        List<String> installed = new ArrayList<>();
+        for (Map.Entry<TurretModifier, Integer> entry : modules.installed().entrySet()) {
+            installed.add(entry.getKey().id() + ":" + entry.getValue());
+        }
         TurretStatsData data = new TurretStatsData(
                 getId(), tier, getHealth(), getMaxHealth(), ammo, getMaxAmmo(),
                 getArrowDamage(), getRange(), getReloadTicks(),
                 Registries.ITEM.getId(repairItem).toString(),
                 nextItem == null ? "" : Registries.ITEM.getId(nextItem).toString(),
-                TurretTier.nextUpgradeCount(tier), upgradeProgress, openScreen);
+                TurretTier.nextUpgradeCount(tier), upgradeProgress, installed, openScreen);
         DtbCompat.sendTurretStats(player, data);
     }
 
@@ -491,12 +624,13 @@ public class TurretEntity extends MobEntity {
     }
 
     private void applyTierAttributes(boolean heal) {
+        float max = (float) (tier().maxHealth() * modules.healthMultiplier());
         EntityAttributeInstance maxHealth = getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(tier().maxHealth());
+            maxHealth.setBaseValue(max);
         }
         if (heal) {
-            setHealth(tier().maxHealth());
+            setHealth(max);
         }
         ammo = Math.min(ammo, getMaxAmmo());
     }
@@ -591,6 +725,7 @@ public class TurretEntity extends MobEntity {
         nbt.putInt("Piercing", piercing);
         nbt.putInt("Multishot", multishot);
         nbt.putInt("QuickCharge", quickCharge);
+        modules.writeNbt(nbt);
         if (!ammoStack.isEmpty()) {
             nbt.put("AmmoStack", DtbCompat.writeStack(this, ammoStack));
         }
@@ -608,6 +743,9 @@ public class TurretEntity extends MobEntity {
         piercing = nbt.getInt("Piercing");
         multishot = nbt.getInt("Multishot");
         quickCharge = nbt.getInt("QuickCharge");
+        // Antes do applyTierAttributes: a Fortificacao entra no calculo da vida
+        // maxima, entao os modulos precisam ja estar carregados ali embaixo.
+        modules.readNbt(nbt);
         if (nbt.contains("AmmoStack")) {
             ammoStack = DtbCompat.readStack(this, nbt.getCompound("AmmoStack"));
         }
