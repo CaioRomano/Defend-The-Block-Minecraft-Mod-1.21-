@@ -108,8 +108,14 @@ public class AttackNexusGoal extends Goal {
 
     @Override
     public void start() {
-        repathTimer = 0;
-        stuckTimer = 0;
+        // Espalhados de proposito, em vez de zerados. Um lote de invasores nasce
+        // no mesmo tick e comeca esta goal no mesmo tick, entao com o contador
+        // zerado a horda inteira recalcula rota <b>no mesmo tick</b>, para
+        // sempre — e busca de caminho e de longe a coisa mais cara que um mob
+        // faz. Com o teto em 100 isso seria um pico periodico de 100 buscas num
+        // tick e zero nos 19 seguintes; assim a carga fica diluida.
+        repathTimer = mob.getRandom().nextInt(REPATH_INTERVAL);
+        stuckTimer = mob.getRandom().nextInt(STUCK_CHECK_INTERVAL);
     }
 
     @Override

@@ -48,6 +48,10 @@ public class YieldToWorkerGoal extends Goal {
         this.mob = mob;
         this.data = InvaderAccess.of(mob);
         this.speed = speed;
+        // Mesma razao do repath da AttackNexusGoal: cada canStart faz uma busca
+        // de entidades, e comecar todo mundo em zero poe a horda inteira
+        // varrendo no mesmo tick. O deslocamento inicial dilui isso.
+        this.scanCooldown = mob.getRandom().nextInt(SCAN_INTERVAL);
         setControls(EnumSet.of(Control.MOVE));
     }
 

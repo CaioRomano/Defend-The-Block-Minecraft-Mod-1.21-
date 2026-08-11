@@ -147,28 +147,55 @@ Cooldown de 30s.
 
 ### A horda
 
-A invasao **nao tem numero fixo de mobs**. Ela spawna sem parar do anoitecer ate
-o fim da noite, e o que segura a quantidade e o teto de invasores vivos ao mesmo
-tempo — que tambem sobe a cada noite.
+A invasao **nao tem numero fixo de mobs** — nao existe "matou 10, a onda
+acabou". Ela spawna sem parar do anoitecer ate o fim da noite, sempre dentro do
+[anel de invasao](#o-quintal-seguro-e-o-anel-de-invasao), e o unico freio e o
+**teto de invasores vivos ao mesmo tempo**: matou um, nasce outro. A noite so
+termina quando amanhece.
 
-| Invasao | Mobs por lote | Intervalo | Teto de vivos |
-|---|---|---|---|
-| 1 | 1 | 6.7s | 10 |
-| 3 | 2 | 6.1s | 18 |
-| 5 | 4 | 5.5s | 26 |
-| 10 | 12 | 4.0s | 46 |
-| 14 | 15 | 2.8s | 62 |
-| 25+ | 24 | 0.8s | 100 |
+Esse teto sobe a cada invasao, e **a dureza de cada mob sobe junto** — senao a
+noite 30 seria a noite 1 com mais gente na tela:
+
+| Invasao | Teto de vivos | Lote | Intervalo | Vida | Dano | Armadura | Material |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 | 1 | 6.7s | 1.00x | 1.00x | 9% | couro |
+| 3 | 18 | 2 | 6.1s | 1.16x | 1.10x | 19% | couro |
+| 5 | 26 | 2 | 5.5s | 1.32x | 1.20x | 29% | ouro |
+| 10 | 46 | 4 | 4.0s | 1.72x | 1.45x | 54% | ferro |
+| 15 | 66 | 6 | 2.5s | 2.12x | 1.70x | 79% | diamante |
+| 20 | 86 | 7 | 1.0s | 2.52x | 1.95x | 90% | diamante |
+| 24+ | **100** | 8+ | 0.8s | 2.84x | 2.00x | 90% | diamante |
+| 26+ | 100 | 9+ | 0.8s | **3.00x** | 2.00x | 90% | diamante |
+
+As tres rampas terminam quase juntas de proposito: o **dano** satura na invasao
+21, a **quantidade** na 24 e a **vida** na 26. Depois disso a invasao para de
+crescer — o teto existe para o servidor aguentar, nao para o jogo ficar
+impossivel.
 
 A **noite 1 e quase um tutorial**: um mob a cada ~7 segundos, no maximo 10
-vivos ao mesmo tempo. Antes ela ja saturava um teto de 35 nos primeiros
-segundos, o que fazia a estreia ser tao dura quanto uma noite avancada.
+vivos, sem nenhum bonus de status. Antes ela ja saturava um teto de 35 nos
+primeiros segundos, o que fazia a estreia ser tao dura quanto uma noite
+avancada.
 
-A escalada nao e so quantidade: a **qualidade sobe junto**. Armadura comeca
-rarissima (4% por peca na noite 1) e vai ficando comum; o material sobe de
-couro ate diamante; encantamentos entram a partir da invasao 4; a chance de
-zumbi rapido cresce por noite; e os zumbis so passam a chegar em grupo a
-partir da invasao 5.
+Para dar a escala do outro extremo: na invasao 24 a horda enche os 100 vivos em
+**~5 segundos** e passa a noite inteira reabastecendo. Na invasao 1 ela leva
+~67 segundos para chegar nos 10, de uma noite de ~500 segundos.
+
+Vida e dano sao aplicados no **valor base do atributo** do mob. Duas
+consequencias praticas: o dano nao afeta o **esqueleto** (a flecha tira o dano
+dela do projetil, nao do atributo de ataque) nem **creeper e ghast**, que nem
+tem esse atributo — o dano deles e a explosao e a bola de fogo. A vida vale
+para todos.
+
+A qualidade tambem sobe pelo lado do equipamento: armadura comeca rarissima e
+vai ficando quase garantida, o material sobe de couro ate diamante,
+encantamentos entram a partir da invasao 4, a chance de zumbi rapido cresce por
+noite, e os zumbis so passam a chegar em grupo a partir da invasao 5.
+
+Tudo isso e configuravel: `maxConcurrentInvaders` segura a carga do servidor, e
+`invaderHealthPerWave` / `invaderDamagePerWave` (com os respectivos
+`...MultiplierMax`) controlam a rampa de status — pondo os dois maximos em
+`1.0` a escalada de status desliga e volta a ser so quantidade.
 
 ### Os 3 dias de carencia
 
@@ -602,6 +629,10 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `spawnRingChunks` | 3 | Largura (chunks) do anel circular onde a invasao nasce |
 | `attractionChunkRadius` | 4 | Raio de recrutamento, em chunks |
 | `maxConcurrentInvaders` | 100 | Teto absoluto de invasores vivos |
+| `invaderHealthPerWave` | 0.08 | Quanto a vida do invasor cresce por invasao |
+| `invaderHealthMultiplierMax` | 3.0 | Teto do multiplicador de vida (1.0 desliga) |
+| `invaderDamagePerWave` | 0.05 | Quanto o dano corpo a corpo cresce por invasao |
+| `invaderDamageMultiplierMax` | 2.0 | Teto do multiplicador de dano (1.0 desliga) |
 | `zombieExtraSpawnCount` | 2 | Teto de zumbis extras por sorteio (liberado aos poucos) |
 | `zombieExtraSpawnWavesPerStep` | 4 | Invasoes para liberar mais um zumbi extra |
 | `invadersDropLoot` | `false` | Invasores dropam itens ao morrer |
@@ -1244,6 +1275,62 @@ continua sem atirar atraves dela e volta a atirar quando a da frente e
 destruida; mob empacado continua contornando parede; Nexus emparedado continua
 sem tomar dano; e a horda continua abrindo espaco para quem trabalha sem
 deixar de bater no bloco quando ja esta em alcance.
+
+**Decima quarta rodada — a rampa de status.** O pedido foi trocar "contagem
+fixa de mobs por onda" por "teto de mobs vivos que sobe ate 100, junto com os
+modificadores de status".
+
+Metade disso **ja existia** e vale registrar para nao se perder: a invasao
+nunca teve contagem fixa. Desde a rodada em que o spawn virou continuo, ela
+spawna do anoitecer ate amanhecer limitada so pelo teto de vivos
+(`activeInvaders.size() >= cap`), a onda so fecha no amanhecer, o spawn ja
+acontece dentro do anel delimitado, e `maxConcurrentInvaders` ja era **100**,
+alcancado na invasao 24. A tabela da secao "A horda" estava com numeros de
+lote errados (dizia 24 por lote na invasao 25; o real e 9) — corrigida agora
+com os valores calculados a partir das formulas, nao de memoria.
+
+O que **de fato faltava** era o outro eixo: nao havia **nenhuma** escalada de
+status. Nada tocava `GENERIC_MAX_HEALTH` nem `GENERIC_ATTACK_DAMAGE` de
+invasor; o unico atributo mexido era a velocidade do zumbi. Na pratica um
+zumbi da noite 30 era identico ao da noite 1, so que em maior numero — o que e
+exatamente a critica do pedido. Agora `InvaderEquipment#scaleStats` escala
+vida (ate 3x, saturando na invasao 26) e dano corpo a corpo (ate 2x, saturando
+na 21), de modo que as tres rampas — quantidade, vida, dano — terminam quase
+juntas.
+
+A vida sobe mais rapido que o dano de proposito: vida a mais alonga a luta e o
+jogador ainda tem tempo de reagir, dano a mais simplesmente mata. Dobrar o
+dano de 100 mobs e muito mais violento do que triplicar a vida deles.
+
+Limitacao honesta da abordagem: mexer no valor base do atributo (em vez de
+`EntityAttributeModifier`, pela mesma incompatibilidade 1.20.1/1.21 de sempre)
+significa que a escalada de dano **nao atinge o esqueleto** — o dano da flecha
+vem do projetil, nao do atributo — nem creeper e ghast, que nao tem atributo
+de ataque. A vida vale para todos. Se o esqueleto precisar escalar tambem, o
+caminho e mexer no dano da flecha, nao aqui.
+
+**Trabalho de performance junto, e nao por perfeccionismo:** 100 mobs
+simultaneos so e um numero utilizavel se o custo por tick nao explodir. Duas
+goals comecavam os contadores em zero, e um lote inteiro de invasores nasce e
+inicia a goal no mesmo tick — ou seja, a horda toda recalculava rota **no mesmo
+tick**, para sempre. Busca de caminho e de longe a coisa mais cara que um mob
+faz; no teto isso seria um pico de 100 buscas num tick e zero nos 19 seguintes.
+`AttackNexusGoal#start` agora sorteia o deslocamento inicial de `repathTimer` e
+`stuckTimer`, e `YieldToWorkerGoal` faz o mesmo com `scanCooldown` (cada
+`canStart` dele e uma busca de entidades). Mesma carga total, diluida em vez de
+concentrada. Isso soma a otimizacao de `findCover` e da `TurretShootGoal` da
+rodada anterior, que ja tinham sido feitas pensando em horda grande.
+
+Verificacao: `javac` estrutural nas duas versoes, sem erro. A rampa da tabela
+foi **calculada a partir das formulas do codigo**, nao estimada. `GENERIC_MAX_HEALTH`
+ja e usado neste projeto (na torreta) e compila nas duas versoes;
+`GENERIC_ATTACK_DAMAGE` e a primeira aparicao, mas e da mesma familia de
+constantes e so mudou de nome no 1.21.5, fora do alcance deste mod. **Nao
+passou por `buildAll` nem por teste em jogo.** O que conferir: se a noite alta
+realmente enche e mantem o teto, se o servidor aguenta 100 vivos, e se 3x de
+vida com 90% de armadura de diamante nao deixou a torreta incapaz de matar
+qualquer coisa — esse ultimo e o risco de balanceamento mais provavel, e
+`invaderHealthMultiplierMax` e o botao para ajustar.
 
 ---
 

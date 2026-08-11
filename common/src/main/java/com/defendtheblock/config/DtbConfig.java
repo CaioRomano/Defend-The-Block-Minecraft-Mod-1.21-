@@ -138,6 +138,39 @@ public final class DtbConfig {
     /** Quantas invasoes para liberar mais um zumbi extra por sorteio. */
     public int zombieExtraSpawnWavesPerStep = 4;
     /**
+     * Quanto a <b>vida</b> de cada invasor cresce por invasao, somado a 1.0.
+     *
+     * <p>O teto de invasores vivos e so metade da escalada: sem isto, a noite
+     * 30 e a noite 5 tem exatamente o mesmo zumbi, so que em maior numero. Com
+     * o padrao (0.08), a invasao 1 usa a vida normal da especie, a 10 usa
+     * 1.72x, e a partir da ~26 fica presa no teto de
+     * {@code invaderHealthMultiplierMax} — mais ou menos quando o teto de
+     * quantidade tambem satura, para as duas rampas terminarem juntas.
+     *
+     * <p>Aplicado com {@code setBaseValue} no atributo, nao com
+     * {@code EntityAttributeModifier}: o construtor do modifier mudou entre
+     * 1.20.1 (UUID) e 1.21 (Identifier), enquanto {@code setBaseValue} e igual
+     * nas duas. Mesma razao da velocidade variavel dos zumbis.
+     */
+    public double invaderHealthPerWave = 0.08D;
+    /** Teto do multiplicador de vida. 1.0 desliga a escalada de vida. */
+    public double invaderHealthMultiplierMax = 3.0D;
+    /**
+     * Quanto o <b>dano corpo a corpo</b> de cada invasor cresce por invasao,
+     * somado a 1.0.
+     *
+     * <p>Sobe mais devagar que a vida de proposito: vida a mais so alonga a
+     * luta, dano a mais mata o jogador. Com o padrao, a invasao 21 chega ao
+     * teto de 2x — um zumbi de 3 de dano passa a bater 6.
+     *
+     * <p>Nao afeta o esqueleto: o dano da flecha vem do projetil, nao do
+     * atributo de ataque. Tambem nao afeta creeper e ghast, que nao tem esse
+     * atributo (o dano deles e a explosao / a bola de fogo).
+     */
+    public double invaderDamagePerWave = 0.05D;
+    /** Teto do multiplicador de dano. 1.0 desliga a escalada de dano. */
+    public double invaderDamageMultiplierMax = 2.0D;
+    /**
      * Invasores dropam item quando morrem?
      *
      * <p>Padrao false: a invasao spawna centenas de mobs por noite, entao os

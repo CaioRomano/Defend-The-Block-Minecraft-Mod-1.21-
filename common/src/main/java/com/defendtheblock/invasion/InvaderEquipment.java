@@ -104,6 +104,7 @@ public final class InvaderEquipment {
             mob.setEquipmentDropChance(EquipmentSlot.OFFHAND, 0.0F);
         }
 
+        scaleStats(mob, wave);
         rollSpeed(mob, wave, random);
 
         // O invasor nao troca de equipamento no meio da invasao.
@@ -113,6 +114,47 @@ public final class InvaderEquipment {
         // na mao, entao precisam reavaliar depois que trocamos a arma.
         if (mob instanceof AbstractSkeletonEntity skeleton) {
             skeleton.updateAttackType();
+        }
+    }
+
+    /**
+     * Vida e dano do invasor conforme a invasao avanca.
+     *
+     * <p>Faz par com o teto de invasores vivos: sozinho, o teto so muda
+     * <i>quantos</i> mobs aparecem, e uma noite avancada acabaria sendo a
+     * noite 1 com mais gente na tela. Aqui o mob tambem fica individualmente
+     * mais duro, entao a escalada e nos dois eixos.
+     *
+     * <p>A vida sobe mais rapido que o dano de proposito: vida a mais alonga a
+     * luta (o jogador tem tempo de reagir, a torreta precisa de mais tiros),
+     * enquanto dano a mais mata. Dobrar o dano de toda a horda e muito mais
+     * violento do que triplicar a vida dela.
+     *
+     * <p>Como {@code rollSpeed}, mexe no valor base do atributo em vez de usar
+     * {@code EntityAttributeModifier}, porque o construtor do modifier mudou
+     * entre 1.20.1 (UUID) e 1.21 (Identifier).
+     */
+    private static void scaleStats(MobEntity mob, int wave) {
+        DtbConfig config = DtbConfig.get();
+        int steps = Math.max(0, wave - 1);
+
+        double healthFactor = Math.min(Math.max(1.0D, config.invaderHealthMultiplierMax),
+                1.0D + steps * config.invaderHealthPerWave);
+        EntityAttributeInstance health = mob.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        if (health != null && healthFactor > 1.0D) {
+            health.setBaseValue(health.getBaseValue() * healthFactor);
+            // Curar depois de subir o teto: sem isto o mob nasce com a vida
+            // antiga e a barra ja aparece pela metade.
+            mob.setHealth(mob.getMaxHealth());
+        }
+
+        double damageFactor = Math.min(Math.max(1.0D, config.invaderDamageMultiplierMax),
+                1.0D + steps * config.invaderDamagePerWave);
+        // Creeper e ghast nao tem este atributo: o dano deles e a explosao e a
+        // bola de fogo, entao aqui simplesmente nao ha o que escalar.
+        EntityAttributeInstance damage = mob.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        if (damage != null && damageFactor > 1.0D) {
+            damage.setBaseValue(damage.getBaseValue() * damageFactor);
         }
     }
 
