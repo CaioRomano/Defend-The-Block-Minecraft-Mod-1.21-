@@ -7,6 +7,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -285,8 +286,14 @@ public class InvasionData {
         }
     }
 
+    /**
+     * So leitura: o unico jeito de mexer neste conjunto e por
+     * {@link #addPlacedBlock} e {@link #clearPlacedBlocks}, que cuidam do teto
+     * de tamanho e do {@code markDirty()}. Devolver o conjunto vivo deixava
+     * qualquer chamador furar as duas coisas em silencio.
+     */
     public Set<Long> getPlacedBlocks() {
-        return placedBlocks;
+        return Collections.unmodifiableSet(placedBlocks);
     }
 
     public void clearPlacedBlocks() {

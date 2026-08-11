@@ -67,7 +67,7 @@ public final class InvasionManager {
         }
 
         long timeOfDay = Math.floorMod(world.getTimeOfDay(), 24000L);
-        long day = Math.floorDiv(world.getTimeOfDay(), 24000L);
+        long day = NexusManager.currentDay(server);
         boolean night = timeOfDay >= NIGHT_START && timeOfDay < NIGHT_END;
 
         if (data.isWaveActive()) {
@@ -101,11 +101,14 @@ public final class InvasionManager {
         if (data.getNexusPlacedDay() < 0L || day == data.getLastCountdownDay()) {
             return;
         }
-        long remaining = data.daysUntilFirstInvasion(day);
-        // Depois da estreia nao ha mais contagem para mostrar.
-        if (remaining <= 0L && !data.isInGracePeriod(day) && day > data.getFirstInvasionDay()) {
+        // Depois da estreia nao ha mais contagem para mostrar. As duas outras
+        // condicoes que estavam aqui (remaining <= 0 e nao estar na carencia)
+        // sao consequencia desta: passado o dia da estreia, a carencia acabou e
+        // daysUntilFirstInvasion ja e zero por definicao.
+        if (day > data.getFirstInvasionDay()) {
             return;
         }
+        long remaining = data.daysUntilFirstInvasion(day);
         data.setLastCountdownDay(day);
 
         if (remaining > 0L) {
@@ -441,13 +444,8 @@ public final class InvasionManager {
 
     // ----------------------------------------------------------------- sync
 
-    /** Dia do mundo, contado sempre pelo Overworld (onde o Nexus vive). */
-    private static long currentDay(MinecraftServer server) {
-        return Math.floorDiv(server.getOverworld().getTimeOfDay(), 24000L);
-    }
-
     public static void sync(MinecraftServer server, InvasionData data) {
-        InvasionSyncData payload = InvasionSyncData.of(data, currentDay(server));
+        InvasionSyncData payload = InvasionSyncData.of(data, NexusManager.currentDay(server));
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             DtbCompat.sendInvasionSync(player, payload);
         }
@@ -455,6 +453,6 @@ public final class InvasionManager {
 
     public static void syncTo(ServerPlayerEntity player) {
         DtbCompat.sendInvasionSync(player,
-                InvasionSyncData.of(NexusManager.getData(player.server), currentDay(player.server)));
+                InvasionSyncData.of(NexusManager.getData(player.server), NexusManager.currentDay(player.server)));
     }
 }

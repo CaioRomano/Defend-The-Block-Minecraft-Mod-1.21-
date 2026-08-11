@@ -63,6 +63,21 @@ public class TurretShootGoal extends Goal {
     private int ticksOnTarget;
     private LivingEntity rejectedTarget;
     private int rejectedTimer;
+    /**
+     * As outras torretas que podem estar na linha de tiro, buscadas <b>uma vez
+     * por rescan</b> em vez de uma vez por candidato.
+     *
+     * <p>Antes {@link #blockedByTurret} fazia a sua propria busca de entidades,
+     * e como ele e chamado de dentro de {@link #isEngageable}, uma varredura de
+     * N candidatos custava N buscas — com varias torretas e uma horda inteira
+     * no alcance, isso e o laco mais caro da goal. Torreta nao anda: a lista so
+     * muda quando alguem coloca ou destroi uma, entao ficar ate
+     * {@code RESCAN_INTERVAL} ticks desatualizada e inofensivo (o javadoc de
+     * {@link #blockedByTurret} ja dizia que a desobstrucao vale "no proximo
+     * rescan"). A checagem de {@code isAlive} continua sendo feita na hora do
+     * uso, para uma torreta destruida nesse meio tempo nao seguir bloqueando.
+     */
+    private List<TurretEntity> nearbyTurrets = List.of();
 
     public TurretShootGoal(TurretEntity turret) {
         this.turret = turret;
@@ -93,6 +108,7 @@ public class TurretShootGoal extends Goal {
         LivingEntity previous = turret.getTarget();
         if (--rescanTimer <= 0) {
             rescanTimer = RESCAN_INTERVAL;
+            refreshNearbyTurrets();
             retarget();
         }
 
@@ -186,17 +202,33 @@ public class TurretShootGoal extends Goal {
      * quando e destruida, e o tiro volta a passar no proximo rescan.
      */
     private boolean blockedByTurret(LivingEntity target) {
+        if (nearbyTurrets.isEmpty()) {
+            return false;
+        }
         Vec3d from = new Vec3d(turret.getX(), turret.getEyeY(), turret.getZ());
         Vec3d to = target.getBoundingBox().getCenter();
-        Box segment = new Box(from, to).expand(1.0D);
 
-        for (TurretEntity other : turret.getWorld().getEntitiesByClass(TurretEntity.class, segment,
-                candidate -> candidate != turret && candidate.isAlive())) {
-            if (other.getBoundingBox().expand(0.05D).raycast(from, to).isPresent()) {
+        for (TurretEntity other : nearbyTurrets) {
+            if (other.isAlive() && other.getBoundingBox().expand(0.05D).raycast(from, to).isPresent()) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Recolhe as torretas que cabem dentro do alcance de tiro. E a mesma caixa
+     * de {@link #findBestTarget}, com a folga de 1 bloco que a busca antiga
+     * fazia por segmento: qualquer torreta capaz de cruzar a linha ate um alvo
+     * dentro do alcance esta necessariamente aqui dentro.
+     */
+    private void refreshNearbyTurrets() {
+        double range = turret.getRange() + 1.0D;
+        double vertical = VERTICAL_SCAN_MARGIN + 1.0D;
+        Box box = new Box(turret.getX() - range, turret.getY() - vertical, turret.getZ() - range,
+                turret.getX() + range, turret.getY() + vertical, turret.getZ() + range);
+        nearbyTurrets = turret.getWorld().getEntitiesByClass(TurretEntity.class, box,
+                candidate -> candidate != turret);
     }
 
     private LivingEntity findBestTarget() {
@@ -209,14 +241,16 @@ public class TurretShootGoal extends Goal {
         LivingEntity best = null;
         double bestDistance = Double.MAX_VALUE;
         for (LivingEntity candidate : candidates) {
-            if (!isEngageable(candidate)) {
+            // A distancia vem primeiro de proposito: quem ja esta mais longe que
+            // o melhor ate agora nao pode vencer, entao nem paga o preco do
+            // cone/visada/raycast de isEngageable. O resultado e o mesmo, so
+            // que sem checar o caro para candidatos que seriam descartados.
+            double distance = turret.horizontalSquaredDistanceTo(candidate);
+            if (distance >= bestDistance || !isEngageable(candidate)) {
                 continue;
             }
-            double distance = turret.horizontalSquaredDistanceTo(candidate);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                best = candidate;
-            }
+            bestDistance = distance;
+            best = candidate;
         }
         return best;
     }

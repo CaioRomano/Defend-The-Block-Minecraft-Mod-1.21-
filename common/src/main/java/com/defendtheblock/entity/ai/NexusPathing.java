@@ -7,6 +7,7 @@ import net.minecraft.block.DoorBlock;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -16,9 +17,14 @@ public final class NexusPathing {
     private NexusPathing() {
     }
 
-    /** Centro do bloco, o ponto que os invasores perseguem. */
+    /**
+     * Centro do bloco, o ponto que os invasores perseguem. E exatamente
+     * {@link Vec3d#ofCenter(net.minecraft.util.math.Vec3i)}; o nome proprio
+     * fica so porque "o centro do Nexus" aparece em meia duzia de goals e le
+     * melhor assim.
+     */
     public static Vec3d center(BlockPos pos) {
-        return new Vec3d(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
+        return Vec3d.ofCenter(pos);
     }
 
     /**
@@ -136,25 +142,41 @@ public final class NexusPathing {
      *         limpa ate o Nexus
      */
     public static BlockPos findCover(World world, Vec3d from, BlockPos nexus) {
-        Vec3d delta = center(nexus).subtract(from);
-        double length = delta.length();
+        // Escalares e um BlockPos.Mutable em vez de Vec3d/BlockPos novos por
+        // passo: com passo de 0.25 bloco uma linha de 3 blocos ja eram 12 Vec3d
+        // mais 12 BlockPos, e isto roda todo tick para cada invasor em alcance
+        // do Nexus — e o caminho quente mais alocador do mod.
+        double dx = nexus.getX() + 0.5D - from.x;
+        double dy = nexus.getY() + 0.5D - from.y;
+        double dz = nexus.getZ() + 0.5D - from.z;
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (length < 1.0E-4D) {
             return null;
         }
 
-        Vec3d step = delta.multiply(COVER_STEP / length);
-        Vec3d cursor = from;
+        double scale = COVER_STEP / length;
+        double stepX = dx * scale;
+        double stepY = dy * scale;
+        double stepZ = dz * scale;
         int steps = (int) Math.ceil(length / COVER_STEP);
 
+        double x = from.x;
+        double y = from.y;
+        double z = from.z;
+        BlockPos.Mutable cursor = new BlockPos.Mutable();
+
         for (int i = 0; i < steps; i++) {
-            cursor = cursor.add(step);
-            BlockPos pos = BlockPos.ofFloored(cursor);
-            if (pos.equals(nexus)) {
+            x += stepX;
+            y += stepY;
+            z += stepZ;
+            cursor.set(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z));
+            if (cursor.equals(nexus)) {
                 // Chegou no proprio bloco sem esbarrar em nada: linha limpa.
                 return null;
             }
-            if (world.getBlockState(pos).isSolidBlock(world, pos)) {
-                return pos;
+            if (world.getBlockState(cursor).isSolidBlock(world, cursor)) {
+                // Imutavel na saida: quem chama guarda esta posicao.
+                return cursor.toImmutable();
             }
         }
         return null;

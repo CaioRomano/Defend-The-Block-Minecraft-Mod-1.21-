@@ -49,12 +49,21 @@ public final class NexusManager {
         return DtbCompat.getInvasionData(server.getOverworld());
     }
 
+    /**
+     * Dia do mundo, contado sempre pelo Overworld — a mesma regra do
+     * {@link #getData}: a campanha inteira (carencia, contagem regressiva,
+     * "uma onda por noite") tem que concordar sobre que dia e hoje, mesmo com
+     * jogadores no Nether ou no End.
+     */
+    public static long currentDay(MinecraftServer server) {
+        return Math.floorDiv(server.getOverworld().getTimeOfDay(), 24000L);
+    }
+
     // ------------------------------------------------------------ ativacao
 
     public static void activate(ServerWorld world, BlockPos pos, PlayerEntity placer) {
         InvasionData data = getData(world);
-        long day = Math.floorDiv(world.getServer().getOverworld().getTimeOfDay(), 24000L);
-        data.placeNexus(pos, day);
+        data.placeNexus(pos, currentDay(world.getServer()));
         data.setMultiplier(DtbConfig.get().mobMultiplier);
         NexusChunkLoader.apply(world.getServer().getOverworld(), data);
 

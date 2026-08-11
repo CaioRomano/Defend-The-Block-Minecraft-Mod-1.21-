@@ -34,8 +34,6 @@ public class YieldToWorkerGoal extends Goal {
     private static final int SCAN_INTERVAL = 10;
     /** Teto de tempo recuando, para nunca virar um mob parado para sempre. */
     private static final int MAX_YIELD_TICKS = 200;
-    /** Mesmo alcance de golpe da {@link AttackNexusGoal}. */
-    private static final double NEXUS_ATTACK_RANGE = 2.8D;
 
     private final MobEntity mob;
     private final InvaderData data;
@@ -73,13 +71,14 @@ public class YieldToWorkerGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return worker != null
-                && worker.isAlive()
-                && yieldTicks < MAX_YIELD_TICKS
-                && !data.isWorking()
-                && !isAtNexus()
-                && isWorking(worker)
-                && mob.squaredDistanceTo(worker) < clearance() * clearance();
+        if (worker == null || !worker.isAlive() || yieldTicks >= MAX_YIELD_TICKS) {
+            return false;
+        }
+        if (data.isWorking() || isAtNexus() || !isWorking(worker)) {
+            return false;
+        }
+        double clearance = clearance();
+        return mob.squaredDistanceTo(worker) < clearance * clearance;
     }
 
     @Override
@@ -130,7 +129,7 @@ public class YieldToWorkerGoal extends Goal {
             return false;
         }
         return mob.squaredDistanceTo(NexusPathing.center(data.getNexusPos()))
-                <= NEXUS_ATTACK_RANGE * NEXUS_ATTACK_RANGE;
+                <= AttackNexusGoal.ATTACK_RANGE * AttackNexusGoal.ATTACK_RANGE;
     }
 
     private static boolean isWorking(MobEntity candidate) {

@@ -34,7 +34,13 @@ import java.util.EnumSet;
  */
 public class AttackNexusGoal extends Goal {
 
-    private static final double ATTACK_RANGE = 2.8D;
+    /**
+     * Alcance de golpe no Nexus. Nao e private porque a
+     * {@link YieldToWorkerGoal} precisa do <b>mesmo</b> numero: ela so deixa de
+     * recuar quando o mob ja pode bater no bloco, e duas constantes separadas
+     * abririam uma faixa em que o mob recua exatamente onde deveria atacar.
+     */
+    static final double ATTACK_RANGE = 2.8D;
     private static final int REPATH_INTERVAL = 20;
     private static final int STUCK_CHECK_INTERVAL = 40;
     /** Raio, em blocos, varrido em busca de um desvio quando o mob empaca. */
@@ -199,25 +205,42 @@ public class AttackNexusGoal extends Goal {
      * @return true se um desvio foi encontrado e o mob ja esta indo para la
      */
     private boolean tryDetour(BlockPos nexus, double currentDistance) {
-        Vec3d center = NexusPathing.center(nexus);
+        double limit = currentDistance - MIN_DETOUR_GAIN;
+        if (limit <= 0.0D) {
+            // Ja praticamente em cima do Nexus: nenhum desvio aproximaria mais.
+            return false;
+        }
+
+        // O cubo tem 9x9x3 = 243 posicoes e roda a cada STUCK_CHECK_INTERVAL em
+        // cada invasor empacado. A versao antiga criava um Vec3d e um BlockPos
+        // por posicao so para medir distancia; aqui a conta e feita em escalares
+        // e so o melhor candidato ate agora vira objeto.
+        double cx = nexus.getX() + 0.5D;
+        double cy = nexus.getY() + 0.5D;
+        double cz = nexus.getZ() + 0.5D;
         BlockPos origin = mob.getBlockPos();
 
         BlockPos best = null;
-        double bestDistance = currentDistance - MIN_DETOUR_GAIN;
+        // Comparar ao quadrado evita uma raiz por posicao; o limite so pode ser
+        // elevado com seguranca porque ja garantimos que ele e positivo acima.
+        double bestSquared = limit * limit;
 
         for (int dx = -DETOUR_RADIUS; dx <= DETOUR_RADIUS; dx++) {
             for (int dz = -DETOUR_RADIUS; dz <= DETOUR_RADIUS; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue;
+                }
+                double ox = origin.getX() + dx + 0.5D - cx;
+                double oz = origin.getZ() + dz + 0.5D - cz;
+                double horizontal = ox * ox + oz * oz;
                 for (int dy = -1; dy <= 1; dy++) {
-                    if (dx == 0 && dz == 0) {
+                    double oy = origin.getY() + dy + 0.5D - cy;
+                    double squared = horizontal + oy * oy;
+                    if (squared >= bestSquared) {
                         continue;
                     }
-                    BlockPos candidate = origin.add(dx, dy, dz);
-                    double candidateDistance = Math.sqrt(NexusPathing.center(candidate).squaredDistanceTo(center));
-                    if (candidateDistance >= bestDistance) {
-                        continue;
-                    }
-                    bestDistance = candidateDistance;
-                    best = candidate;
+                    bestSquared = squared;
+                    best = origin.add(dx, dy, dz);
                 }
             }
         }
