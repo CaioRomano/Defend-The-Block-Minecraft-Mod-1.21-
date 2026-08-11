@@ -63,9 +63,9 @@ public class InvaderEggItem extends Item {
         InvasionData invasion = NexusManager.getData(serverWorld);
         int wave = Math.max(1, invasion.getCurrentWave());
 
+        // Vira invasor, mas fora da contagem da onda: e um mob invocado a mao,
+        // nao parte do lote, entao nao entra em activeInvaders.
         data.setInvader(true);
-        // Fora da contagem da onda: e um mob invocado a mao, nao parte do lote.
-        data.setCountsForWave(false);
         data.setWave(wave);
         if (invasion.hasNexus()) {
             data.setNexusPos(invasion.getNexusPos());

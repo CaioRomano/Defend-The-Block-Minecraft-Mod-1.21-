@@ -33,21 +33,8 @@ public enum InvaderAbility {
      */
     BLOCK_BUILDER;
 
-    private static final InvaderAbility[] VALUES = values();
-
+    /** Posicao desta habilidade na mascara de bits guardada em {@code InvaderData}. */
     public int bit() {
         return 1 << ordinal();
-    }
-
-    public static int toMask(Iterable<InvaderAbility> abilities) {
-        int mask = 0;
-        for (InvaderAbility ability : abilities) {
-            mask |= ability.bit();
-        }
-        return mask;
-    }
-
-    public static InvaderAbility[] all() {
-        return VALUES;
     }
 }

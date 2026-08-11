@@ -262,7 +262,7 @@ public final class InvasionManager {
                 world.getRandom().nextFloat() * 360.0F, 0.0F);
         DtbCompat.initializeMob(world, mob, pos);
 
-        markAsInvader(world, mob, nexus, wave, true);
+        markAsInvader(world, mob, nexus, wave);
         if (!world.spawnEntity(mob)) {
             return false;
         }
@@ -316,7 +316,14 @@ public final class InvasionManager {
 
     // ------------------------------------------------------------ invasores
 
-    public static void markAsInvader(ServerWorld world, MobEntity mob, BlockPos nexus, int wave, boolean counts) {
+    /**
+     * Transforma um mob em invasor. Quem entra na <b>contagem oficial</b> da
+     * onda e decidido em outro lugar: so o lote spawnado por
+     * {@link #spawnInvader} chama {@code data.addInvader(uuid)}, e e esse
+     * conjunto que o HUD le. Mob atraido ou invocado a mao vira invasor sem
+     * entrar na conta.
+     */
+    public static void markAsInvader(ServerWorld world, MobEntity mob, BlockPos nexus, int wave) {
         InvaderData invader = InvaderAccess.of(mob);
         if (invader == null) {
             return;
@@ -324,7 +331,6 @@ public final class InvasionManager {
         boolean fresh = !invader.isInvader();
         invader.setInvader(true);
         invader.setNexusPos(nexus);
-        invader.setCountsForWave(counts);
 
         if (fresh) {
             invader.setWave(wave);
@@ -381,8 +387,10 @@ public final class InvasionManager {
                 > DtbConfig.get().attractionChunkRadius) {
             return;
         }
-        // Mobs atraidos nao entram na contagem oficial da onda.
-        markAsInvader(world, mob, data.getNexusPos(), Math.max(1, data.getCurrentWave()), false);
+        // Mobs atraidos viram invasores, mas nao entram na contagem oficial da
+        // onda: quem conta e o conjunto activeInvaders, alimentado so pelo lote
+        // de spawnInvader.
+        markAsInvader(world, mob, data.getNexusPos(), Math.max(1, data.getCurrentWave()));
     }
 
     private static void prune(MinecraftServer server, InvasionData data) {
@@ -415,11 +423,10 @@ public final class InvasionManager {
             List<Entity> doomed = new ArrayList<>();
             for (Entity entity : world.iterateEntities()) {
                 InvaderData invader = InvaderAccess.of(entity);
-                // countsForWave so importa para a contagem/HUD da onda — todo
-                // invasor (contado ou so atraido) precisa sumir aqui, senao um
-                // mob atraido (recrutado fora do lote oficial) sobrevive para
-                // sempre a trocas de Nexus e continua "atacando o vento" no
-                // lugar onde o Nexus costumava estar.
+                // Todo invasor precisa sumir aqui, contado na onda ou nao: sem
+                // isso um mob atraido (recrutado fora do lote oficial)
+                // sobrevive para sempre a trocas de Nexus e continua "atacando
+                // o vento" no lugar onde o Nexus costumava estar.
                 if (invader != null && invader.isInvader()) {
                     doomed.add(entity);
                 }

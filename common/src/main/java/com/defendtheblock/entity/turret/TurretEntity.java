@@ -185,10 +185,6 @@ public class TurretEntity extends MobEntity {
         return Math.max(4, reload);
     }
 
-    public int getAmmo() {
-        return ammo;
-    }
-
     public int getMaxAmmo() {
         return tier().maxAmmo();
     }

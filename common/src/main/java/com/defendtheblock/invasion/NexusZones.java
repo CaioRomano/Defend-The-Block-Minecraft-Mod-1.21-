@@ -31,7 +31,7 @@ public final class NexusZones {
     }
 
     /** Raio (em chunks) do quadrado onde nada nasce. */
-    public static int noSpawnRadius() {
+    private static int noSpawnRadius() {
         return Math.max(0, DtbConfig.get().noSpawnChunkRadius);
     }
 

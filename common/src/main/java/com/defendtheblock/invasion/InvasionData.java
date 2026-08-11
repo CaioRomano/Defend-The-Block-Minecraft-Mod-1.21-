@@ -186,14 +186,6 @@ public class InvasionData {
         markDirty();
     }
 
-    public boolean removeInvader(UUID uuid) {
-        boolean removed = activeInvaders.remove(uuid);
-        if (removed) {
-            markDirty();
-        }
-        return removed;
-    }
-
     public void startWave(int wave) {
         this.currentWave = wave;
         this.mobsSpawned = 0;

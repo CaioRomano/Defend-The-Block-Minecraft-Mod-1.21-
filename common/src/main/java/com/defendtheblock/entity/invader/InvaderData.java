@@ -16,8 +16,6 @@ public class InvaderData {
     private boolean invader;
     private int abilityMask;
     private int wave;
-    /** true quando o mob faz parte da contagem oficial da onda. */
-    private boolean countsForWave;
 
     private BlockPos nexusPos;
 
@@ -66,28 +64,12 @@ public class InvaderData {
         this.abilityMask |= ability.bit();
     }
 
-    public int getAbilityMask() {
-        return abilityMask;
-    }
-
-    public void setAbilityMask(int abilityMask) {
-        this.abilityMask = abilityMask;
-    }
-
     public int getWave() {
         return wave;
     }
 
     public void setWave(int wave) {
         this.wave = wave;
-    }
-
-    public boolean countsForWave() {
-        return countsForWave;
-    }
-
-    public void setCountsForWave(boolean countsForWave) {
-        this.countsForWave = countsForWave;
     }
 
     public BlockPos getNexusPos() {
@@ -216,7 +198,6 @@ public class InvaderData {
         nbt.putBoolean("Invader", true);
         nbt.putInt("Abilities", abilityMask);
         nbt.putInt("Wave", wave);
-        nbt.putBoolean("Counts", countsForWave);
         if (nexusPos != null) {
             nbt.putInt("NexusX", nexusPos.getX());
             nbt.putInt("NexusY", nexusPos.getY());
@@ -233,7 +214,6 @@ public class InvaderData {
         invader = nbt.getBoolean("Invader");
         abilityMask = nbt.getInt("Abilities");
         wave = nbt.getInt("Wave");
-        countsForWave = nbt.getBoolean("Counts");
         if (nbt.contains("NexusX")) {
             nexusPos = new BlockPos(nbt.getInt("NexusX"), nbt.getInt("NexusY"), nbt.getInt("NexusZ"));
         }

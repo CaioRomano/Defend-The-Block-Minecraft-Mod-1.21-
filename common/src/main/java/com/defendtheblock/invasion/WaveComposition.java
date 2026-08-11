@@ -4,7 +4,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.random.Random;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -82,16 +81,5 @@ public final class WaveComposition {
             }
         }
         return EntityType.ZOMBIE;
-    }
-
-    /** Tipos ja liberados na invasao informada (usado so para diagnostico). */
-    public static List<EntityType<? extends MobEntity>> unlocked(int wave) {
-        List<EntityType<? extends MobEntity>> types = new ArrayList<>();
-        for (Rule rule : RULES) {
-            if (wave >= rule.firstWave()) {
-                types.add(rule.type());
-            }
-        }
-        return types;
     }
 }
