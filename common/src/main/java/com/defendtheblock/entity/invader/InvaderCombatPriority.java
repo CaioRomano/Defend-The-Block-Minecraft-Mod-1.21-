@@ -46,6 +46,27 @@ public final class InvaderCombatPriority {
     private InvaderCombatPriority() {
     }
 
+    /**
+     * Ate que distancia este mob mantem <b>este</b> alvo em vez de largar tudo
+     * e voltar a marchar para o Nexus.
+     *
+     * <p>Publico porque a {@link com.defendtheblock.entity.ai.AttackNexusGoal}
+     * precisa da mesma resposta: e ela quem decide ceder o controle de
+     * movimento para as IAs de combate. Se as duas usassem numeros diferentes,
+     * um esqueleto mirando uma torreta a 15 blocos "manteria o alvo" por esta
+     * classe e ao mesmo tempo marcharia para o Nexus pela outra — que era
+     * exatamente o bug de o esqueleto avancar em vez de atirar de longe.
+     */
+    public static double engageRange(MobEntity mob, LivingEntity target) {
+        DtbConfig config = DtbConfig.get();
+        // Quem atira resolve parado de onde esta, entao mantem o alvo de bem
+        // mais longe — e o que o faz ficar atirando em vez de avancar.
+        if (mob instanceof RangedAttackMob) {
+            return config.rangedTurretPriorityRange;
+        }
+        return config.nexusPriorityEngageRange;
+    }
+
     public static void tick(MobEntity mob, InvaderData data) {
         if (!data.isInvader() || data.getNexusPos() == null) {
             return;
@@ -62,7 +83,7 @@ public final class InvaderCombatPriority {
         }
 
         data.clearTurretEngagement();
-        double range = DtbConfig.get().nexusPriorityEngageRange;
+        double range = engageRange(mob, target);
         if (mob.squaredDistanceTo(target) > range * range) {
             mob.setTarget(null);
         }
@@ -71,7 +92,7 @@ public final class InvaderCombatPriority {
     private static void tickTurretEngagement(MobEntity mob, InvaderData data, TurretEntity turret) {
         DtbConfig config = DtbConfig.get();
         boolean ranged = mob instanceof RangedAttackMob;
-        double range = ranged ? config.rangedTurretPriorityRange : config.nexusPriorityEngageRange;
+        double range = engageRange(mob, turret);
         double distance = mob.squaredDistanceTo(turret);
 
         if (distance > range * range) {

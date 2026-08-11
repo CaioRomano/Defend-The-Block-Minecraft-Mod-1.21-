@@ -221,7 +221,7 @@ public final class InvasionManager {
             // chegam um a um. Isso e diferente de so aumentar o peso no
             // sorteio (que mudaria a proporcao) — aqui muda a quantidade.
             if (type == EntityType.ZOMBIE) {
-                for (int extra = 0; extra < DtbConfig.get().zombieExtraSpawnCount; extra++) {
+                for (int extra = 0; extra < zombieExtras(wave); extra++) {
                     if (data.getActiveInvaders().size() >= cap
                             || !spawnInvader(world, data, EntityType.ZOMBIE, wave)) {
                         break;
@@ -229,6 +229,19 @@ public final class InvasionManager {
                 }
             }
         }
+    }
+
+    /**
+     * Quantos zumbis extras acompanham cada zumbi sorteado nesta invasao.
+     *
+     * <p>Liberado aos poucos: nas primeiras noites o zumbi chega sozinho, e o
+     * grupo so vai engrossando conforme as invasoes passam. Sem isso a onda 1
+     * ja vinha com o triplo de zumbis por lote.
+     */
+    private static int zombieExtras(int wave) {
+        DtbConfig config = DtbConfig.get();
+        int perStep = Math.max(1, config.zombieExtraSpawnWavesPerStep);
+        return Math.min(config.zombieExtraSpawnCount, Math.max(0, wave - 1) / perStep);
     }
 
     // ---------------------------------------------------------------- spawn

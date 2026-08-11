@@ -94,20 +94,26 @@ public final class DtbConfig {
      * recrutado.
      */
     public int attractionChunkRadius = 4;
+    // A rampa de dificuldade mora nestes seis valores. Eles foram bem
+    // reduzidos no inicio: com os numeros antigos a onda 1 ja saturava um teto
+    // de 35 invasores vivos nos primeiros segundos, o que fazia a primeira
+    // noite ser tao dura quanto uma noite avancada. Agora a noite 1 e quase um
+    // tutorial (um mob a cada ~7s, teto 10) e a escalada leva ~25 invasoes
+    // para chegar no mesmo teto de antes.
     /** Ticks entre cada lote de spawn na invasao 1. Diminui a cada invasao. */
-    public int baseSpawnInterval = 60;
+    public int baseSpawnInterval = 140;
     /** Quanto o intervalo entre lotes encolhe a cada invasao, em ticks. */
-    public int spawnIntervalStepPerWave = 4;
+    public int spawnIntervalStepPerWave = 6;
     /** Menor intervalo de spawn possivel, em ticks. */
-    public int minSpawnInterval = 10;
+    public int minSpawnInterval = 15;
     /** Quantos invasores nascem por lote na invasao 1. */
-    public double baseSpawnBatch = 2.0D;
+    public double baseSpawnBatch = 1.0D;
     /** Quanto o lote cresce a cada invasao. */
-    public double spawnBatchGrowthPerWave = 0.5D;
+    public double spawnBatchGrowthPerWave = 0.30D;
     /** Teto de invasores vivos ao mesmo tempo na invasao 1. */
-    public int baseConcurrentInvaders = 30;
+    public int baseConcurrentInvaders = 6;
     /** Quanto esse teto sobe a cada invasao. */
-    public int concurrentInvadersPerWave = 5;
+    public int concurrentInvadersPerWave = 4;
     /**
      * Teto absoluto de invasores vivos ao mesmo tempo.
      *
@@ -117,14 +123,20 @@ public final class DtbConfig {
      */
     public int maxConcurrentInvaders = 100;
     /**
-     * Quantos zumbis <b>extras</b> nascem junto sempre que o sorteio tira um
+     * Teto de zumbis <b>extras</b> que nascem junto quando o sorteio tira um
      * zumbi.
      *
      * <p>E diferente de so aumentar o peso no sorteio: o peso muda a
      * proporcao, isto aqui muda a <i>quantidade</i>. O zumbi e a base da
      * horda, entao ele chega em grupo enquanto os outros tipos chegam um a um.
+     *
+     * <p>O numero e liberado aos poucos, um a cada
+     * {@code zombieExtraSpawnWavesPerStep} invasoes — nas primeiras noites o
+     * zumbi chega sozinho, como todo mundo.
      */
     public int zombieExtraSpawnCount = 2;
+    /** Quantas invasoes para liberar mais um zumbi extra por sorteio. */
+    public int zombieExtraSpawnWavesPerStep = 4;
     /**
      * Invasores dropam item quando morrem?
      *
@@ -147,10 +159,19 @@ public final class DtbConfig {
      */
     public double creeperBreachChance = 1.0D;
     /**
-     * Tempo maximo, em ticks, entre um creeper marcar um obstaculo e acender.
+     * Pavio do creeper depois de encostar no obstaculo, em ticks (60 = 3s).
      *
-     * <p>Ele acende na hora se ja estiver encostado no obstaculo; este valor e
-     * o teto para o caso de ficar preso tentando chegar la. 100 ticks = 5s.
+     * <p>E o tempo <b>total</b> ate a explosao: a segunda metade dele e o
+     * inchaco branco do vanilla, para o jogador ter aviso visual e chance de
+     * reagir em vez de levar uma explosao sem nenhum sinal.
+     */
+    public int creeperObstacleFuseTicks = 60;
+    /**
+     * Teto de tempo, em ticks, que um creeper fica tentando <b>chegar</b> ao
+     * obstaculo antes de acender de qualquer jeito.
+     *
+     * <p>So vale para o caso de emergencia (ficou preso no caminho): uma
+     * explosao mal posicionada e melhor que um creeper eternamente empacado.
      */
     public int creeperBreachTimeoutTicks = 100;
     public double spiderWebChance = 0.25D;

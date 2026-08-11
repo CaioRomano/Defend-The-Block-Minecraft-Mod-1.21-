@@ -151,12 +151,24 @@ A invasao **nao tem numero fixo de mobs**. Ela spawna sem parar do anoitecer ate
 o fim da noite, e o que segura a quantidade e o teto de invasores vivos ao mesmo
 tempo — que tambem sobe a cada noite.
 
-| Invasao | Mobs por lote | Intervalo | Teto de vivos | Nether |
-|---|---|---|---|---|
-| 1 | 2 | 2.8s | 35 | — |
-| 3 | 4 | 2.4s | 45 | 27% |
-| 8 | 6 | 1.4s | 70 | 28% |
-| 14+ | 9+ | 0.5s | 100 | 26% |
+| Invasao | Mobs por lote | Intervalo | Teto de vivos |
+|---|---|---|---|
+| 1 | 1 | 6.7s | 10 |
+| 3 | 2 | 6.1s | 18 |
+| 5 | 4 | 5.5s | 26 |
+| 10 | 12 | 4.0s | 46 |
+| 14 | 15 | 2.8s | 62 |
+| 25+ | 24 | 0.8s | 100 |
+
+A **noite 1 e quase um tutorial**: um mob a cada ~7 segundos, no maximo 10
+vivos ao mesmo tempo. Antes ela ja saturava um teto de 35 nos primeiros
+segundos, o que fazia a estreia ser tao dura quanto uma noite avancada.
+
+A escalada nao e so quantidade: a **qualidade sobe junto**. Armadura comeca
+rarissima (4% por peca na noite 1) e vai ficando comum; o material sobe de
+couro ate diamante; encantamentos entram a partir da invasao 4; a chance de
+zumbi rapido cresce por noite; e os zumbis so passam a chegar em grupo a
+partir da invasao 5.
 
 ### Os 3 dias de carencia
 
@@ -264,7 +276,7 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Todos, exceto creeper | **Sobem escadas** — inclusive as montadas por outros mobs | 100% |
 | Todos, exceto creeper | **Arrombam portas fechadas** em vez de so abri-las (veja abaixo) | 100% |
 | Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
-| Creeper | **Se explode no obstaculo** quando nao ha caminho, abrindo passagem para o resto da horda (no maximo 5s ate acender). **Nao danifica o Nexus** | 100% |
+| Creeper | **Se explode no obstaculo** que trava a horda, com pavio de 3s depois de encostar. **Nao danifica o Nexus** | 100% |
 | Zumbi | **Escadas**: monta uma coluna de escadas no obstaculo | 16% |
 | Zumbi | **Construtor**: ergue caminho/pilar de blocos ate o Nexus, muito mais rapido que um invasor comum | 12% |
 | Zumbi | **Picareta**: cava a parede que atrapalha | 18% |
@@ -328,6 +340,22 @@ demorar mais em paredes mais duras.
 A picareta nao vence blocos muito duros (limite de dureza 30, entao obsidiana
 segura) — para esses e preciso TNT ou creeper. Bedrock, barreira e o proprio
 Nexus nunca sao quebrados.
+
+### Emparedar o Nexus funciona
+
+Um invasor so tira vida do Nexus se houver **linha limpa** ate o bloco. Estar
+perto nao basta: se voce cobriu o Nexus de blocos, a horda bate na cobertura,
+nao no bloco atras dela.
+
+Isso era um bug ate agora — so a distancia era checada, entao um mob do lado
+de fora de uma parede tirava vida atravessando-a como se ela nao existisse, e
+a defesa mais obvia do jogo nao servia para nada.
+
+Quando o caminho esta coberto, o bloco que esta na frente vira o **obstaculo**
+do mob: quem tem picareta cava, quem tem TNT explode, o creeper se explode, e
+o resto contorna procurando um lado exposto. Enquanto o Nexus estiver
+completamente fechado e nenhum especialista aparecer, ele nao toma dano
+nenhum.
 
 ### Todo mob ataca o Nexus — menos o creeper
 
@@ -398,6 +426,18 @@ tentado numa rodada anterior e causou o bug descrito abaixo). O gatilho e o
 flechada da torreta e exatamente o mesmo estimulo que levar uma flechada de um
 jogador. O jogador continua sendo alvo do jeito vanilla de sempre (ele ataca,
 o mob revida).
+
+### O esqueleto atira em vez de avancar
+
+Enquanto tem um alvo a vista, o esqueleto **para de marchar** e deixa a IA de
+arco do vanilla trabalhar — que sabe recuar e circular para manter distancia.
+So volta a avancar para o Nexus quando nao ha mais ninguem a vista.
+
+O que fazia ele avancar mesmo com alvo era uma incoerencia entre dois numeros:
+o sistema que decide *manter o alvo* usava 20 blocos para quem atira, mas o
+que decide *ceder o controle de movimento* usava 6 para todo mundo. Com uma
+torreta a 15 blocos, o esqueleto mantinha o alvo e marchava ao mesmo tempo.
+Agora os dois perguntam a mesma funcao.
 
 ### So ataca o que enxerga
 
@@ -562,7 +602,8 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `spawnRingChunks` | 3 | Largura (chunks) do anel circular onde a invasao nasce |
 | `attractionChunkRadius` | 4 | Raio de recrutamento, em chunks |
 | `maxConcurrentInvaders` | 100 | Teto absoluto de invasores vivos |
-| `zombieExtraSpawnCount` | 2 | Zumbis extras que nascem junto a cada zumbi sorteado |
+| `zombieExtraSpawnCount` | 2 | Teto de zumbis extras por sorteio (liberado aos poucos) |
+| `zombieExtraSpawnWavesPerStep` | 4 | Invasoes para liberar mais um zumbi extra |
 | `invadersDropLoot` | `false` | Invasores dropam itens ao morrer |
 | `mobMultiplier` | 1.0 | Multiplicador global do ritmo |
 | `creeperBreachChance` | 1.0 | Chance de creeper arrombador |
@@ -573,7 +614,8 @@ ninguem defendendo. Algumas noites assim e ele cai.
 | `zombieBuilderChance` | 0.12 | Chance de zumbi construtor |
 | `elevatedNexusBuilderBonus` | 2.5 | Multiplicador de escada/construtor com o Nexus suspenso |
 | `zombieFireStarterChance` | 0.10 | Chance de zumbi com isqueiro (incendeia madeira) |
-| `creeperBreachTimeoutTicks` | 100 | Prazo maximo (5s) ate o creeper acender diante de um obstaculo |
+| `creeperObstacleFuseTicks` | 60 | Pavio do creeper (3s) depois de encostar no obstaculo |
+| `creeperBreachTimeoutTicks` | 100 | Teto de tempo tentando **chegar** ao obstaculo antes de acender assim mesmo |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
 | `nexusPriorityEngageRange` | 6.0 | Raio (blocos) para brigar com jogador/torreta antes de voltar ao Nexus |
 | `rangedTurretPriorityRange` | 20.0 | Raio no qual esqueletos priorizam atirar nas torretas |
@@ -1039,6 +1081,41 @@ Um efeito colateral que precisou de ajuste: o teto de tempo do
 tempo legitimo de um mob sem picareta cavando pedra. Agora ele e calculado por
 obstaculo (tempo de trabalho + folga), senao a protecao contra travamento
 passaria a interromper trabalho valido.
+
+**Decima segunda rodada — o furo do Nexus emparedado, e a rampa.**
+
+- **Nexus coberto tomava dano atraves da parede.** Bug real: `attackNexus` so
+  checava distancia, nunca se havia bloco no caminho. Agora
+  `NexusPathing#findCover` amostra a reta do olho do mob ate o bloco e, se
+  achar solido no meio, esse bloco vira o obstaculo em vez de o Nexus tomar
+  dano. Amostrar a cada 0.25 bloco em vez de usar `World#raycast` foi
+  proposital: usa so `isSolidBlock`, que este projeto ja usa em varios
+  lugares, e evita depender da assinatura de `RaycastContext` — o tipo de API
+  cuja diferenca entre versoes ja derrubou este mod duas vezes.
+
+  Detalhe de comportamento: quando esta coberto, o mob **nao** para a
+  navegacao. Ele continua tentando se mover, o que o faz procurar um lado
+  exposto e acionar a reavaliacao de rota. Parar ali deixaria a horda
+  encostada na parede sem nunca tentar contornar.
+- **Creeper com pavio de 3s** ao encostar no obstaculo, em vez de explodir no
+  instante em que chega. Como o pavio do vanilla dura 30 ticks depois de
+  `ignite()`, a contagem propria acende faltando esse tanto — assim o tempo
+  total bate com a config e a segunda metade e o inchaco branco que da aviso
+  ao jogador. O sistema tambem nao desperdica creeper: se outro invasor abrir
+  a passagem antes, `shouldContinue()` derruba a goal e ele nunca chega a
+  acender. Acender longe do obstaculo virou caso de emergencia (ficou preso
+  tentando chegar).
+- **Rampa de dificuldade refeita.** A noite 1 saturava um teto de 35 invasores
+  vivos nos primeiros segundos. Agora comeca em 10 e leva ~25 invasoes para
+  chegar ao mesmo teto. Os zumbis extras tambem passaram a ser liberados aos
+  poucos (nenhum ate a invasao 4), e a chance de armadura caiu de 18% para 4%
+  por peca na estreia.
+- **Esqueleto para de avancar quando tem alvo.** A causa era uma incoerencia
+  entre dois numeros: `InvaderCombatPriority` mantinha o alvo ate 20 blocos
+  para quem atira, mas `AttackNexusGoal` usava 6 para todo mundo ao decidir se
+  cede o controle de movimento. Com uma torreta a 15 blocos ele mantinha o
+  alvo e marchava ao mesmo tempo. Agora os dois chamam
+  `InvaderCombatPriority#engageRange`, que e a unica fonte da resposta.
 
 **Decima primeira rodada — restricoes, carencia e coordenacao da horda.**
 Parte desta rodada desfaz coisas da anterior, por decisao de design depois de

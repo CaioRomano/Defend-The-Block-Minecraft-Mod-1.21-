@@ -2,6 +2,7 @@ package com.defendtheblock.entity.ai;
 
 import com.defendtheblock.config.DtbConfig;
 import com.defendtheblock.entity.invader.InvaderAccess;
+import com.defendtheblock.entity.invader.InvaderCombatPriority;
 import com.defendtheblock.entity.invader.InvaderData;
 import com.defendtheblock.invasion.NexusManager;
 import net.minecraft.entity.LivingEntity;
@@ -77,20 +78,25 @@ public class AttackNexusGoal extends Goal {
     }
 
     /**
-     * Alvo vivo e perto o bastante para o mob preferir mata-lo primeiro.
+     * Alvo vivo e perto o bastante para o mob preferir resolve-lo primeiro.
      *
-     * <p>Na pratica {@code mob.getTarget()} ja e limpo pelo
-     * {@code InvaderCombatPriority} sempre que fica mais longe que
-     * {@code nexusPriorityEngageRange}, entao esta checagem e mais uma garantia
-     * redundante do que o unico portao — mas usa o mesmo raio para nao haver
-     * dois numeros diferentes representando a mesma ideia.
+     * <p>Enquanto isto e true, esta goal <b>nao roda</b> e o controle de
+     * movimento fica com as IAs de combate do vanilla. Para um esqueleto isso
+     * e o que o faz recuar e ficar atirando (o {@code ProjectileAttackGoal}
+     * do vanilla sabe manter distancia) em vez de marchar para o bloco.
+     *
+     * <p>O raio vem de {@link InvaderCombatPriority#engageRange}, o mesmo que
+     * decide ate quando o alvo e mantido. Usar um numero diferente aqui era
+     * justamente o bug: um esqueleto com uma torreta a 15 blocos mantinha o
+     * alvo (20 de alcance la) mas, como aqui o raio era 6, esta goal rodava e
+     * o empurrava para o Nexus — ele avancava em vez de atirar.
      */
     private boolean hasCloseTarget() {
         LivingEntity target = mob.getTarget();
         if (target == null || !target.isAlive()) {
             return false;
         }
-        double range = DtbConfig.get().nexusPriorityEngageRange;
+        double range = InvaderCombatPriority.engageRange(mob, target);
         return mob.squaredDistanceTo(target) < range * range;
     }
 
@@ -119,9 +125,20 @@ public class AttackNexusGoal extends Goal {
         mob.getLookControl().lookAt(center.x, center.y, center.z);
 
         if (distance <= ATTACK_RANGE) {
-            mob.getNavigation().stop();
-            attackNexus(nexus);
-            return;
+            // Perto o bastante nao basta: precisa haver linha limpa ate o
+            // bloco. Nexus emparedado nao toma dano atraves da parede — a
+            // cobertura vira o obstaculo a ser arrombado.
+            BlockPos cover = NexusPathing.findCover(mob.getWorld(), mob.getEyePos(), nexus);
+            if (cover == null) {
+                mob.getNavigation().stop();
+                attackNexus(nexus);
+                return;
+            }
+            data.setObstacle(cover);
+            // Nao para a navegacao: segue para o codigo de movimento abaixo,
+            // que faz o mob procurar um lado exposto (ou empacar e acionar a
+            // reavaliacao de rota). Parar aqui deixaria a horda encostada na
+            // parede sem nunca tentar contornar.
         }
 
         // Uma porta fechada bem na frente sempre vira obstaculo marcado, mesmo

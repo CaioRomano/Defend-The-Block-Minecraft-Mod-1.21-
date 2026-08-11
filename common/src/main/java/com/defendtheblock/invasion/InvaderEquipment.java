@@ -69,7 +69,10 @@ public final class InvaderEquipment {
 
     public static void equip(ServerWorld world, MobEntity mob, InvaderData data, int wave, Random random) {
         int tier = tierForWave(wave);
-        double armorChance = Math.min(0.90D, 0.12D + wave * 0.06D);
+        // Comeca bem baixo e sobe devagar: nas primeiras noites a maioria da
+        // horda vem sem armadura nenhuma, que e parte de fazer a noite 1 ser
+        // acessivel. Antes comecava em 18% por peca ja na estreia.
+        double armorChance = Math.min(0.90D, 0.04D + wave * 0.05D);
         double enchantChance = wave < 4 ? 0.0D : Math.min(0.65D, (wave - 3) * 0.07D);
         int enchantPower = 5 + wave * 2;
 

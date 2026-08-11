@@ -80,6 +80,8 @@ public class BreachObstacleGoal extends Goal {
     private int goalTicks;
     /** Teto de tempo deste obstaculo, calculado em {@link #start()}. */
     private int maxGoalTicks;
+    /** Contagem propria do pavio do creeper; negativo enquanto nao comecou. */
+    private int creeperFuse = -1;
 
     public BreachObstacleGoal(MobEntity mob, double speed) {
         this.mob = mob;
@@ -177,6 +179,7 @@ public class BreachObstacleGoal extends Goal {
         mineTicks = 0;
         approachTimer = 0;
         goalTicks = 0;
+        creeperFuse = -1;
         BlockState state = mob.getWorld().getBlockState(target);
         float hardness = Math.max(0.2F, state.getHardness(mob.getWorld(), target));
         // Porta usa seu proprio ritmo (mais rapido que minerar parede de verdade);
@@ -208,6 +211,7 @@ public class BreachObstacleGoal extends Goal {
         target = null;
         mineTicks = 0;
         goalTicks = 0;
+        creeperFuse = -1;
         mob.getNavigation().stop();
     }
 
@@ -234,11 +238,8 @@ public class BreachObstacleGoal extends Goal {
         // qualquer jeito. Antes ele so acendia depois de conseguir chegar a
         // menos de 3.2 blocos, o que podia demorar muito — ou nunca acontecer.
         if (data.hasAbility(InvaderAbility.SUICIDE_BREACH) && mob instanceof CreeperEntity creeper) {
-            if (inWorkRange || goalTicks >= DtbConfig.get().creeperBreachTimeoutTicks) {
-                creeper.ignite();
-                data.setBreachCooldown(200);
-                return;
-            }
+            tickCreeper(world, creeper, inWorkRange);
+            return;
         }
 
         if (!inWorkRange) {
@@ -279,6 +280,66 @@ public class BreachObstacleGoal extends Goal {
         }
         if (data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
             mine(world);
+        }
+    }
+
+    // -------------------------------------------------------------- creeper
+
+    /**
+     * Ticks que o pavio do creeper leva no vanilla depois de {@code ignite()}.
+     *
+     * <p>E por isso que a contagem propria acende o creeper faltando este
+     * tanto: o tempo total ate explodir fica igual a
+     * {@code creeperObstacleFuseTicks}, e a segunda metade e o inchaco branco
+     * que o jogador reconhece — em vez de um creeper parado sem aviso nenhum
+     * seguido de explosao.
+     */
+    private static final int VANILLA_FUSE_TICKS = 30;
+
+    /**
+     * O creeper diante de um obstaculo.
+     *
+     * <p>A regra e nao desperdicar creeper: ele so acende encostado no
+     * obstaculo que esta atrapalhando, com um pavio de
+     * {@code creeperObstacleFuseTicks} (3s por padrao) para o jogador ter
+     * chance de reagir. Se a passagem for aberta por outro invasor nesse meio
+     * tempo, {@code shouldContinue()} derruba a goal e ele nunca chega a
+     * acender — sai andando para o Nexus como qualquer outro mob.
+     *
+     * <p>O unico caso em que ele acende longe do obstaculo e o de emergencia:
+     * ficou {@code creeperBreachTimeoutTicks} preso sem conseguir encostar.
+     * Melhor uma explosao mal posicionada do que um creeper eternamente
+     * empacado.
+     */
+    private void tickCreeper(ServerWorld world, CreeperEntity creeper, boolean inWorkRange) {
+        DtbConfig config = DtbConfig.get();
+
+        if (!inWorkRange) {
+            if (goalTicks >= config.creeperBreachTimeoutTicks) {
+                creeper.ignite();
+                data.setBreachCooldown(200);
+                return;
+            }
+            if (--approachTimer <= 0) {
+                approachTimer = 10;
+                Vec3d center = Vec3d.ofCenter(target);
+                mob.getNavigation().startMovingTo(center.x, center.y, center.z, speed);
+            }
+            return;
+        }
+
+        mob.getNavigation().stop();
+        if (creeperFuse < 0) {
+            creeperFuse = Math.max(1, config.creeperObstacleFuseTicks);
+            world.playSound(null, mob.getBlockPos(), SoundEvents.ENTITY_CREEPER_PRIMED,
+                    SoundCategory.HOSTILE, 1.0F, 0.9F);
+        }
+
+        creeperFuse--;
+        // Acende faltando o pavio do vanilla, para o total bater com a config.
+        if (creeperFuse <= VANILLA_FUSE_TICKS) {
+            creeper.ignite();
+            data.setBreachCooldown(200);
         }
     }
 

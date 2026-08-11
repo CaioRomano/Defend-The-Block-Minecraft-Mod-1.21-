@@ -113,4 +113,50 @@ public final class NexusPathing {
     public static boolean isClimbable(World world, BlockPos pos) {
         return world.getBlockState(pos).isIn(BlockTags.CLIMBABLE);
     }
+
+    /** Passo da amostragem de {@link #findCover}, em blocos. */
+    private static final double COVER_STEP = 0.25D;
+
+    /**
+     * Existe bloco solido entre o invasor e o Nexus?
+     *
+     * <p>Sem esta checagem, bastava <b>estar perto</b> do Nexus para bate-lo: um
+     * mob do lado de fora de uma parede, a menos de 3 blocos do bloco, tirava
+     * vida atravessando a parede como se ela nao existisse. Cobrir o Nexus de
+     * blocos, que deveria ser a defesa mais obvia do jogo, nao servia para nada.
+     *
+     * <p>Amostrar a reta a cada 0.25 bloco em vez de usar
+     * {@code World#raycast} e proposital: so usa
+     * {@code BlockState#isSolidBlock}, que este projeto ja usa em varios
+     * lugares, e evita depender da assinatura de {@code RaycastContext} — que e
+     * exatamente o tipo de API cuja diferenca entre versoes ja derrubou este
+     * mod antes.
+     *
+     * @return o primeiro bloco solido no caminho, ou null se a linha chega
+     *         limpa ate o Nexus
+     */
+    public static BlockPos findCover(World world, Vec3d from, BlockPos nexus) {
+        Vec3d delta = center(nexus).subtract(from);
+        double length = delta.length();
+        if (length < 1.0E-4D) {
+            return null;
+        }
+
+        Vec3d step = delta.multiply(COVER_STEP / length);
+        Vec3d cursor = from;
+        int steps = (int) Math.ceil(length / COVER_STEP);
+
+        for (int i = 0; i < steps; i++) {
+            cursor = cursor.add(step);
+            BlockPos pos = BlockPos.ofFloored(cursor);
+            if (pos.equals(nexus)) {
+                // Chegou no proprio bloco sem esbarrar em nada: linha limpa.
+                return null;
+            }
+            if (world.getBlockState(pos).isSolidBlock(world, pos)) {
+                return pos;
+            }
+        }
+        return null;
+    }
 }
