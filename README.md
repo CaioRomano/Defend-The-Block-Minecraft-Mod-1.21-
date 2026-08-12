@@ -9,6 +9,8 @@
 [![Fabric](https://img.shields.io/badge/Mod%20Loader-Fabric-DBD0B4?style=for-the-badge)](https://fabricmc.net/)
 [![Licenca](https://img.shields.io/badge/Licen%C3%A7a-Apache%202.0-4A90D9?style=for-the-badge)](LICENSE)
 
+**Português (Brasil)** · [English](README.en.md)
+
 </div>
 
 > 🖼️ **`docs/images/hero.png`** — imagem de capa: o Nexus brilhando no centro de

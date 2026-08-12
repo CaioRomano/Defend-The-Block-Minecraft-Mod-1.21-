@@ -10,10 +10,13 @@ Duas origens diferentes moram aqui, e vale nao misturar:
 
 ## Capturas pendentes
 
-O [README](../../README.md) ja tem o espaco demarcado para cada uma delas, com
+Os dois READMEs — [portugues](../../README.md) e [ingles](../../README.en.md) —
+ja tem o espaco demarcado para cada uma delas, com
 a descricao no lugar exato onde a imagem entra. Salve o arquivo aqui com o nome
-da tabela e troque o bloco `> 🖼️ ...` correspondente por
-`![descricao](docs/images/NOME.png)`.
+da tabela e troque o bloco `> 🖼️ ...` correspondente **nos dois arquivos** por
+`![descricao](docs/images/NOME.png)`. Os nomes de arquivo sao os mesmos nas duas
+linguas de proposito: imagem nao precisa de traducao, e assim uma captura serve
+as duas versoes da documentacao.
 
 | Arquivo | O que a captura deve mostrar |
 |---|---|
