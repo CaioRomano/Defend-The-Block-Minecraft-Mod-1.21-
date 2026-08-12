@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " I ",
+    "PBP",
+    " I "
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:blue_ice"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "P": {
+      "item": "minecraft:packed_ice"
+    }
+  },
+  "result": {
+    "id": "defendtheblock:turret_module_frost",
+    "count": 1
+  }
+}

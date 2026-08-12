@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.defendtheblock.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "InvaderDropsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

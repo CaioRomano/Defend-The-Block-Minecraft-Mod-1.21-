@@ -1,0 +1,28 @@
+plugins {
+    // Loom 1.7 usa Problems.forNamespace(String), removida no Gradle 8.11, entao
+    // o wrapper fica preso no 8.10.2. Para subir o Gradle, suba o Loom junto.
+    id 'fabric-loom' version '1.7-SNAPSHOT' apply false
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
+    }
+
+    java {
+        withSourcesJar()
+    }
+}
+
+// Convenience task: build every supported Minecraft version at once.
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Builds the mod jar for every supported Minecraft version.'
+    dependsOn subprojects.collect { it.tasks.named('build') }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "defendtheblock:block/nexus_block_top",
+    "bottom": "defendtheblock:block/nexus_block_bottom",
+    "side": "defendtheblock:block/nexus_block"
+  }
+}

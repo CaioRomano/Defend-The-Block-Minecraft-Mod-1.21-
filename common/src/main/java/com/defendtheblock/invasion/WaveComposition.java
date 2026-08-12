@@ -1,0 +1,85 @@
+package com.defendtheblock.invasion;
+
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.math.random.Random;
+
+import java.util.List;
+
+/**
+ * Sorteia <b>que tipo</b> de mob nasce em cada spawn da invasao.
+ *
+ * <p>A invasao nao tem mais uma lista fechada de mobs: ela spawna sem parar do
+ * anoitecer ate o amanhecer, e cada spawn tira um tipo desta tabela. O que muda
+ * noite apos noite e quais tipos ja estao liberados — o zumbi/esqueleto/creeper
+ * valem desde a primeira, e os reforcos (incluindo os do Nether) vao entrando
+ * conforme as invasoes passam.
+ *
+ * <p>Enderman fica de fora de proposito: ele nao participa das invasoes.
+ */
+public final class WaveComposition {
+
+    /**
+     * @param type      tipo de mob
+     * @param firstWave primeira invasao em que ele pode aparecer
+     * @param weight    peso no sorteio depois de liberado (maior = mais comum)
+     */
+    private record Rule(EntityType<? extends MobEntity> type, int firstWave, int weight) {
+    }
+
+    private static final List<Rule> RULES = List.of(
+            // --- nucleo do Overworld
+            // Creeper foi bem reduzido de proposito: com o peso antigo (18) e
+            // muito comum a horda ser dominada por creepers, que exigem uma
+            // aproximacao suicida (SUICIDE_BREACH) em vez de simplesmente
+            // marchar e bater, o que deixava as invasoes menos dinamicas.
+            new Rule(EntityType.ZOMBIE, 1, 48),
+            new Rule(EntityType.SKELETON, 1, 28),
+            new Rule(EntityType.CREEPER, 1, 6),
+            new Rule(EntityType.SPIDER, 2, 12),
+            new Rule(EntityType.HUSK, 3, 10),
+            new Rule(EntityType.STRAY, 4, 9),
+            new Rule(EntityType.CAVE_SPIDER, 5, 8),
+            new Rule(EntityType.WITCH, 6, 5),
+            new Rule(EntityType.ZOMBIE_VILLAGER, 7, 6),
+            new Rule(EntityType.DROWNED, 9, 5),
+            new Rule(EntityType.VINDICATOR, 12, 4),
+
+            // --- reforcos do Nether: entram cedo e com peso de verdade, para
+            // aparecerem em quantidade nas ondas em vez de serem curiosidade.
+            new Rule(EntityType.MAGMA_CUBE, 2, 9),
+            new Rule(EntityType.WITHER_SKELETON, 2, 8),
+            new Rule(EntityType.BLAZE, 3, 8),
+            new Rule(EntityType.ZOMBIFIED_PIGLIN, 3, 9),
+            new Rule(EntityType.PIGLIN_BRUTE, 5, 5),
+            new Rule(EntityType.HOGLIN, 6, 4),
+            new Rule(EntityType.GHAST, 6, 3));
+
+    private WaveComposition() {
+    }
+
+    /** Sorteia um tipo entre os liberados para a invasao informada. */
+    public static EntityType<? extends MobEntity> pick(int wave, Random random) {
+        int total = 0;
+        for (Rule rule : RULES) {
+            if (wave >= rule.firstWave()) {
+                total += rule.weight();
+            }
+        }
+        if (total <= 0) {
+            return EntityType.ZOMBIE;
+        }
+
+        int roll = random.nextInt(total);
+        for (Rule rule : RULES) {
+            if (wave < rule.firstWave()) {
+                continue;
+            }
+            roll -= rule.weight();
+            if (roll < 0) {
+                return rule.type();
+            }
+        }
+        return EntityType.ZOMBIE;
+    }
+}

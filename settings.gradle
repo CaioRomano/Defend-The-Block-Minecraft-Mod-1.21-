@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'defendtheblock'
+
+// One Gradle sub-project per supported Minecraft version.
+// Both of them compile the very same shared sources in `common/`, plus a small
+// version specific `compat` layer that lives inside each sub-project.
+include 'fabric-1.20.1'
+include 'fabric-1.21.1'

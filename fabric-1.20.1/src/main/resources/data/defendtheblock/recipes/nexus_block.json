@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ODO",
+    "DED",
+    "ODO"
+  ],
+  "key": {
+    "O": { "item": "minecraft:obsidian" },
+    "D": { "item": "minecraft:diamond" },
+    "E": { "item": "minecraft:ender_eye" }
+  },
+  "result": { "item": "defendtheblock:nexus_block", "count": 1 }
+}
