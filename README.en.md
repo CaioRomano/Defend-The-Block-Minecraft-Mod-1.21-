@@ -706,7 +706,8 @@ fabric-1.20.1/                build + 1.20.1 compat + recipes
 fabric-1.21.1/                build + 1.21.1 compat + recipes
 tools/                        texture generators
 docs/images/                  documentation images
-docs/DESENVOLVIMENTO.md       technical diary and verification status
+docs/DEVELOPMENT.md           technical diary and verification status
+docs/DESENVOLVIMENTO.md       the same diary, in Portuguese
 ```
 
 Each subproject compiles `common/` together with its own
@@ -730,7 +731,7 @@ Treat the balance numbers on this page as intent, not as measured results.
 The detailed history of what was verified, what could still break and the
 reasoning behind each implementation decision lives in:
 
-### 👉 **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** *(written in Portuguese)*
+### 👉 **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
 
 If you are going to touch the code, start there — several decisions that look
 crooked are scars from real problems.

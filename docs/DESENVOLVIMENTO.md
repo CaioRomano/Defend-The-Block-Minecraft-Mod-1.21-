@@ -1,5 +1,7 @@
 # Diario de desenvolvimento
 
+**Português (Brasil)** · [English](DEVELOPMENT.md)
+
 > Este arquivo e o **registro honesto** de como o mod chegou onde esta: o que
 > foi verificado e como, o que ainda **nao** foi testado, os bugs que
 > apareceram em cada playtest e a razao por tras de cada decisao de

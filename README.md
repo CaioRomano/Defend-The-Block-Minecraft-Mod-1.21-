@@ -705,6 +705,7 @@ fabric-1.21.1/                build + compat 1.21.1 + receitas
 tools/                        geradores de textura
 docs/images/                  imagens desta documentacao
 docs/DESENVOLVIMENTO.md       diario tecnico e status de verificacao
+docs/DEVELOPMENT.md           o mesmo diario, em ingles
 ```
 
 Cada sub-projeto compila `common/` junto com o seu proprio pacote
