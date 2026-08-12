@@ -20,11 +20,30 @@
 
 ## Status de verificacao
 
-**`./gradlew buildAll` compila com sucesso as duas versoes** (Fabric Loom
-1.7.4 + Gradle 8.10.2, testado numa maquina com acesso a rede). Isso prova que
-o codigo bate com as APIs do Minecraft e do Fabric nas duas versoes — nao
-prova que o mod funciona jogando. Ninguem colocou o Nexus, viu a torreta girar
-nem sobreviveu a uma invasao ainda.
+**`./gradlew buildAll` compila com sucesso as duas versoes**, verificado por
+ultimo no commit **`28833d8`** (Fabric Loom 1.7.4 + Gradle 8.10.2, JDK 21,
+numa maquina com acesso a rede). Isso prova que o codigo bate com as APIs do
+Minecraft e do Fabric nas duas versoes — **nao** prova que o mod funciona
+jogando. Ninguem colocou o Nexus, viu a torreta girar nem sobreviveu a uma
+invasao ainda.
+
+Esse build fechou uma divida de **nove commits** que tinham sido escritos e so
+conferidos por `javac` estrutural. Com ele, saem da lista de risco e passam a
+contar como comprovadas nas duas versoes as APIs de primeiro uso que vinham
+sendo sinalizadas rodada apos rodada:
+
+| API | Onde | Era o risco de |
+|---|---|---|
+| `ArrowEntity#addEffect(StatusEffectInstance)` | `DtbCompat` (as duas) | modulos Gelo e Veneno |
+| `EntityAttributes.GENERIC_ATTACK_DAMAGE` | `InvaderEquipment` | escalada de dano do invasor |
+| `NbtComponent.of` / `copyNbt` | `DtbCompat` 1.21 | estado guardado no item da torreta |
+| `ItemStack#setSubNbt` / `getSubNbt` | `DtbCompat` 1.20.1 | idem, no 1.20.1 |
+| `Items.GRINDSTONE`, `BlockPos.Mutable`, `MathHelper.floor` | varios | desmontar modulo, `findCover` |
+
+A aposta de conter cada uma delas em `DtbCompat` (erro de compilacao numa
+versao, nunca crash de mixin em jogo) nao chegou a ser cobrada — nenhuma
+falhou. O que **nao** muda com este build: nada disso foi executado. Compilar
+prova assinatura, nao comportamento.
 
 Historico de como chegou aqui: o codigo foi escrito num ambiente que bloqueia
 `maven.fabricmc.net`, `libraries.minecraft.net` e `piston-meta.mojang.com`, entao

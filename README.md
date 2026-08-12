@@ -716,9 +716,16 @@ porque o campo `result` do JSON mudou de `item` para `id` no 1.21.
 
 ## 📋 Estado do projeto
 
-O mod **compila nas duas versoes**, mas ainda **nao passou por um playtest
-completo** apos as ultimas mudancas. O historico detalhado do que foi verificado,
-o que ainda pode quebrar e a razao de cada decisao de implementacao esta em:
+✅ **`./gradlew buildAll` compila as duas versoes** — verificado por ultimo no
+commit `28833d8`, com JDK 21.
+
+⚠️ **Ainda nao passou por um playtest completo.** Compilar prova que o codigo
+bate com as APIs do Minecraft; nao prova que o jogo se comporta como o descrito
+acima. Trate os numeros de balanceamento desta pagina como intencao, nao como
+resultado medido em jogo.
+
+O historico detalhado do que foi verificado, o que ainda pode quebrar e a razao
+de cada decisao de implementacao esta em:
 
 ### 👉 **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)**
 
