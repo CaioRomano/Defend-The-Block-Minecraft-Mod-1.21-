@@ -463,7 +463,7 @@ public class TurretEntity extends MobEntity {
                 result == TurretModifiers.Result.INSTALLED
                         ? "turret.defendtheblock.module_installed"
                         : "turret.defendtheblock.module_upgraded",
-                name, roman(grade)), false);
+                name, TurretModifiers.grade(grade)), false);
         updateDisplayName();
         if (player instanceof ServerPlayerEntity serverPlayer) {
             sendStats(serverPlayer, false);
@@ -501,17 +501,6 @@ public class TurretEntity extends MobEntity {
             sendStats(serverPlayer, false);
         }
         return ActionResult.SUCCESS;
-    }
-
-    /** I, II, III... para o grau aparecer como num encantamento. */
-    private static Text roman(int grade) {
-        return Text.literal(switch (grade) {
-            case 1 -> "I";
-            case 2 -> "II";
-            case 3 -> "III";
-            case 4 -> "IV";
-            default -> String.valueOf(grade);
-        });
     }
 
     private interface LevelSetter {
@@ -586,8 +575,85 @@ public class TurretEntity extends MobEntity {
         return ActionResult.SUCCESS;
     }
 
+    /**
+     * Chave do bloco de estado que a torreta guarda dentro do proprio item.
+     */
+    public static final String STACK_TAG = "TurretState";
+
+    /**
+     * O item que representa <b>esta</b> torreta, com nivel, encantamentos,
+     * modulos, progresso de upgrade e vida guardados dentro.
+     *
+     * <p>Sem isto, recolher a torreta era destrutivo: {@link #damage} manda
+     * qualquer ataque corpo a corpo de jogador para {@link #pickUp}, entao um
+     * clique esquerdo sem querer numa torreta de esmeralda com dois modulos de
+     * grau 3 apagava dezenas de itens de investimento. Reposicionar uma torreta
+     * e uma acao normal do jogo e nao pode custar isso.
+     *
+     * <p>A vida tambem entra, e nao por capricho: se o item voltasse sempre com
+     * vida cheia, recolher e recolocar seria um reparo gratuito e o custo de
+     * material de {@code turretRepairHealthPerItem} nao valeria nada.
+     *
+     * <p>Uma torreta <b>de fabrica</b> (nivel 0, sem nada, sem dano) devolve um
+     * item limpo de proposito: item com NBT nao empilha com item sem NBT, e
+     * seria irritante que colocar e recolher uma torreta recem-fabricada
+     * quebrasse a pilha do inventario.
+     */
+    public ItemStack toItemStack() {
+        ItemStack stack = new ItemStack(ModItems.ARROW_TURRET);
+        boolean pristine = tier == 0 && upgradeProgress == 0 && modules.isEmpty()
+                && power == 0 && punch == 0 && flame == 0
+                && piercing == 0 && multishot == 0 && quickCharge == 0
+                && getHealth() >= getMaxHealth();
+        if (pristine) {
+            return stack;
+        }
+
+        NbtCompound tag = new NbtCompound();
+        tag.putInt("Tier", tier);
+        tag.putInt("UpgradeProgress", upgradeProgress);
+        tag.putFloat("Health", getHealth());
+        tag.putInt("Power", power);
+        tag.putInt("Punch", punch);
+        tag.putInt("Flame", flame);
+        tag.putInt("Piercing", piercing);
+        tag.putInt("Multishot", multishot);
+        tag.putInt("QuickCharge", quickCharge);
+        modules.writeNbt(tag);
+        DtbCompat.putStackTag(stack, STACK_TAG, tag);
+        return stack;
+    }
+
+    /**
+     * Restaura numa torreta recem-colocada o estado guardado no item que a
+     * colocou. Item sem estado (recem-fabricado) nao mexe em nada.
+     */
+    public void applyFromStack(ItemStack stack) {
+        NbtCompound tag = DtbCompat.getStackTag(stack, STACK_TAG);
+        if (tag == null) {
+            return;
+        }
+        tier = MathHelper.clamp(tag.getInt("Tier"), 0, TurretTier.MAX_TIER);
+        upgradeProgress = Math.max(0, tag.getInt("UpgradeProgress"));
+        power = tag.getInt("Power");
+        punch = tag.getInt("Punch");
+        flame = tag.getInt("Flame");
+        piercing = tag.getInt("Piercing");
+        multishot = tag.getInt("Multishot");
+        quickCharge = tag.getInt("QuickCharge");
+        modules.readNbt(tag);
+
+        // Sobe o teto de vida antes de aplicar a vida guardada, senao o valor
+        // seria cortado pelo maximo do nivel 0.
+        applyTierAttributes(true);
+        if (tag.contains("Health")) {
+            setHealth(Math.min(tag.getFloat("Health"), getMaxHealth()));
+        }
+        updateDisplayName();
+    }
+
     private void pickUp(PlayerEntity player) {
-        ItemStack turret = new ItemStack(ModItems.ARROW_TURRET);
+        ItemStack turret = toItemStack();
         if (!player.getInventory().insertStack(turret)) {
             dropStack(turret);
         }
@@ -698,6 +764,13 @@ public class TurretEntity extends MobEntity {
         return true;
     }
 
+    /**
+     * Morte da torreta (destruida pelos invasores). Ao contrario de
+     * {@link #pickUp}, aqui o item volta <b>limpo</b>: recolher com as maos e
+     * desmontar com cuidado, ser derrubada pela horda e perder o investimento.
+     * E o que mantem alguma aposta em deixar uma torreta cara na linha de
+     * frente — se a morte devolvesse tudo, defender a torreta nao teria peso.
+     */
     @Override
     protected void dropInventory() {
         super.dropInventory();

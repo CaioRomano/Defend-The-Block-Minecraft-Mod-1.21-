@@ -133,6 +133,24 @@ public final class DtbCompat {
         }
     }
 
+    // ------------------------------------------------- estado guardado no item
+
+    /**
+     * Guarda um bloco de NBT proprio dentro de um {@code ItemStack}.
+     *
+     * <p>No 1.20.1 e NBT direto no item. No 1.21 o NBT de item deixou de
+     * existir e isso vira o componente {@code CUSTOM_DATA} — dois caminhos
+     * completamente diferentes, por isso a operacao mora aqui.
+     */
+    public static void putStackTag(ItemStack stack, String key, NbtCompound tag) {
+        stack.setSubNbt(key, tag);
+    }
+
+    /** @return o bloco guardado por {@link #putStackTag}, ou null se nao houver. */
+    public static NbtCompound getStackTag(ItemStack stack, String key) {
+        return stack.getSubNbt(key);
+    }
+
     // ------------------------------------------------------------ itens em nbt
 
     public static NbtCompound writeStack(Entity context, ItemStack stack) {

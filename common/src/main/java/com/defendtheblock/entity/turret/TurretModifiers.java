@@ -112,6 +112,22 @@ public final class TurretModifiers {
         return Math.min(0.9D, grade(TurretModifier.SCAVENGER) * DtbConfig.get().turretModuleSavePerGrade);
     }
 
+    /**
+     * O grau em algarismo romano, como num encantamento.
+     *
+     * <p>Fonte unica: a mensagem de chat ao instalar, a aba de estatisticas e o
+     * tooltip do item guardado precisam escrever a mesma coisa.
+     */
+    public static String grade(int grade) {
+        return switch (grade) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            default -> String.valueOf(grade);
+        };
+    }
+
     /** Duracao, em ticks, do efeito aplicado pelas flechas no grau informado. */
     public static int effectDuration(int grade) {
         return (int) Math.max(20L, Math.round(grade * DtbConfig.get().turretModuleEffectSeconds * 20.0D));

@@ -33,6 +33,9 @@ public class ArrowTurretItem extends Item {
         }
         turret.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D,
                 context.getPlayerYaw(), 0.0F);
+        // Antes de entrar no mundo: o item pode carregar nivel, encantamentos e
+        // modulos de uma torreta recolhida (ver TurretEntity#toItemStack).
+        turret.applyFromStack(context.getStack());
         if (!world.spawnEntity(turret)) {
             return ActionResult.FAIL;
         }

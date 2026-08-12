@@ -218,7 +218,7 @@ primeiro, atira depois, nunca o contrario.
 | Clique com... | Acontece |
 |---|---|
 | 🖐️ Mao vazia | Abre a **aba de estatisticas** |
-| 👊 Soco (ataque) | Recolhe a torreta e as flechas, sem dar dano nela |
+| 👊 Soco (ataque) | Recolhe a torreta **com nivel, encantamentos e modulos guardados no item**, mais as flechas |
 | 🏹 Flechas | Carrega municao (aceita flecha com efeito e espectral) |
 | ⛏️ Material do nivel atual, torreta ferida | **Repara vida** |
 | 💎 Material do proximo nivel, vida cheia | Contribui para o upgrade |
@@ -239,6 +239,12 @@ primeiro, atira depois, nunca o contrario.
 O progresso e **por unidade**: cada material correto clicado conta um ponto, e a
 torreta sobe de nivel sozinha ao completar. Nao precisa ter tudo na mao de uma
 vez. O mesmo material do nivel atual **repara** a torreta quando ela esta ferida.
+
+**Recolher nao destroi o investimento.** Socar a torreta devolve um item que
+carrega nivel, encantamentos, modulos, progresso de upgrade e a vida atual — o
+tooltip mostra tudo isso. Recolocar restaura a torreta como ela estava.
+Reposicionar uma torreta de esmeralda e uma acao barata; **mas deixar a horda
+destrui-la ainda custa tudo**, e o item que cai da morte vem limpo.
 
 O **alcance sobe bastante por nivel** de proposito: e o atributo que muda o
 *papel* da torreta. Uma de madeira cobre so o entorno do Nexus; uma de esmeralda

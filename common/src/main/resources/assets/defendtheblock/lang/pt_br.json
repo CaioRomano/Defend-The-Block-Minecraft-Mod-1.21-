@@ -108,5 +108,6 @@
   "screen.defendtheblock.modules_title": "Modulos (%s / %s)",
   "screen.defendtheblock.modules_empty": "Nenhum. Clique com um livro de modulo na mao.",
   "screen.defendtheblock.module_entry": "- %s %s",
-  "tooltip.defendtheblock.arrow_turret.5": "Livros de modulo personalizam um atributo cada - ate 2 por torreta."
+  "tooltip.defendtheblock.arrow_turret.5": "Livros de modulo personalizam um atributo cada - ate 2 por torreta.",
+  "tooltip.defendtheblock.arrow_turret.saved": "Torreta guardada: %s, %s de vida"
 }

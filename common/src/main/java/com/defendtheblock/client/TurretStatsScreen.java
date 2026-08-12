@@ -287,13 +287,13 @@ public final class TurretStatsScreen extends Screen {
         if (modifier == null) {
             return Text.literal(entry);
         }
-        String grade = switch (entry.substring(split + 1)) {
-            case "1" -> "I";
-            case "2" -> "II";
-            case "3" -> "III";
-            case "4" -> "IV";
-            default -> entry.substring(split + 1);
-        };
+        String raw = entry.substring(split + 1);
+        String grade;
+        try {
+            grade = TurretModifiers.grade(Integer.parseInt(raw));
+        } catch (NumberFormatException ignored) {
+            grade = raw;
+        }
         return Text.translatable("screen.defendtheblock.module_entry",
                 Text.translatable(modifier.translationKey()), grade);
     }

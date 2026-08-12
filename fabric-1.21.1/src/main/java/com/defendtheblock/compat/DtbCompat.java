@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -126,6 +127,33 @@ public final class DtbCompat {
     /** Perfuracao (Piercing) — <b>sem efeito no 1.21</b>, mesmo motivo do Punch. */
     public static void applyPiercing(PersistentProjectileEntity arrow, int level) {
         // ver javadoc de applyPunch
+    }
+
+    // ------------------------------------------------- estado guardado no item
+
+    /**
+     * Guarda um bloco de NBT proprio dentro de um {@code ItemStack}.
+     *
+     * <p>No 1.21 o NBT de item deixou de existir: o equivalente e o componente
+     * {@code CUSTOM_DATA}, que embrulha um {@code NbtCompound}. No 1.20.1 e NBT
+     * direto — dois caminhos completamente diferentes, por isso a operacao mora
+     * aqui.
+     */
+    public static void putStackTag(ItemStack stack, String key, NbtCompound tag) {
+        NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
+        NbtCompound root = existing == null ? new NbtCompound() : existing.copyNbt();
+        root.put(key, tag);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(root));
+    }
+
+    /** @return o bloco guardado por {@link #putStackTag}, ou null se nao houver. */
+    public static NbtCompound getStackTag(ItemStack stack, String key) {
+        NbtComponent data = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (data == null) {
+            return null;
+        }
+        NbtCompound root = data.copyNbt();
+        return root.contains(key) ? root.getCompound(key) : null;
     }
 
     // ------------------------------------------------------------ itens em nbt

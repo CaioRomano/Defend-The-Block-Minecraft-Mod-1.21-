@@ -766,3 +766,49 @@ sobrando nem faltando**, comparadas por script contra o codigo. A tabela de
 receitas dos modulos foi conferida contando os ingredientes nos JSON gerados,
 e pegou um erro: eu tinha escrito "2x luneta" para o modulo de Alcance quando
 o padrao usa 3.
+
+**Decima setima rodada — recolher a torreta deixou de ser destrutivo.**
+Encontrado ao revisar o estado do projeto, nao relatado em playtest.
+
+`TurretEntity#damage` manda **qualquer** ataque corpo a corpo de jogador para
+`pickUp`, que devolvia `new ItemStack(ModItems.ARROW_TURRET)` — um item cru. Ou
+seja, um clique esquerdo sem querer apagava nivel, encantamentos e modulos.
+
+Nao era regressao: o nivel ja se perdia assim antes dos modulos existirem. Mas
+a decima quinta rodada colocou um sistema caro em cima de um recipiente furado
+— um modulo de Alcance III custa 9 lunetas e 3 perolas do ender, e sumia num
+clique. Reposicionar torreta e acao rotineira e nao pode custar isso.
+
+Agora `toItemStack()` guarda nivel, os seis encantamentos vanilla, os modulos,
+o progresso de upgrade e a **vida atual** dentro do item, e
+`ArrowTurretItem#useOnBlock` chama `applyFromStack` antes de spawnar.
+
+Tres decisoes que mereciam nota:
+
+- **A vida entra no pacote.** Se o item voltasse sempre com vida cheia,
+  recolher e recolocar seria um reparo gratuito e o custo de material de
+  `turretRepairHealthPerItem` deixaria de significar qualquer coisa.
+- **Torreta de fabrica devolve item limpo.** Item com NBT nao empilha com item
+  sem NBT; sem essa checagem, colocar e recolher uma torreta recem-fabricada
+  quebraria a pilha do inventario sem motivo.
+- **Morte continua limpando tudo.** Recolher com as maos e desmontar; ser
+  derrubada pela horda e perder o investimento. Se a morte devolvesse o item
+  completo, defender a torreta perderia o peso. E a unica parte do
+  comportamento antigo que ficou de proposito.
+
+Compatibilidade: guardar dados num `ItemStack` e mais uma divergencia dura —
+NBT direto no 1.20.1, componente `CUSTOM_DATA` no 1.21, que nem tem mais NBT de
+item. Virou o par `DtbCompat.putStackTag` / `getStackTag`, contido como sempre:
+se a assinatura estiver errada e erro de compilacao numa versao, nao crash em
+jogo. `NbtComponent.of` / `copyNbt` sao de primeiro uso no projeto; evitei
+`NbtComponent.DEFAULT` usando `get` + checagem de null, que e um simbolo a
+menos para dar errado.
+
+De quebra, o algarismo romano do grau tinha **tres** copias (mensagem de chat,
+aba de estatisticas e agora o tooltip do item). Virou `TurretModifiers.grade`,
+fonte unica — conferido por script que so resta uma ocorrencia de `"III"` no
+codigo.
+
+Verificacao: `javac` estrutural nas duas versoes sem erro, sem import orfao,
+`en_us` e `pt_br` identicas em conjunto de chaves. **Continua sem `buildAll` e
+sem teste em jogo.**
