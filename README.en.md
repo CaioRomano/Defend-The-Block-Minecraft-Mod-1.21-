@@ -708,6 +708,7 @@ tools/                        texture generators
 docs/images/                  documentation images
 docs/DEVELOPMENT.md           technical diary and verification status
 docs/DESENVOLVIMENTO.md       the same diary, in Portuguese
+docs/PLAYTEST.md              in-game test checklist
 ```
 
 Each subproject compiles `common/` together with its own
@@ -731,7 +732,8 @@ Treat the balance numbers on this page as intent, not as measured results.
 The detailed history of what was verified, what could still break and the
 reasoning behind each implementation decision lives in:
 
-### 👉 **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**
+### 👉 **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — the technical diary
+### 👉 **[docs/PLAYTEST.md](docs/PLAYTEST.md)** — the pending in-game test checklist *(in Portuguese)*
 
 If you are going to touch the code, start there — several decisions that look
 crooked are scars from real problems.

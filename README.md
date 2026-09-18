@@ -706,6 +706,7 @@ tools/                        geradores de textura
 docs/images/                  imagens desta documentacao
 docs/DESENVOLVIMENTO.md       diario tecnico e status de verificacao
 docs/DEVELOPMENT.md           o mesmo diario, em ingles
+docs/PLAYTEST.md              roteiro de testes em jogo
 ```
 
 Cada sub-projeto compila `common/` junto com o seu proprio pacote
@@ -730,7 +731,8 @@ resultado medido em jogo.
 O historico detalhado do que foi verificado, o que ainda pode quebrar e a razao
 de cada decisao de implementacao esta em:
 
-### 👉 **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)**
+### 👉 **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** — o diario tecnico
+### 👉 **[docs/PLAYTEST.md](docs/PLAYTEST.md)** — o roteiro do que falta testar em jogo
 
 Se voce vai mexer no codigo, comece por la — varias decisoes que parecem tortas
 sao cicatrizes de problemas reais.
