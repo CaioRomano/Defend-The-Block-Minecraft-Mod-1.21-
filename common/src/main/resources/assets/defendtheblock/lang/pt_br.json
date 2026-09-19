@@ -109,5 +109,10 @@
   "screen.defendtheblock.modules_empty": "Nenhum. Clique com um livro de modulo na mao.",
   "screen.defendtheblock.module_entry": "- %s %s",
   "tooltip.defendtheblock.arrow_turret.5": "Livros de modulo personalizam um atributo cada - ate 2 por torreta.",
-  "tooltip.defendtheblock.arrow_turret.saved": "Torreta guardada: %s, %s de vida"
+  "tooltip.defendtheblock.arrow_turret.saved": "Torreta guardada: %s, %s de vida",
+  "commands.defendtheblock.wave_set": "Campanha movida para a invasao %s.",
+  "commands.defendtheblock.spawnwave_started": "Onda de debug de %s iniciada (invasao %s).",
+  "commands.defendtheblock.spawnwave_reset": "Onda de debug encerrada: o spawn voltou ao sorteio normal.",
+  "commands.defendtheblock.spawnwave_unknown": "Entidade desconhecida: %s",
+  "commands.defendtheblock.spawnwave_not_mob": "%s nao e um mob e nao pode invadir."
 }

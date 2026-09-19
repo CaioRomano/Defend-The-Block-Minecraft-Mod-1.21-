@@ -48,6 +48,26 @@ public final class InvasionManager {
     private InvasionManager() {
     }
 
+    /**
+     * Tipo unico a ser spawnado, quando a onda foi iniciada por
+     * {@code /dtb spawnwave <mob>}.
+     *
+     * <p><b>So para debug.</b> E estatico e nao persistido de proposito: a
+     * campanha e uma so por servidor e isto precisa sumir no restart, para uma
+     * sessao de teste nunca contaminar a proxima. {@code null} = sorteio normal
+     * da {@link WaveComposition}.
+     */
+    private static EntityType<? extends MobEntity> forcedSpawnType;
+
+    /** @return o tipo forcado agora, ou null se a onda e normal. */
+    public static EntityType<? extends MobEntity> getForcedSpawnType() {
+        return forcedSpawnType;
+    }
+
+    public static void setForcedSpawnType(EntityType<? extends MobEntity> type) {
+        forcedSpawnType = type;
+    }
+
     // ------------------------------------------------------------ tick loop
 
     public static void tick(MinecraftServer server) {
@@ -216,7 +236,9 @@ public final class InvasionManager {
             if (data.getActiveInvaders().size() >= cap) {
                 break;
             }
-            EntityType<? extends MobEntity> type = WaveComposition.pick(wave, world.getRandom());
+            EntityType<? extends MobEntity> type = forcedSpawnType != null
+                    ? forcedSpawnType
+                    : WaveComposition.pick(wave, world.getRandom());
             if (!spawnInvader(world, data, type, wave)) {
                 break;
             }

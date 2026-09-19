@@ -161,6 +161,20 @@ public class InvasionData {
         return wavesCompleted;
     }
 
+    /**
+     * Reposiciona a campanha numa invasao especifica (comando {@code /dtb setwave}).
+     *
+     * <p>Mexe <b>so</b> neste contador de proposito. Teto de invasores vivos,
+     * ritmo de spawn, tamanho do lote, escalada de vida e dano, qualidade do
+     * equipamento e liberacao de tipos de mob sao <b>todos</b> derivados do
+     * numero da onda, entao ajustar este unico valor faz o resto acompanhar
+     * sozinho — nao existe estado paralelo para sincronizar.
+     */
+    public void setWavesCompleted(int wavesCompleted) {
+        this.wavesCompleted = Math.max(0, wavesCompleted);
+        markDirty();
+    }
+
     public int getCurrentWave() {
         return currentWave;
     }
