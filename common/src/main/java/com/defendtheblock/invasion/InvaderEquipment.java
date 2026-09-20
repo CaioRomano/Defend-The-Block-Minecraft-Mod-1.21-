@@ -198,7 +198,8 @@ public final class InvaderEquipment {
     }
 
     private static ItemStack mainHandFor(MobEntity mob, InvaderData data, int tier, Random random) {
-        // Zumbi mineiro sempre carrega a picareta: e a ferramenta da habilidade.
+        // Zumbi sapador sempre carrega a picareta na mao principal: e a
+        // ferramenta que ele usa em tudo que nao for madeira.
         if (data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
             return new ItemStack(PICKAXES[tier]);
         }
@@ -228,6 +229,8 @@ public final class InvaderEquipment {
 
     private static ItemStack offHandFor(InvaderData data) {
         if (data.hasAbility(InvaderAbility.LADDER_BUILDER)) {
+            // O construtor carrega escada visivel; o cobblestone dos degraus e
+            // criado pela goal, nao sai do inventario dele.
             return new ItemStack(Items.LADDER, 16);
         }
         if (data.hasAbility(InvaderAbility.TNT_SAPPER)) {
@@ -235,10 +238,10 @@ public final class InvaderEquipment {
             // vez num obstaculo, e depois vira um zumbi comum.
             return new ItemStack(Items.TNT, 1);
         }
-        if (data.hasAbility(InvaderAbility.BLOCK_BUILDER)) {
-            return new ItemStack(Items.COBBLESTONE, 64);
-        }
-        if (data.hasAbility(InvaderAbility.FIRE_STARTER)) {
+        if (data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
+            // A segunda ferramenta do sapador: picareta na mao principal para
+            // cavar, isqueiro aqui para queimar madeira. Ele escolhe pelo
+            // material do obstaculo (ver BreachObstacleGoal).
             return new ItemStack(Items.FLINT_AND_STEEL);
         }
         return ItemStack.EMPTY;

@@ -30,8 +30,6 @@ public final class ModItems {
     // --- ovos dos invasores especiais (um por habilidade)
     public static final Item LADDER_ZOMBIE_EGG = egg(InvaderAbility.LADDER_BUILDER);
     public static final Item TNT_ZOMBIE_EGG = egg(InvaderAbility.TNT_SAPPER);
-    public static final Item BUILDER_ZOMBIE_EGG = egg(InvaderAbility.BLOCK_BUILDER);
-    public static final Item FIRE_ZOMBIE_EGG = egg(InvaderAbility.FIRE_STARTER);
     public static final Item MINER_ZOMBIE_EGG = egg(InvaderAbility.PICKAXE_MINER);
 
     private static Item egg(InvaderAbility ability) {
@@ -62,8 +60,6 @@ public final class ModItems {
         Registry.register(Registries.ITEM, DtbCompat.id("gathering_totem"), GATHERING_TOTEM);
         Registry.register(Registries.ITEM, DtbCompat.id("ladder_zombie_egg"), LADDER_ZOMBIE_EGG);
         Registry.register(Registries.ITEM, DtbCompat.id("tnt_zombie_egg"), TNT_ZOMBIE_EGG);
-        Registry.register(Registries.ITEM, DtbCompat.id("builder_zombie_egg"), BUILDER_ZOMBIE_EGG);
-        Registry.register(Registries.ITEM, DtbCompat.id("fire_zombie_egg"), FIRE_ZOMBIE_EGG);
         Registry.register(Registries.ITEM, DtbCompat.id("miner_zombie_egg"), MINER_ZOMBIE_EGG);
 
         for (Map.Entry<TurretModifier, Item> entry : TURRET_MODULES.entrySet()) {

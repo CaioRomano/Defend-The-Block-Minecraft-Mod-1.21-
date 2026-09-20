@@ -207,25 +207,35 @@ public final class DtbConfig {
      * explosao mal posicionada e melhor que um creeper eternamente empacado.
      */
     public int creeperBreachTimeoutTicks = 100;
+    /** Chance de uma aranha nascer sabendo cuspir teia. */
     public double spiderWebChance = 0.25D;
-    public double zombiePickaxeChance = 0.18D;
-    public double zombieLadderChance = 0.16D;
+    /**
+     * Chance de um zumbi nascer <b>sapador</b>: o que abre passagem pelo
+     * obstaculo.
+     *
+     * <p>Ele escolhe a ferramenta pelo material — isqueiro na madeira,
+     * picareta no resto — entao esta unica chance cobre o que antes eram duas
+     * habilidades separadas (mineiro e incendiario).
+     */
+    public double zombiePickaxeChance = 0.28D;
+    /**
+     * Chance de um zumbi nascer <b>construtor</b>: o unico invasor que coloca
+     * bloco no mundo.
+     *
+     * <p>Ele monta a escalada rente a um obstaculo alto e ergue rampa ate um
+     * Nexus suspenso, sempre com escada nos lados livres para o resto da horda
+     * subir junto. Absorveu a chance do antigo construtor de pilar, que deixou
+     * de existir como habilidade separada.
+     */
+    public double zombieLadderChance = 0.28D;
+    /** Chance de um zumbi nascer com uma unica TNT para arremessar. */
     public double zombieTntChance = 0.07D;
     /**
-     * Chance de um zumbi nascer com isqueiro. Ele nao depende de haver
-     * construcao de madeira por perto para nascer — a habilidade e sorteada
-     * como qualquer outra, e so o <i>uso</i> dela e que precisa de um
-     * obstaculo de madeira.
-     */
-    public double zombieFireStarterChance = 0.10D;
-    /** Chance de um zumbi nascer construtor (ergue caminho/pilar ate o Nexus). */
-    public double zombieBuilderChance = 0.12D;
-    /**
-     * Multiplicador aplicado as chances de zumbi com escada e de zumbi
-     * construtor quando o Nexus esta suspenso no ar ou bem acima do chao.
+     * Multiplicador aplicado a chance de zumbi construtor quando o Nexus esta
+     * suspenso no ar ou bem acima do chao.
      *
-     * <p>Sao justamente as duas habilidades que resolvem esse cenario, entao
-     * faz sentido a horda trazer mais delas quando ele acontece.
+     * <p>E a unica habilidade que resolve esse cenario, entao faz sentido a
+     * horda trazer mais dela quando ele acontece.
      */
     public double elevatedNexusBuilderBonus = 2.5D;
 

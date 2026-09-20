@@ -63,26 +63,20 @@ public final class InvaderGoals {
 
         if (mob instanceof ZombieEntity) {
             // Uma habilidade por zumbi, no maximo: os intervalos sao exclusivos.
-            // Escada e construtor vem primeiro na fila justamente porque sao as
-            // duas que ganham bonus quando o Nexus esta suspenso.
+            // O construtor vem primeiro na fila porque e o unico que ganha
+            // bonus quando o Nexus esta suspenso — e o unico que resolve o caso.
             double bonus = isNexusElevated(mob, data) ? config.elevatedNexusBuilderBonus : 1.0D;
-            double ladder = Math.min(0.5D, config.zombieLadderChance * bonus);
-            double builder = ladder + Math.min(0.5D, config.zombieBuilderChance * bonus);
-            double pickaxe = builder + config.zombiePickaxeChance;
-            double tnt = pickaxe + config.zombieTntChance;
-            double fire = tnt + config.zombieFireStarterChance;
+            double builder = Math.min(0.5D, config.zombieLadderChance * bonus);
+            double sapper = builder + config.zombiePickaxeChance;
+            double tnt = sapper + config.zombieTntChance;
 
             double roll = random.nextDouble();
-            if (roll < ladder) {
+            if (roll < builder) {
                 data.addAbility(InvaderAbility.LADDER_BUILDER);
-            } else if (roll < builder) {
-                data.addAbility(InvaderAbility.BLOCK_BUILDER);
-            } else if (roll < pickaxe) {
+            } else if (roll < sapper) {
                 data.addAbility(InvaderAbility.PICKAXE_MINER);
             } else if (roll < tnt) {
                 data.addAbility(InvaderAbility.TNT_SAPPER);
-            } else if (roll < fire) {
-                data.addAbility(InvaderAbility.FIRE_STARTER);
             }
         }
     }
@@ -130,7 +124,10 @@ public final class InvaderGoals {
         // > atacar o Nexus).
         accessor.defendtheblock$getGoalSelector().add(-3, new BreachObstacleGoal(mob, MOVE_SPEED));
         accessor.defendtheblock$getGoalSelector().add(-2, new ClimbLadderGoal(mob, MOVE_SPEED));
-        if (DtbConfig.get().invadersCanBridge) {
+        // So o construtor levanta rampa. A goal filtra por habilidade sozinha,
+        // mas nem instalar nos outros evita um canStart por tick a toa em cada
+        // mob da horda.
+        if (DtbConfig.get().invadersCanBridge && data.hasAbility(InvaderAbility.LADDER_BUILDER)) {
             accessor.defendtheblock$getGoalSelector().add(-1, new BridgeToNexusGoal(mob));
         }
         if (data.hasAbility(InvaderAbility.WEB_SHOT)) {

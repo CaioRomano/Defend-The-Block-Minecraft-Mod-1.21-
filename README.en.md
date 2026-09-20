@@ -62,7 +62,7 @@ message.
 | 🕐 | **A 3-day grace period** before the first invasion, with an on-screen warning. |
 | 🧹 | **The terrain resets at dawn**: everything the horde built is cleaned up. |
 | 💎 | **Loot** scattered around the Nexus for every night survived. |
-| ⚙️ | **64 configuration options** — from Nexus health to every ability chance. |
+| ⚙️ | **62 configuration options** — from Nexus health to every ability chance. |
 
 ---
 
@@ -405,13 +405,11 @@ Some invaders also carry abilities that change the game:
 | All but creeper | 🚪 **Break down closed doors** instead of just opening them | 100% |
 | 🕷️ Spider | Climbs walls and **shoots web** that pins the target | 25% |
 | 💥 Creeper | **Blows itself up on the obstacle** blocking the horde, 3s fuse after touching it. **Does not damage the Nexus** | 100% |
-| 🧟 Zombie | ⛏️ **Pickaxe**: mines through the wall in the way | 18% |
-| 🧟 Zombie | 🪜 **Ladders**: builds a ladder column up the obstacle | 16% |
-| 🧟 Zombie | 🧱 **Builder**: raises a path or pillar to the Nexus, far faster than a regular invader | 12% |
-| 🧟 Zombie | 🔥 **Firestarter**: sets wooden obstacles alight instead of breaking them | 10% |
+| 🧟 Zombie | ⛏️🔥 **Sapper**: opens a way through, picking the tool by material — flint and steel on wood, pickaxe on everything else | 28% |
+| 🧟 Zombie | 🪜 **Builder**: the **only** invader that places blocks. Builds a climb flush against a tall wall and raises a ramp to a suspended Nexus, always with ladders on every free side | 28% |
 | 🧟 Zombie | 💣 **TNT**: **throws** a single TNT in an arc, like a projectile | 7% |
 
-Each zombie gets **at most one** of these. When the **Nexus is suspended in the
+Each zombie gets **at most one** of these. **No other invader places blocks or ladders** — anyone who is not a builder only knows how to *climb* what already exists, so killing the builder closes the path it was opening. When the **Nexus is suspended in the
 air**, the chances for ladder and builder zombies are multiplied by 2.5 — those
 are precisely the two abilities that solve that scenario.
 
@@ -552,12 +550,10 @@ is plain JSON: edit, save and restart the world/server.
 | `creeperObstacleFuseTicks` | `60` | Creeper fuse after touching the obstacle (3s) |
 | `creeperBreachTimeoutTicks` | `100` | Time spent trying to **reach** the obstacle before lighting up anyway |
 | `spiderWebChance` | `0.25` | Chance of a web-shooting spider |
-| `zombiePickaxeChance` | `0.18` | Chance of a miner zombie |
-| `zombieLadderChance` | `0.16` | Chance of a ladder zombie |
-| `zombieBuilderChance` | `0.12` | Chance of a builder zombie |
-| `zombieFireStarterChance` | `0.10` | Chance of a firestarter zombie |
+| `zombiePickaxeChance` | `0.28` | Chance of a sapper zombie (digs and burns) |
+| `zombieLadderChance` | `0.28` | Chance of a builder zombie (the only block placer) |
 | `zombieTntChance` | `0.07` | Chance of a TNT zombie |
-| `elevatedNexusBuilderBonus` | `2.5` | Ladder/builder multiplier when the Nexus is suspended |
+| `elevatedNexusBuilderBonus` | `2.5` | Builder multiplier when the Nexus is suspended |
 | `invadersCanBridge` | `true` | Mobs build block paths when the Nexus is elevated |
 | `maxMineHardness` | `30.0` | Hardest block an invader can mine |
 | `mineTicksPerHardness` | `14` | Mining pace (higher = slower) |

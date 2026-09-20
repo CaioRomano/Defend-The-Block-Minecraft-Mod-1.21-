@@ -44,11 +44,12 @@ import java.util.EnumSet;
  *       arromba porta fechada bem mais rapido que cavando;</li>
  *   <li>{@link InvaderAbility#SUICIDE_BREACH} - creeper se explode no obstaculo;</li>
  *   <li>{@link InvaderAbility#TNT_SAPPER} - zumbi planta e acende uma TNT;</li>
- *   <li>{@link InvaderAbility#LADDER_BUILDER} - zumbi monta uma coluna de escadas
- *       (que o resto da horda tambem usa);</li>
- *   <li>{@link InvaderAbility#FIRE_STARTER} - zumbi ateia fogo em obstaculo de
- *       madeira em vez de quebra-lo;</li>
- *   <li>{@link InvaderAbility#PICKAXE_MINER} - cava o bloco.</li>
+ *   <li>{@link InvaderAbility#LADDER_BUILDER} - zumbi construtor monta a
+ *       escalada rente ao obstaculo, com escada nos lados livres (que o resto
+ *       da horda, que nao constroi nada, usa para subir junto);</li>
+ *   <li>{@link InvaderAbility#PICKAXE_MINER} - zumbi sapador abre a passagem
+ *       escolhendo a ferramenta pelo material: isqueiro na madeira, picareta
+ *       no resto.</li>
  * </ul>
  *
  * <p>Todo bloco colocado aqui passa por {@link com.defendtheblock.invasion.InvaderBlocks},
@@ -127,15 +128,17 @@ public class BreachObstacleGoal extends Goal {
                 && mob.getEquippedStack(EquipmentSlot.OFFHAND).isOf(Items.LADDER)) {
             return true;
         }
-        if (data.hasAbility(InvaderAbility.FIRE_STARTER) && isWood(state)) {
-            return true;
-        }
-        // Quebrar parede e privilegio de quem tem ferramenta para isso: o zumbi
-        // com picareta cava, o da TNT explode, o creeper se explode. O resto da
+        // Abrir passagem e privilegio de quem tem ferramenta: o sapador
+        // queima ou cava, o da TNT explode, o creeper se explode. O resto da
         // horda contorna (ver AttackNexusGoal#tryDetour) ou espera a passagem
         // ser aberta. Deixar todo mundo cavar tornava qualquer muro irrelevante.
-        return data.hasAbility(InvaderAbility.PICKAXE_MINER)
-                && state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
+        if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
+            return false;
+        }
+        // O sapador escolhe a ferramenta pelo material: madeira ele queima com
+        // o isqueiro, e ai a dureza nem importa; o resto ele cava, e ai importa.
+        return isWood(state)
+                || state.getHardness(mob.getWorld(), pos) <= DtbConfig.get().maxMineHardness;
     }
 
     @Override
@@ -267,7 +270,9 @@ public class BreachObstacleGoal extends Goal {
         if (data.hasAbility(InvaderAbility.LADDER_BUILDER) && buildLadder(world)) {
             return;
         }
-        if (data.hasAbility(InvaderAbility.FIRE_STARTER) && igniteWood(world)) {
+        // O sapador troca de ferramenta conforme o bloco: isqueiro na madeira,
+        // picareta no resto. Uma habilidade so, duas respostas.
+        if (data.hasAbility(InvaderAbility.PICKAXE_MINER) && igniteWood(world)) {
             return;
         }
         if (!data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
@@ -530,7 +535,9 @@ public class BreachObstacleGoal extends Goal {
         }
 
         InvaderBlocks.place(world, above, Blocks.FIRE.getDefaultState());
-        mob.swingHand(Hand.MAIN_HAND);
+        // Balanca a mao secundaria: e nela que fica o isqueiro do sapador, e
+        // assim o jogador ve qual ferramenta ele escolheu para este bloco.
+        mob.swingHand(Hand.OFF_HAND);
         world.playSound(null, target, SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.HOSTILE, 1.0F, 1.0F);
         data.setBreachCooldown(300);
         data.setObstacle(null);

@@ -30,8 +30,6 @@ public final class ModItemGroups {
                 entries.add(ModItems.GATHERING_TOTEM);
                 entries.add(ModItems.LADDER_ZOMBIE_EGG);
                 entries.add(ModItems.TNT_ZOMBIE_EGG);
-                entries.add(ModItems.BUILDER_ZOMBIE_EGG);
-                entries.add(ModItems.FIRE_ZOMBIE_EGG);
                 entries.add(ModItems.MINER_ZOMBIE_EGG);
                 // Os livros de modulo entram na ordem do enum, entao a aba
                 // sempre reflete a ordem em que eles estao documentados.

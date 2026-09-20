@@ -63,7 +63,7 @@ embora isso seja desligavel na config, se voce preferir so a mensagem de derrota
 | 🕐 | **3 dias de carencia** antes da primeira invasao, com aviso na tela. |
 | 🧹 | **O terreno volta ao normal** ao amanhecer: o entulho que a horda construiu some. |
 | 💎 | **Saque** espalhado em volta do Nexus a cada noite sobrevivida. |
-| ⚙️ | **64 opcoes de configuracao** — da vida do Nexus a cada chance de habilidade. |
+| ⚙️ | **62 opcoes de configuracao** — da vida do Nexus a cada chance de habilidade. |
 
 ---
 
@@ -406,13 +406,11 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Todos, exceto creeper | 🚪 **Arrombam portas fechadas** em vez de so abri-las | 100% |
 | 🕷️ Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
 | 💥 Creeper | **Se explode no obstaculo** que trava a horda, com pavio de 3s. **Nao danifica o Nexus** | 100% |
-| 🧟 Zumbi | ⛏️ **Picareta**: cava a parede que atrapalha | 18% |
-| 🧟 Zumbi | 🪜 **Escadas**: monta uma coluna de escadas no obstaculo | 16% |
-| 🧟 Zumbi | 🧱 **Construtor**: ergue caminho/pilar ate o Nexus, bem mais rapido que um invasor comum | 12% |
-| 🧟 Zumbi | 🔥 **Isqueiro**: ateia fogo em obstaculo de madeira em vez de quebra-lo | 10% |
+| 🧟 Zumbi | ⛏️🔥 **Sapador**: abre passagem escolhendo a ferramenta pelo material — isqueiro na madeira, picareta no resto | 28% |
+| 🧟 Zumbi | 🪜 **Construtor**: o **unico** invasor que coloca bloco. Monta escalada rente a um muro alto e ergue rampa ate um Nexus suspenso, sempre com escada nos lados livres | 28% |
 | 🧟 Zumbi | 💣 **TNT**: **arremessa** uma unica TNT em arco, como um projetil | 7% |
 
-Cada zumbi recebe **no maximo uma** dessas habilidades. Quando o **Nexus esta
+Cada zumbi recebe **no maximo uma** dessas habilidades. **Nenhum outro invasor coloca bloco ou escada** — quem nao e construtor so sabe *subir* o que ja existe, entao matar o construtor fecha a passagem que ele estava abrindo. Quando o **Nexus esta
 suspenso no ar**, as chances de zumbi com escadas e de construtor sao
 multiplicadas por 2.5 — sao justamente as duas que resolvem esse cenario.
 
@@ -555,12 +553,10 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 | `creeperObstacleFuseTicks` | `60` | Pavio do creeper apos encostar no obstaculo (3s) |
 | `creeperBreachTimeoutTicks` | `100` | Tempo tentando **chegar** ao obstaculo antes de acender assim mesmo |
 | `spiderWebChance` | `0.25` | Chance de aranha com teia |
-| `zombiePickaxeChance` | `0.18` | Chance de zumbi mineiro |
-| `zombieLadderChance` | `0.16` | Chance de zumbi carpinteiro |
-| `zombieBuilderChance` | `0.12` | Chance de zumbi construtor |
-| `zombieFireStarterChance` | `0.10` | Chance de zumbi com isqueiro |
+| `zombiePickaxeChance` | `0.28` | Chance de zumbi sapador (cava e queima) |
+| `zombieLadderChance` | `0.28` | Chance de zumbi construtor (o unico que coloca bloco) |
 | `zombieTntChance` | `0.07` | Chance de zumbi bombardeiro |
-| `elevatedNexusBuilderBonus` | `2.5` | Multiplicador de escada/construtor com o Nexus suspenso |
+| `elevatedNexusBuilderBonus` | `2.5` | Multiplicador do construtor com o Nexus suspenso |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
 | `maxMineHardness` | `30.0` | Dureza maxima de bloco que um invasor consegue minerar |
 | `mineTicksPerHardness` | `14` | Ritmo de mineracao (maior = mais lento) |
