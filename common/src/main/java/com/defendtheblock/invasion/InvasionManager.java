@@ -239,7 +239,17 @@ public final class InvasionManager {
             EntityType<? extends MobEntity> type = forcedSpawnType != null
                     ? forcedSpawnType
                     : WaveComposition.pick(wave, world.getRandom());
-            if (!spawnInvader(world, data, type, wave)) {
+
+            // Um unico sorteio de lugar por lote. Nao e so economia: o grupo
+            // de zumbis abaixo nasce em volta DESTE ponto, entao a horda chega
+            // em pelotao em vez de pingar um mob de cada canto do anel.
+            BlockPos anchor = findSpawnPos(world, data.getNexusPos());
+            if (anchor == null) {
+                // Anel sem lugar valido (oceano, tudo coberto): insistir no
+                // resto do lote sairia caro e daria no mesmo.
+                break;
+            }
+            if (!spawnInvader(world, data, type, wave, anchor)) {
                 break;
             }
             // O zumbi e a base da horda: ele chega em grupo, os outros tipos
@@ -247,8 +257,11 @@ public final class InvasionManager {
             // sorteio (que mudaria a proporcao) — aqui muda a quantidade.
             if (type == EntityType.ZOMBIE) {
                 for (int extra = 0; extra < zombieExtras(wave); extra++) {
-                    if (data.getActiveInvaders().size() >= cap
-                            || !spawnInvader(world, data, EntityType.ZOMBIE, wave)) {
+                    if (data.getActiveInvaders().size() >= cap) {
+                        break;
+                    }
+                    BlockPos beside = spreadAround(world, data.getNexusPos(), anchor);
+                    if (!spawnInvader(world, data, EntityType.ZOMBIE, wave, beside)) {
                         break;
                     }
                 }
@@ -272,13 +285,9 @@ public final class InvasionManager {
     // ---------------------------------------------------------------- spawn
 
     private static boolean spawnInvader(ServerWorld world, InvasionData data,
-                                        EntityType<? extends MobEntity> type, int wave) {
+                                        EntityType<? extends MobEntity> type, int wave,
+                                        BlockPos pos) {
         BlockPos nexus = data.getNexusPos();
-        BlockPos pos = findSpawnPos(world, nexus);
-        if (pos == null) {
-            return false;
-        }
-
         MobEntity mob = type.create(world);
         if (mob == null) {
             return false;
@@ -299,44 +308,114 @@ public final class InvasionManager {
         return true;
     }
 
+    /** Tentativas de achar lugar por lote. Ver {@link #findSpawnPos}. */
+    private static final int SPAWN_ATTEMPTS = 16;
+    /** Raio, em blocos, do espalhamento do pelotao em volta do ponto do lote. */
+    private static final int GROUP_SPREAD = 2;
+    /** Tentativas de achar lugar para cada acompanhante do pelotao. */
+    private static final int GROUP_ATTEMPTS = 4;
+
     /**
-     * Um lugar valido dentro do <b>anel de invasao</b>: a partir da distancia
-     * minima de spawn em volta do Nexus e dentro do circulo externo. A
-     * geometria toda mora em {@link NexusZones}, compartilhada com a checagem
-     * que impede o spawn natural perto do bloco.
+     * Um lugar valido dentro do <b>anel de invasao</b>. A geometria toda mora
+     * em {@link NexusZones}, compartilhada com a checagem que impede o spawn
+     * natural perto do bloco. Fora do anel o mundo segue com o spawn normal do
+     * vanilla.
      *
-     * <p>Fora desse anel o mundo segue com o spawn normal do vanilla.
+     * <p><b>Como sorteia.</b> O chunk sai de {@link NexusZones#ringOffsets()},
+     * a lista pronta dos chunks do anel, entao <b>toda tentativa cai no
+     * anel</b>. Antes o sorteio era no quadrado que contem o anel e dois tercos
+     * dele era descartado na hora — num caminho que roda dezenas de vezes por
+     * segundo nas ondas altas, onde o lote passa de vinte mobs. Por isso aqui
+     * bastam {@value #SPAWN_ATTEMPTS} tentativas para valer mais do que as 32
+     * de antes: todas sao tentativas de verdade.
+     *
+     * <p>As checagens de cada tentativa estao na ordem do mais barato para o
+     * mais caro: heightmap, depois aritmetica da distancia, e so no fim os
+     * estados de bloco.
      */
     private static BlockPos findSpawnPos(ServerWorld world, BlockPos nexus) {
-        int outer = NexusZones.outerRadius();
+        int[] ring = NexusZones.ringOffsets();
+        if (ring.length == 0) {
+            return null;
+        }
         ChunkPos origin = new ChunkPos(nexus);
+        Random random = world.getRandom();
+        BlockPos.Mutable probe = new BlockPos.Mutable();
+        int chunks = ring.length >> 1;
 
-        for (int attempt = 0; attempt < 32; attempt++) {
-            int dx = world.getRandom().nextInt(outer * 2 + 1) - outer;
-            int dz = world.getRandom().nextInt(outer * 2 + 1) - outer;
-
-            ChunkPos chunk = new ChunkPos(origin.x + dx, origin.z + dz);
-            if (!NexusZones.isInvasionSpawnZone(nexus, chunk)) {
-                continue;
-            }
-            if (!world.getChunkManager().isChunkLoaded(chunk.x, chunk.z)) {
-                continue;
-            }
-            int x = chunk.getStartX() + world.getRandom().nextInt(16);
-            int z = chunk.getStartZ() + world.getRandom().nextInt(16);
-            int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-            if (y <= world.getBottomY() + 1) {
-                continue;
-            }
-            BlockPos pos = new BlockPos(x, y, z);
-            boolean feetFree = world.getBlockState(pos).isAir();
-            boolean headFree = world.getBlockState(pos.up()).isAir();
-            boolean ground = world.getBlockState(pos.down()).isSolidBlock(world, pos.down());
-            if (feetFree && headFree && ground) {
+        for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
+            int offset = random.nextInt(chunks) << 1;
+            int x = ((origin.x + ring[offset]) << 4) + random.nextInt(16);
+            int z = ((origin.z + ring[offset + 1]) << 4) + random.nextInt(16);
+            BlockPos pos = surfaceAt(world, nexus, probe, x, z);
+            if (pos != null) {
                 return pos;
             }
         }
         return null;
+    }
+
+    /**
+     * Um lugar para o acompanhante do pelotao, a poucos blocos do ponto do
+     * lote. Se nao achar, devolve o proprio ponto: dois mobs no mesmo bloco e
+     * um problema que o vanilla resolve sozinho empurrando um deles, e vale
+     * mais do que perder o mob do lote.
+     */
+    private static BlockPos spreadAround(ServerWorld world, BlockPos nexus, BlockPos anchor) {
+        Random random = world.getRandom();
+        BlockPos.Mutable probe = new BlockPos.Mutable();
+        int span = GROUP_SPREAD * 2 + 1;
+
+        for (int attempt = 0; attempt < GROUP_ATTEMPTS; attempt++) {
+            int x = anchor.getX() + random.nextInt(span) - GROUP_SPREAD;
+            int z = anchor.getZ() + random.nextInt(span) - GROUP_SPREAD;
+            BlockPos pos = surfaceAt(world, nexus, probe, x, z);
+            if (pos != null) {
+                return pos;
+            }
+        }
+        return anchor;
+    }
+
+    /**
+     * O chao exposto nesta coluna, se ele servir de lugar de spawn: carregado,
+     * respeitando a distancia minima, com os pes e a cabeca livres e piso
+     * solido embaixo.
+     *
+     * <p>Reaproveita o {@code probe} do chamador em vez de alocar um
+     * {@link BlockPos} por checagem — sao tres por coluna, e a coluna pode ser
+     * descartada em qualquer uma delas. So aloca de verdade no sucesso.
+     *
+     * <p>A checagem de chunk carregado vem antes de qualquer leitura: ler
+     * terreno de chunk descarregado forcaria o servidor a gerar/carregar o
+     * chunk no meio do tick do spawn.
+     */
+    private static BlockPos surfaceAt(ServerWorld world, BlockPos nexus, BlockPos.Mutable probe,
+                                      int x, int z) {
+        if (!world.getChunkManager().isChunkLoaded(x >> 4, z >> 4)) {
+            return null;
+        }
+        int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y <= world.getBottomY() + 1) {
+            return null;
+        }
+        // A regra exata, em 3D: a borda interna do anel ainda tem cantos a
+        // menos da distancia minima do bloco (o anel e alinhado a chunk, a
+        // regra nao e), e o ponto alto do mapa pode estar bem acima do Nexus.
+        probe.set(x, y, z);
+        if (NexusZones.isTooCloseToSpawn(nexus, probe)) {
+            return null;
+        }
+        if (!world.getBlockState(probe).isAir()) {
+            return null;
+        }
+        if (!world.getBlockState(probe.set(x, y + 1, z)).isAir()) {
+            return null;
+        }
+        if (!world.getBlockState(probe.set(x, y - 1, z)).isSolidBlock(world, probe)) {
+            return null;
+        }
+        return new BlockPos(x, y, z);
     }
 
     // ------------------------------------------------------------ invasores
@@ -392,15 +471,13 @@ public final class InvasionManager {
             return;
         }
 
-        ChunkPos mobChunk = new ChunkPos(mob.getBlockPos());
-
         // Distancia minima de spawn: o quintal em volta do Nexus fica limpo,
         // seja o mob da invasao ou o spawn natural da noite. Vale ate para o
         // enderman, que e excecao so na hora de ser recrutado.
         // Nao e um escudo que apaga mob por perto: isto so roda quando a
         // entidade entra no mundo, entao quem VEIO andando de fora continua
         // valendo — some so o que tentar nascer aqui dentro.
-        if (NexusZones.isNoSpawnZone(data.getNexusPos(), mobChunk)) {
+        if (NexusZones.isTooCloseToSpawn(data.getNexusPos(), mob.getBlockPos())) {
             entity.discard();
             return;
         }
@@ -409,7 +486,10 @@ public final class InvasionManager {
         if (mob instanceof EndermanEntity) {
             return;
         }
-        if (NexusZones.chunkDistance(new ChunkPos(data.getNexusPos()), mobChunk)
+        // O recrutamento continua medido em chunk, de proposito: ele e
+        // deliberadamente generoso na vertical, para que o mob que nasceu numa
+        // caverna funda debaixo da base entre na mesma briga que os de cima.
+        if (NexusZones.chunkDistance(new ChunkPos(data.getNexusPos()), new ChunkPos(mob.getBlockPos()))
                 > DtbConfig.get().attractionChunkRadius) {
             return;
         }

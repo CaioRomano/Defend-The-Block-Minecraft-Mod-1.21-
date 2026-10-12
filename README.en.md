@@ -384,11 +384,16 @@ not repeat the message.
 Two concentric regions around the Nexus, with different rules:
 
 - **No-spawn zone** — everything closer than **4 chunks** to the Nexus
-  (`minSpawnChunkDistance`), a 7x7 chunk square, or 112x112 blocks. **No
-  aggressive mob spawns there**, neither the invasion nor the usual night
+  (`minSpawnChunkDistance`), measured **in 3D**: a sphere of 64 blocks radius.
+  **No aggressive mob spawns there**, neither the invasion nor the usual night
   spawning. Anything near the Nexus marched in from outside. This does **not**
-  affect players or passive mobs — animals spawn normally. From the fourth
-  chunk outwards, natural spawning is back to vanilla.
+  affect players or passive mobs — animals spawn normally. Outside the sphere,
+  natural spawning is back to vanilla.
+
+  Being 3D matters: the protection **ends vertically**. A cave 80 blocks below
+  the base is still mob territory, because being 80 blocks under the Nexus is
+  further from it than open ground 4 chunks away. Were it an infinitely tall
+  column, a buried base would sterilise the entire world beneath it.
 - **Invasion ring** — a circular band starting exactly at the minimum distance
   and extending 3 chunks out. With the defaults, invaders spawn between chunk 4
   and chunk 6 from the Nexus, and march in from there.
@@ -412,13 +417,29 @@ Some invaders also carry abilities that change the game:
 | All but creeper | 🚪 **Break down closed doors** instead of just opening them | 100% |
 | 🕷️ Spider | Climbs walls and **shoots web** that pins the target | 25% |
 | 💥 Creeper | **Blows itself up on the obstacle** blocking the horde, 3s fuse after touching it. **Does not damage the Nexus** | 100% |
-| 🧟 Zombie | ⛏️🔥 **Sapper**: opens a way through, picking the tool by material — flint and steel on wood, pickaxe on everything else | 28% |
+| 🧟 Zombie | ⛏️🔥 **Sapper**: opens a way through, picking the tool by material — flint and steel on wood, pickaxe on everything else. The **only** one that digs a descending **tunnel** to reach a buried Nexus | 28% |
 | 🧟 Zombie | 🪜 **Builder**: the **only** invader that places blocks. Builds a climb flush against a tall wall and raises a ramp to a suspended Nexus, always with ladders on every free side | 28% |
 | 🧟 Zombie | 💣 **TNT**: **throws** a single TNT in an arc, like a projectile | 7% |
 
-Each zombie gets **at most one** of these. **No other invader places blocks or ladders** — anyone who is not a builder only knows how to *climb* what already exists, so killing the builder closes the path it was opening. When the **Nexus is suspended in the
-air**, the chances for ladder and builder zombies are multiplied by 2.5 — those
-are precisely the two abilities that solve that scenario.
+Each zombie gets **at most one** of these. **No other invader places blocks or
+ladders** — anyone who is not a builder only knows how to *climb* what already
+exists, so killing the builder closes the path it was opening.
+
+The horde adapts to the shape of your base, and **the two adaptations mirror
+each other**:
+
+- **Nexus suspended in the air** (tower, platform) — the builder's chance is
+  multiplied by 2.5. It raises the ramp, always with ladders on every free side,
+  and the rest of the horde climbs it.
+- **Nexus buried** (basement, bunker) — the sapper's chance is multiplied by
+  2.5. The invasion always spawns at the surface, so it digs a **descending
+  staircase**, 1 wide and 2 tall, towards the block, and the rest of the horde
+  walks down it. Not a shaft: a shaft is something the horde neither descends
+  nor climbs back out of. The tunnel stops at liquid and at anything too hard
+  for a pickaxe (obsidian), and is capped at 128 blocks removed.
+
+In both cases opening a way is the privilege of **one** mob, not of the horde:
+killing whoever was working closes the passage.
 
 > 🖼️ **`docs/images/habilidades.png`** — a collage showing a zombie mining the
 > wall, another building a ladder and a creeper about to blow up an obstacle.
@@ -542,7 +563,7 @@ is plain JSON: edit, save and restart the world/server.
 
 | Key | Default | What it does |
 |---|---|---|
-| `minSpawnChunkDistance` | `4` | Minimum distance (chunks) for an aggressive mob to spawn. `4` = a clean 7x7 square |
+| `minSpawnChunkDistance` | `4` | Minimum distance for an aggressive mob to spawn, in chunks, measured in 3D. `4` = a 64-block sphere |
 | `spawnRingChunks` | `3` | Width (chunks) of the circular invasion ring (chunks 4 to 6) |
 | `attractionChunkRadius` | `6` | Recruitment radius for mobs that spawned on their own |
 
@@ -561,7 +582,10 @@ is plain JSON: edit, save and restart the world/server.
 | `zombieLadderChance` | `0.28` | Chance of a builder zombie (the only block placer) |
 | `zombieTntChance` | `0.07` | Chance of a TNT zombie |
 | `elevatedNexusBuilderBonus` | `2.5` | Builder multiplier when the Nexus is suspended |
+| `buriedNexusMinerBonus` | `2.5` | Sapper multiplier when the Nexus is buried |
 | `invadersCanBridge` | `true` | Mobs build block paths when the Nexus is elevated |
+| `invadersCanTunnel` | `true` | The sapper digs a descending tunnel when the Nexus is buried |
+| `tunnelTicksPerBlock` | `8` | Tunnel pace, in ticks per block removed |
 | `maxMineHardness` | `30.0` | Hardest block an invader can mine |
 | `mineTicksPerHardness` | `14` | Mining pace (higher = slower) |
 | `doorBreakTicksPerHardness` | `10` | Door-breaking pace |

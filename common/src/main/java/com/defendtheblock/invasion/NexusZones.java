@@ -4,29 +4,41 @@ import com.defendtheblock.config.DtbConfig;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 
+import java.util.Arrays;
+
 /**
  * A geometria das areas em volta do Nexus, num lugar so.
  *
  * <p>Tudo parte de uma unica medida: a <b>distancia minima de spawn</b>
- * ({@code minSpawnChunkDistance}, 4 chunks por padrao). Dela saem duas regioes,
- * com <b>metricas diferentes de proposito</b>:
+ * ({@code minSpawnChunkDistance}, 4 chunks por padrao). Dela saem duas coisas,
+ * com papeis bem diferentes:
  *
  * <ul>
- *   <li><b>Zona livre de spawn</b> — um <i>quadrado</i> de chunks (distancia de
- *       Chebyshev), porque e assim que o jogo enxerga vizinhanca de chunk: todo
- *       chunk a menos de {@code minSpawnChunkDistance} do Nexus. Com o padrao,
- *       o quadrado de 7x7 chunks em volta do bloco. Nada hostil nasce ali, nem
- *       a invasao nem o spawn natural do vanilla.</li>
- *   <li><b>Anel de invasao</b> — uma <i>coroa circular</i> (distancia
- *       euclidiana) que comeca exatamente onde o quadrado seguro termina e se
- *       estende por {@code spawnRingChunks} chunks. Com os padroes, os
- *       invasores nascem entre o chunk 4 e o chunk 6 a partir do Nexus.</li>
+ *   <li><b>A regra</b> — {@link #isTooCloseToSpawn}, medida em <b>blocos e em
+ *       3D</b>: uma esfera de {@code minSpawnChunkDistance * 16} blocos de raio
+ *       em volta do bloco. Nenhum mob agressivo nasce dentro dela, nem a
+ *       invasao nem o spawn natural da noite. E a palavra final; vale para
+ *       qualquer posicao do mundo.</li>
+ *   <li><b>O amostrador</b> — {@link #ringOffsets}, a lista de chunks onde a
+ *       invasao procura lugar: do chunk {@code minSpawnChunkDistance} ate
+ *       {@code outerRadius()}, com borda externa circular. Serve so para
+ *       <i>onde olhar</i> e e pre-calculado, porque roda no caminho quente do
+ *       spawn.</li>
  * </ul>
  *
- * <p>Manter as duas regras aqui evita o risco classico de o spawn da invasao e
- * a checagem da zona segura discordarem por meio chunk e um mob nascer dentro
- * do quintal que deveria estar limpo. {@link NexusChunkLoader} tambem le
- * {@link #outerRadius()} para garantir que o anel inteiro fique carregado.
+ * <p><b>Por que a regra e 3D.</b> Antes ela era a vizinhanca quadrada de chunks
+ * — uma coluna de altura infinita. Isso dizia que uma caverna 80 blocos abaixo
+ * da base estava "a 0 chunk de distancia" e esterilizava o mundo inteiro em
+ * baixo do Nexus, enquanto na pratica aquilo e mais longe do bloco do que o
+ * campo aberto a 4 chunks. Medindo em 3D a conta fica honesta nos dois
+ * sentidos: horizontalmente e praticamente a mesma area de antes (circulo de
+ * 128 blocos de diametro, em vez de um quadrado de 112), e verticalmente a
+ * protecao passa a ter fim — ceu alto e caverna funda voltam a ser lugar de
+ * mob, que e o que torna uma base enterrada atacavel.
+ *
+ * <p>O amostrador <b>nao</b> substitui a regra: um chunk na borda interna do
+ * anel ainda contem cantos a menos de 64 blocos do bloco, entao
+ * {@link InvasionManager} aplica a regra exata na posicao final.
  */
 public final class NexusZones {
 
@@ -34,7 +46,7 @@ public final class NexusZones {
     }
 
     /**
-     * Distancia minima (em chunks) para qualquer mob hostil nascer. Minimo 1:
+     * Distancia minima (em chunks) para qualquer mob agressivo nascer. Minimo 1:
      * o chunk do Nexus nunca e area de spawn.
      */
     public static int minSpawnDistance() {
@@ -52,30 +64,75 @@ public final class NexusZones {
     }
 
     /**
-     * O chunk esta perto demais do Nexus para alguem nascer? Vale tanto para a
-     * invasao quanto para o spawn natural da noite.
+     * <b>A regra.</b> Esta posicao esta perto demais do Nexus para alguem
+     * nascer? Distancia euclidiana em 3D, em blocos.
      *
-     * @param nexus posicao do Nexus
-     * @param chunk chunk a testar
+     * <p>Em inteiros de proposito: roda uma vez por mob que entra no mundo e
+     * varias vezes por spawn de invasor, e nao precisa de raiz quadrada nem de
+     * ponto flutuante para comparar com um limite fixo.
      */
-    public static boolean isNoSpawnZone(BlockPos nexus, ChunkPos chunk) {
-        return chunkDistance(new ChunkPos(nexus), chunk) < minSpawnDistance();
+    public static boolean isTooCloseToSpawn(BlockPos nexus, BlockPos pos) {
+        long dx = pos.getX() - nexus.getX();
+        long dy = pos.getY() - nexus.getY();
+        long dz = pos.getZ() - nexus.getZ();
+        long limit = (long) minSpawnDistance() * 16L;
+        return dx * dx + dy * dy + dz * dz < limit * limit;
     }
 
+    // ------------------------------------------------------- o amostrador
+
+    /** Pares {@code dx, dz} achatados do anel atual. Ver {@link #ringOffsets}. */
+    private static int[] ringOffsets;
+    /** Config que gerou {@link #ringOffsets}, para refazer quando ela mudar. */
+    private static int ringOffsetsKey = -1;
+
     /**
-     * O chunk serve para a invasao spawnar? Precisa respeitar a distancia
-     * minima e estar dentro do circulo externo.
+     * Os offsets de chunk do anel de invasao, como pares {@code dx, dz}
+     * achatados num unico array ({@code dx} em {@code 2i}, {@code dz} em
+     * {@code 2i + 1}).
+     *
+     * <p><b>Por que pre-calculado:</b> o spawn sorteia um chunk do anel a cada
+     * tentativa. Sorteando dentro do quadrado que contem o anel, com os padroes
+     * so <b>38%</b> dos sorteios caiam no anel (64 chunks validos de 169) — quase
+     * dois tercos das tentativas eram descartadas antes de qualquer checagem de
+     * terreno, e isso num caminho que roda dezenas de vezes por segundo nas
+     * ondas altas. Sorteando um indice desta lista, toda tentativa cai no anel.
+     *
+     * <p>O array e devolvido sem copia, por ser caminho quente: quem chamar
+     * <b>nao deve escrever nele</b>. Vive na thread do servidor, unica que
+     * spawna invasor e recarrega config.
      */
-    public static boolean isInvasionSpawnZone(BlockPos nexus, ChunkPos chunk) {
-        ChunkPos origin = new ChunkPos(nexus);
-        if (chunkDistance(origin, chunk) < minSpawnDistance()) {
-            return false;
+    public static int[] ringOffsets() {
+        int min = minSpawnDistance();
+        int ring = Math.max(1, DtbConfig.get().spawnRingChunks);
+        int key = min * 1024 + ring;
+
+        int[] cached = ringOffsets;
+        if (cached != null && ringOffsetsKey == key) {
+            return cached;
         }
-        int dx = chunk.x - origin.x;
-        int dz = chunk.z - origin.z;
-        int outer = outerRadius();
-        // Limite externo circular: e o "circulo maior" da area de invasao, em
-        // vez de mais um quadrado concentrico.
-        return dx * dx + dz * dz <= outer * outer;
+
+        int outer = min + ring - 1;
+        int[] built = new int[(2 * outer + 1) * (2 * outer + 1) * 2];
+        int size = 0;
+        for (int dx = -outer; dx <= outer; dx++) {
+            for (int dz = -outer; dz <= outer; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) < min) {
+                    continue;
+                }
+                // Borda externa circular: uma coroa em volta do quadrado
+                // seguro, em vez de mais um quadrado concentrico.
+                if (dx * dx + dz * dz > outer * outer) {
+                    continue;
+                }
+                built[size++] = dx;
+                built[size++] = dz;
+            }
+        }
+
+        int[] trimmed = Arrays.copyOf(built, size);
+        ringOffsets = trimmed;
+        ringOffsetsKey = key;
+        return trimmed;
     }
 }

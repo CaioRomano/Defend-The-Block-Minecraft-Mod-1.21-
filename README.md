@@ -385,11 +385,17 @@ repete a mensagem.
 Sao duas regioes concentricas em volta do Nexus, com regras diferentes:
 
 - **Zona livre de spawn** — tudo a menos de **4 chunks** do Nexus
-  (`minSpawnChunkDistance`), um quadrado de 7x7 chunks, ou 112x112 blocos.
+  (`minSpawnChunkDistance`), medido **em 3D**: uma esfera de 64 blocos de raio.
   **Nenhum mob agressivo nasce ali**, nem a invasao nem o spawn natural da
   noite. O que aparecer perto do Nexus veio marchando de fora. Isso **nao
-  afeta** jogadores nem mobs pacificos — animais nascem normalmente. A partir
-  do quarto chunk o spawn natural volta ao normal do vanilla.
+  afeta** jogadores nem mobs pacificos — animais nascem normalmente. Fora da
+  esfera o spawn natural volta ao normal do vanilla.
+
+  Ser 3D importa: a protecao **tem fim na vertical**. Uma caverna 80 blocos
+  abaixo da base continua sendo lugar de mob, porque estar 80 blocos embaixo do
+  Nexus e estar mais longe dele do que o campo aberto a 4 chunks. Se fosse uma
+  coluna de altura infinita, uma base enterrada esterilizaria o mundo inteiro
+  abaixo dela.
 - **Anel de invasao** — uma coroa circular que comeca exatamente na distancia
   minima e se estende por 3 chunks. Com os padroes, os invasores nascem entre
   o chunk 4 e o chunk 6 a partir do Nexus, e marcham de la ate o bloco.
@@ -413,13 +419,28 @@ Alem disso, alguns invasores tem habilidades que mudam o jogo:
 | Todos, exceto creeper | 🚪 **Arrombam portas fechadas** em vez de so abri-las | 100% |
 | 🕷️ Aranha | Escala parede e **cospe teia** que prende o alvo | 25% |
 | 💥 Creeper | **Se explode no obstaculo** que trava a horda, com pavio de 3s. **Nao danifica o Nexus** | 100% |
-| 🧟 Zumbi | ⛏️🔥 **Sapador**: abre passagem escolhendo a ferramenta pelo material — isqueiro na madeira, picareta no resto | 28% |
+| 🧟 Zumbi | ⛏️🔥 **Sapador**: abre passagem escolhendo a ferramenta pelo material — isqueiro na madeira, picareta no resto. E o **unico** que cava **tunel** descendente para alcancar um Nexus enterrado | 28% |
 | 🧟 Zumbi | 🪜 **Construtor**: o **unico** invasor que coloca bloco. Monta escalada rente a um muro alto e ergue rampa ate um Nexus suspenso, sempre com escada nos lados livres | 28% |
 | 🧟 Zumbi | 💣 **TNT**: **arremessa** uma unica TNT em arco, como um projetil | 7% |
 
-Cada zumbi recebe **no maximo uma** dessas habilidades. **Nenhum outro invasor coloca bloco ou escada** — quem nao e construtor so sabe *subir* o que ja existe, entao matar o construtor fecha a passagem que ele estava abrindo. Quando o **Nexus esta
-suspenso no ar**, as chances de zumbi com escadas e de construtor sao
-multiplicadas por 2.5 — sao justamente as duas que resolvem esse cenario.
+Cada zumbi recebe **no maximo uma** dessas habilidades. **Nenhum outro invasor
+coloca bloco ou escada** — quem nao e construtor so sabe *subir* o que ja
+existe, entao matar o construtor fecha a passagem que ele estava abrindo.
+
+A horda se adapta ao formato da sua base, e **as duas adaptacoes sao espelhos**:
+
+- **Nexus suspenso no ar** (torre, plataforma) — a chance de construtor e
+  multiplicada por 2.5. Ele ergue a rampa, sempre com escada nos lados livres,
+  e o resto da horda sobe por ela.
+- **Nexus enterrado** (porao, bunker) — a chance de sapador e multiplicada por
+  2.5. A invasao sempre nasce na superficie, entao ele cava uma **escada
+  descendente** de 1 de largura e 2 de altura rumo ao bloco, e o resto da horda
+  desce por ela. Nao e um poco: poco a horda nao desce nem sobe. O tunel para
+  em liquido e em bloco duro demais para a picareta (obsidiana), e tem teto de
+  128 blocos removidos.
+
+Nos dois casos abrir caminho e privilegio de **um** mob, nao da horda: matar
+quem estava trabalhando fecha a passagem.
 
 > 🖼️ **`docs/images/habilidades.png`** — colagem mostrando um zumbi minerando a
 > parede, outro montando escada e um creeper prestes a explodir num obstaculo.
@@ -545,7 +566,7 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 
 | Chave | Padrao | O que faz |
 |---|---|---|
-| `minSpawnChunkDistance` | `4` | Distancia minima (chunks) para um mob agressivo nascer. `4` = quadrado limpo de 7x7 |
+| `minSpawnChunkDistance` | `4` | Distancia minima para um mob agressivo nascer, em chunks, medida em 3D. `4` = esfera de 64 blocos |
 | `spawnRingChunks` | `3` | Largura (chunks) do anel circular onde a invasao nasce (chunks 4 a 6) |
 | `attractionChunkRadius` | `6` | Raio de recrutamento de mobs que nasceram sozinhos |
 
@@ -564,7 +585,10 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 | `zombieLadderChance` | `0.28` | Chance de zumbi construtor (o unico que coloca bloco) |
 | `zombieTntChance` | `0.07` | Chance de zumbi bombardeiro |
 | `elevatedNexusBuilderBonus` | `2.5` | Multiplicador do construtor com o Nexus suspenso |
+| `buriedNexusMinerBonus` | `2.5` | Multiplicador do sapador com o Nexus enterrado |
 | `invadersCanBridge` | `true` | Mobs constroem caminho de blocos quando o Nexus esta elevado |
+| `invadersCanTunnel` | `true` | O sapador cava um tunel descendente quando o Nexus esta enterrado |
+| `tunnelTicksPerBlock` | `8` | Ritmo do tunel, em ticks por bloco removido |
 | `maxMineHardness` | `30.0` | Dureza maxima de bloco que um invasor consegue minerar |
 | `mineTicksPerHardness` | `14` | Ritmo de mineracao (maior = mais lento) |
 | `doorBreakTicksPerHardness` | `10` | Ritmo de arrombamento de portas |

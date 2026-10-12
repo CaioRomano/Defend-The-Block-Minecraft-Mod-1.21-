@@ -72,10 +72,12 @@ public final class DtbConfig {
      * <b>Distancia minima, em chunks</b>, que um mob hostil precisa ter do
      * Nexus para conseguir nascer. O padrao e 4.
      *
-     * <p>Medida em distancia de Chebyshev (quadrada), que e como o jogo enxerga
-     * vizinhanca de chunk. Com o padrao 4, o quarto chunk e o primeiro onde
-     * alguem nasce: tudo entre o Nexus e ele fica limpo, um quadrado de 7x7
-     * chunks (112x112 blocos) em volta do bloco.
+     * <p>Medida em <b>3D</b>, em blocos ({@code chunks * 16}): com o padrao 4,
+     * uma esfera de 64 blocos de raio em volta do bloco. Horizontalmente da
+     * quase a mesma area de uma vizinhanca de 4 chunks; a diferenca e que a
+     * protecao <b>tem fim na vertical</b> — ceu bem alto e caverna funda sao
+     * lugar de mob de novo, porque estar 80 blocos abaixo da base e estar mais
+     * longe do Nexus do que o campo aberto a 4 chunks.
      *
      * <p>A regra vale para <b>todo mob agressivo</b>, nao so para a invasao: o
      * spawn natural da noite tambem e barrado ali. Fora dessa distancia o mundo
@@ -253,6 +255,15 @@ public final class DtbConfig {
      * horda trazer mais dela quando ele acontece.
      */
     public double elevatedNexusBuilderBonus = 2.5D;
+    /**
+     * Multiplicador aplicado a chance de zumbi sapador quando o Nexus esta
+     * enterrado — o espelho de {@link #elevatedNexusBuilderBonus}.
+     *
+     * <p>A invasao sempre nasce na superficie, entao contra uma base
+     * subterranea o tunel do sapador e o unico caminho. Sem este bonus a horda
+     * chegaria em cima da base com dois ou tres mobs capazes de descer.
+     */
+    public double buriedNexusMinerBonus = 2.5D;
 
     // --------------------------------------------- velocidade dos zumbis
     /** Chance de um zumbi nascer mais lento que o normal. */
@@ -303,6 +314,24 @@ public final class DtbConfig {
      * colocando bloco no mundo.
      */
     public boolean invadersCanBridge = true;
+    /**
+     * Deixa o zumbi sapador cavar um tunel descendente quando fica preso e o
+     * Nexus esta visivelmente abaixo dele — o espelho de
+     * {@link #invadersCanBridge}, para a base subterranea.
+     *
+     * <p>Desligue se nao quiser que a invasao remova bloco do mundo por
+     * iniciativa propria. Com isso desligado, uma base enterrada e bem fechada
+     * fica praticamente inatacavel.
+     */
+    public boolean invadersCanTunnel = true;
+    /**
+     * Ticks por bloco removido pelo tunel do sapador.
+     *
+     * <p>Deliberadamente mais rapido que o {@code mineTicksPerHardness} de
+     * arrombar parede: um tunel sao dezenas de blocos, e no ritmo de parede
+     * (uns 21 ticks por bloco de pedra) ele nao terminaria dentro de uma noite.
+     */
+    public int tunnelTicksPerBlock = 8;
     /**
      * Alcance, em blocos, dentro do qual um invasor mantem o alvo de combate
      * atual (jogador ou torreta) em vez de esquece-lo e voltar para o Nexus.

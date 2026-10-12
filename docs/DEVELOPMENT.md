@@ -833,3 +833,62 @@ keys documented in both READMEs with none missing or extra, and no leftover
 reference to the old key name. **Still without `buildAll` and without an in-game
 test.** Underground bases remain an open question, alongside the rooftop spawn
 point.
+
+**Round nineteen — a 3D distance, the sapper's tunnel, and spawning without
+waste.** The two ends the previous round left open, plus the spawn hot path.
+
+**The rule became 3D.** The minimum distance used to be the square chunk
+neighbourhood, that is, an infinitely tall column: it claimed a cave 80 blocks
+below the base was "0 chunks away" and sterilised the entire world beneath the
+Nexus. `isTooCloseToSpawn` now measures in blocks and in 3D, a sphere of
+`minSpawnChunkDistance * 16`. Horizontally that is almost the same area as
+before (a 128-diameter circle instead of a 112 square); what changes is that the
+protection ends vertically, which is what makes a buried base attackable.
+Verified by simulation: across 20k ring samples, no accepted position sits
+closer than 64.0 blocks to the block, with the Nexus anywhere in its chunk.
+Recruitment (`attractionChunkRadius`) stayed chunk-based on purpose — being
+generous vertically is the wanted behaviour there.
+
+**The tunnel.** `TunnelToNexusGoal` is the exact mirror of
+`BridgeToNexusGoal`: only the sapper digs, only while stuck, and only when the
+Nexus is below. It carves a descending staircase, 1 wide and 2 tall, two blocks
+per step. Choosing a staircase over a shaft is the whole point: a 1x1 shaft is
+something the horde will not descend (long fall, pathfinding penalty) and can
+never climb back out of, whereas a one-block step per stride is something every
+mob walks without knowing anything — the same reason the builder lines its ramp
+with ladders. Unlike the ramp, this goal holds `Control.MOVE`: `AttackNexusGoal`
+still sees no path (that is why this goal woke up), so the mob would open the
+first step and stand there looking at it. Three brakes: liquid aborts (opening an
+ocean inside the tunnel would drown the horde and flood the base through a route
+the player never had a chance to defend), a block above `maxMineHardness` aborts,
+and a 128-block cap. `abort()` always clears `stuckTicks` — without it the mob
+would re-enter this goal next tick and be trapped in it.
+
+Two calibration details. `tunnelTicksPerBlock = 8` instead of the wall-breaking
+pace (`mineTicksPerHardness`, about 21 ticks per stone block): a tunnel is dozens
+of blocks and at wall pace it would not finish within one night. And
+`isNexusBuried` reads the **Nexus's own column** from the heightmap rather than
+the drop down from the mob. The literal mirror of `isNexusElevated` would be
+wrong here: rough terrain puts a mob 4 or 5 blocks above the block constantly,
+and the sapper bonus would fire on surface bases all the time. Eight blocks of
+cover also stays well clear of an ordinary roof, which is a case for breaching,
+not digging.
+
+**The spawn.** `findSpawnPos` used to draw `dx, dz` inside the square containing
+the ring and discard whatever fell outside: with the defaults, **38%** of draws
+were useful (64 valid chunks out of 169), and it gets worse the further out the
+ring goes — at `minSpawnChunkDistance = 8` it would be 11%. That is on a path
+that runs per mob, and the batch exceeds twenty mobs per second in late waves.
+`NexusZones` now precomputes the ring's chunk list (rebuilt only when the config
+changes) and the draw picks an index from it, so every attempt lands in the ring
+— which is why 16 attempts today beat the 32 from before. On top of that: one
+reused `BlockPos.Mutable` for the three reads of each column instead of
+allocating per check, checks ordered cheapest-first (heightmap, arithmetic, block
+states), and **one position draw per batch** instead of one per mob — the zombie
+squad spawns around the same point, which as a bonus makes the horde arrive
+together instead of trickling in from every corner of the ring.
+
+Verification: structural `javac` clean on both versions, no unresolved mod
+symbol, no orphaned imports, 65/65 config keys documented in both READMEs, and
+the geometry checked by simulation. **Still without `buildAll` and without an
+in-game test.**

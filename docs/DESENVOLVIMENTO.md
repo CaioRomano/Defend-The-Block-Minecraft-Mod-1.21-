@@ -865,3 +865,62 @@ config documentadas nos dois READMEs sem faltar nem sobrar, e nenhuma referencia
 sobrando ao nome antigo da chave. **Continua sem `buildAll` e sem teste em
 jogo.** Bases subterraneas seguem como questao aberta, junto com o ponto de
 spawn em telhado.
+
+**Decima nona rodada — distancia em 3D, o tunel do sapador e o spawn sem
+desperdicio.** As duas pontas que a rodada anterior deixou abertas, mais o
+caminho quente do spawn.
+
+**A regra virou 3D.** Antes a distancia minima era a vizinhanca quadrada de
+chunks, ou seja uma coluna de altura infinita: dizia que uma caverna 80 blocos
+abaixo da base estava "a 0 chunk" e esterilizava o mundo inteiro debaixo do
+Nexus. Agora `isTooCloseToSpawn` mede em blocos e em 3D, uma esfera de
+`minSpawnChunkDistance * 16`. Horizontalmente da quase a mesma area de antes
+(circulo de 128 de diametro em vez de quadrado de 112); o que muda e que a
+protecao tem fim na vertical, o que e o que torna uma base enterrada atacavel.
+Conferido por simulacao: em 20 mil amostras do anel, nenhuma posicao aceita fica
+a menos de 64,0 blocos do bloco, com o Nexus em qualquer canto do chunk dele. O
+recrutamento (`attractionChunkRadius`) ficou em chunk de proposito — ali ser
+generoso na vertical e o comportamento desejado.
+
+**O tunel.** `TunnelToNexusGoal` e o espelho exato da `BridgeToNexusGoal`: so o
+sapador cava, so quando esta travado e so quando o Nexus esta abaixo. Cava uma
+escada descendente de 1 de largura e 2 de altura, dois blocos por passo. A
+escolha de escada em vez de poco e o ponto todo: poco de 1x1 a horda nao desce
+(queda alta e penalidade de pathfinding) e nao sobe nunca mais, enquanto degrau
+de um bloco por passo todo mob anda sem saber de nada — o mesmo motivo de o
+construtor forrar a rampa de escadas. Diferente da rampa, este goal fica em
+`Control.MOVE`: o pathfinding da `AttackNexusGoal` ainda nao ve caminho (foi por
+isso que o goal acordou), entao o mob abriria o primeiro degrau e ficaria olhando
+para ele. Tres freios: liquido aborta (abrir oceano dentro do tunel afogaria a
+horda e inundaria a base por um caminho que o jogador nunca teve chance de
+defender), bloco acima de `maxMineHardness` aborta, e teto de 128 blocos. O
+`abort()` sempre zera `stuckTicks` — sem isso o mob voltaria a este goal no tick
+seguinte e ficaria preso nele.
+
+Dois detalhes de calibragem. `tunnelTicksPerBlock = 8` em vez do ritmo de parede
+(`mineTicksPerHardness`, uns 21 ticks por bloco de pedra): um tunel sao dezenas
+de blocos e no ritmo de parede nao terminaria dentro de uma noite. E o
+`isNexusBuried` olha a **coluna do Nexus** pelo heightmap, nao o desnivel ate o
+mob. O espelho literal de `isNexusElevated` estaria errado aqui: terreno
+acidentado poe mob 4 ou 5 blocos acima do bloco toda hora, e o bonus de sapador
+dispararia em base de superficie o tempo todo. Oito blocos de cobertura tambem
+passa longe de um telhado comum, que e caso de arrombar e nao de cavar.
+
+**O spawn.** `findSpawnPos` sorteava `dx, dz` dentro do quadrado que contem o
+anel e descartava o que caia fora: com os padroes, **38%** dos sorteios eram
+uteis (64 chunks validos de 169), e o numero piora quanto mais longe o anel vai —
+com `minSpawnChunkDistance = 8` seriam 11%. Isso num caminho que roda por mob, e
+o lote passa de vinte mobs por segundo nas ondas altas. Agora `NexusZones`
+pre-calcula a lista de chunks do anel (refeita so quando a config muda) e o
+sorteio tira um indice dela, entao toda tentativa cai no anel — por isso 16
+tentativas hoje valem mais que as 32 de antes. Alem disso: um `BlockPos.Mutable`
+reaproveitado nas tres leituras de cada coluna em vez de alocar por checagem,
+checagens na ordem do mais barato para o mais caro (heightmap, aritmetica,
+estados de bloco), e **um sorteio de lugar por lote** em vez de um por mob — o
+pelotao de zumbis nasce em volta do mesmo ponto, que de quebra faz a horda
+chegar junta em vez de pingar um mob de cada canto do anel.
+
+Verificacao: `javac` estrutural limpo nas duas versoes, nenhum simbolo do mod
+sem resolver, sem import orfao, 65/65 chaves de config documentadas nos dois
+READMEs, e a geometria conferida por simulacao. **Continua sem `buildAll` e sem
+teste em jogo.**

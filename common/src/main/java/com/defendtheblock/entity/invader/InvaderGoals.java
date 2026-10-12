@@ -8,6 +8,7 @@ import com.defendtheblock.entity.ai.ClimbLadderGoal;
 import com.defendtheblock.entity.ai.SpiderWebShotGoal;
 import com.defendtheblock.entity.ai.TargetTurretGoal;
 import com.defendtheblock.entity.ai.ThrowTntGoal;
+import com.defendtheblock.entity.ai.TunnelToNexusGoal;
 import com.defendtheblock.entity.ai.YieldToWorkerGoal;
 import com.defendtheblock.mixin.MobEntityAccessor;
 import net.minecraft.entity.ai.RangedAttackMob;
@@ -19,6 +20,7 @@ import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.world.Heightmap;
 
 /**
  * Sorteia as habilidades do invasor e instala as IAs correspondentes nos
@@ -67,7 +69,10 @@ public final class InvaderGoals {
             // bonus quando o Nexus esta suspenso — e o unico que resolve o caso.
             double bonus = isNexusElevated(mob, data) ? config.elevatedNexusBuilderBonus : 1.0D;
             double builder = Math.min(0.5D, config.zombieLadderChance * bonus);
-            double sapper = builder + config.zombiePickaxeChance;
+            // O mesmo raciocinio, de cabeca para baixo: contra base enterrada o
+            // tunel do sapador e o unico caminho, entao a horda traz mais dele.
+            double minerBonus = isNexusBuried(mob, data) ? config.buriedNexusMinerBonus : 1.0D;
+            double sapper = builder + Math.min(0.5D, config.zombiePickaxeChance * minerBonus);
             double tnt = sapper + config.zombieTntChance;
 
             double roll = random.nextDouble();
@@ -97,6 +102,30 @@ public final class InvaderGoals {
             return true;
         }
         return nexus.getY() - mob.getBlockY() >= 4;
+    }
+
+    /** Terreno (ou construcao) acima do Nexus que o caracteriza como enterrado. */
+    private static final int BURIED_DEPTH = 8;
+
+    /**
+     * O Nexus esta enterrado — ou seja, ha mundo por cima dele?
+     *
+     * <p>Ao contrario de {@link #isNexusElevated}, que compara com a altura do
+     * mob, esta olha a <b>coluna do proprio Nexus</b>. Comparar com o mob seria
+     * o espelho literal, e estaria errado: terreno acidentado poe mob 4 ou 5
+     * blocos acima do bloco toda hora, e o bonus dispararia em base de
+     * superficie o tempo todo. {@value #BURIED_DEPTH} blocos de cobertura
+     * tambem passa longe de um telhado comum (4 a 6), que e caso de arrombar, e
+     * nao de cavar.
+     */
+    private static boolean isNexusBuried(MobEntity mob, InvaderData data) {
+        BlockPos nexus = data.getNexusPos();
+        if (nexus == null) {
+            return false;
+        }
+        int surface = mob.getWorld().getTopY(
+                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, nexus.getX(), nexus.getZ());
+        return surface - nexus.getY() >= BURIED_DEPTH;
     }
 
     /**
@@ -129,6 +158,13 @@ public final class InvaderGoals {
         // mob da horda.
         if (DtbConfig.get().invadersCanBridge && data.hasAbility(InvaderAbility.LADDER_BUILDER)) {
             accessor.defendtheblock$getGoalSelector().add(-1, new BridgeToNexusGoal(mob));
+        }
+        // E o espelho dela, para o Nexus enterrado: so o sapador cava, e so
+        // quando o pathfinding ja desistiu. Vem antes da YieldToWorkerGoal na
+        // mesma prioridade de proposito — empate de Control.MOVE vai para quem
+        // foi adicionado primeiro, e aqui quem cava e o trabalhador.
+        if (DtbConfig.get().invadersCanTunnel && data.hasAbility(InvaderAbility.PICKAXE_MINER)) {
+            accessor.defendtheblock$getGoalSelector().add(-1, new TunnelToNexusGoal(mob, MOVE_SPEED));
         }
         if (data.hasAbility(InvaderAbility.WEB_SHOT)) {
             accessor.defendtheblock$getGoalSelector().add(-1, new SpiderWebShotGoal(mob));
