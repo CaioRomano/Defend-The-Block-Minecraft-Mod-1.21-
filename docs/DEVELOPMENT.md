@@ -800,3 +800,36 @@ the code.
 Verification: structural `javac` on both versions with no errors, no orphaned
 imports, `en_us` and `pt_br` identical in key set. **Still without `buildAll` and
 without an in-game test.**
+
+**Round eighteen — the minimum spawn distance.** The request was to push spawning
+away from the block: a minimum distance of 4 chunks from the Nexus, configurable,
+with nothing aggressive spawning between the block and that limit — neither the
+invasion nor the usual night spawning — leaving vanilla spawning untouched from
+there outwards.
+
+The `NexusZones` geometry had existed since round nine, it was just phrased the
+other way around: `noSpawnChunkRadius = 1` was the *radius of the safe square*,
+and the ring was added on top of it. Since the request speaks of a minimum
+distance, the key became `minSpawnChunkDistance = 4` and the comparison became
+`dist < minimum` instead of `dist <= radius`. The ring is now counted from it
+(`outer = minimum + width - 1`), so with the defaults invaders spawn between
+chunk 4 and chunk 6 — it used to be between 2 and 4. Blocking natural spawning
+did not change mechanism: it is still the `discard()` on `ENTITY_LOAD`, which
+already read the same function.
+
+The detail that nearly slipped through: **the ring moved outside the loaded
+area.** `forcedChunkRadius` was 4 and covered the old ring exactly. With the ring
+reaching chunk 6, spawn attempts would land in an unloaded chunk whenever the
+player was away, and `findSpawnPos` discards unloaded chunks silently — the night
+would pass with no invaders at all and nothing in the log. The loaded radius now
+has an automatic floor at `NexusZones.outerRadius()`
+(`NexusChunkLoader.forcedRadius`), and the default rose to 6 so the config file
+reflects reality: 13x13 chunks instead of 9x9. Loading less is done by shortening
+the ring, not the radius. `attractionChunkRadius` followed to 6, keeping the
+invariant that the whole ring behaves alike.
+
+Verification: structural `javac` on both versions with no errors, 62/62 config
+keys documented in both READMEs with none missing or extra, and no leftover
+reference to the old key name. **Still without `buildAll` and without an in-game
+test.** Underground bases remain an open question, alongside the rooftop spawn
+point.

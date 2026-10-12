@@ -45,11 +45,16 @@ public final class DtbConfig {
     /**
      * Raio, <b>em chunks</b>, da area mantida carregada em volta do Nexus.
      *
-     * <p>0 = so o chunk do Nexus, 1 = 3x3, 4 = 9x9 (o padrao). O padrao cobre
-     * exatamente a area de spawn e de atracao, para que a invasao rode inteira
-     * mesmo sem jogador por perto.
+     * <p>0 = so o chunk do Nexus, 1 = 3x3, 6 = 13x13 (o padrao).
+     *
+     * <p><b>Piso automatico:</b> o mod sempre carrega, no minimo, o anel onde a
+     * invasao nasce ({@code minSpawnChunkDistance + spawnRingChunks - 1}). Um
+     * valor menor que isso e elevado em silencio, porque um invasor que nasce
+     * em chunk descarregado simplesmente nao nasce — e a onda ficaria vazia
+     * sempre que o jogador se afastasse. Para carregar <i>menos</i>, reduza o
+     * anel ({@code spawnRingChunks}) em vez deste numero.
      */
-    public int forcedChunkRadius = 4;
+    public int forcedChunkRadius = 6;
 
     // ----------------------------------------------------------- invasoes
     /**
@@ -64,25 +69,34 @@ public final class DtbConfig {
     /** Multiplicador global do ritmo de spawn da invasao. */
     public double mobMultiplier = 1.0D;
     /**
-     * Raio, <b>em chunks</b>, da <b>zona livre de spawn</b> em volta do Nexus.
+     * <b>Distancia minima, em chunks</b>, que um mob hostil precisa ter do
+     * Nexus para conseguir nascer. O padrao e 4.
      *
-     * <p>Medido em distancia de Chebyshev (quadrada), que e como o jogo enxerga
-     * vizinhanca de chunk: 0 = so o chunk do Nexus, <b>1 = o chunk do Nexus
-     * mais todos os adjacentes (3x3)</b>, que e o padrao.
+     * <p>Medida em distancia de Chebyshev (quadrada), que e como o jogo enxerga
+     * vizinhanca de chunk. Com o padrao 4, o quarto chunk e o primeiro onde
+     * alguem nasce: tudo entre o Nexus e ele fica limpo, um quadrado de 7x7
+     * chunks (112x112 blocos) em volta do bloco.
      *
-     * <p>Dentro dessa area <b>nenhum mob hostil nasce</b> — nem a invasao
-     * spawna ali, nem o spawn natural do vanilla. E o quintal seguro da base:
-     * o que aparecer perto do Nexus veio marchando de fora, nao brotou do lado.
+     * <p>A regra vale para <b>todo mob agressivo</b>, nao so para a invasao: o
+     * spawn natural da noite tambem e barrado ali. Fora dessa distancia o mundo
+     * segue com o spawn normal do vanilla. O que aparecer perto do Nexus veio
+     * marchando de fora, nao brotou do lado.
+     *
+     * <p>Nao barra mob <i>andando</i> para dentro, so o nascimento — a checagem
+     * roda quando a entidade entra no mundo.
      */
-    public int noSpawnChunkRadius = 1;
+    public int minSpawnChunkDistance = 4;
     /**
      * Largura, <b>em chunks</b>, do anel onde a invasao nasce, contada a partir
-     * da borda da zona livre de spawn.
+     * de {@code minSpawnChunkDistance}.
      *
-     * <p>Com os padroes (zona livre de raio 1 + anel de 3), os invasores nascem
-     * entre o chunk 2 e o chunk 4 a partir do Nexus. O limite externo e
+     * <p>Com os padroes (distancia minima 4 + anel de 3), os invasores nascem
+     * entre o chunk 4 e o chunk 6 a partir do Nexus. O limite externo e
      * <b>circular</b> (distancia euclidiana), entao a area de spawn e uma coroa
      * em volta do quadrado seguro, nao outro quadrado.
+     *
+     * <p>Este numero manda no custo de {@code forcedChunkRadius}: o anel
+     * inteiro precisa ficar carregado para a onda rodar sem jogador por perto.
      */
     public int spawnRingChunks = 3;
     /**
@@ -90,10 +104,11 @@ public final class DtbConfig {
      * natural, spawner ou ovo) e atraido pelo Nexus e ganha as habilidades de
      * invasor. Endermen sao a unica excecao.
      *
-     * <p>Vale so fora da zona livre de spawn: dentro dela nada nasce para ser
-     * recrutado.
+     * <p>O padrao acompanha a borda externa do anel de invasao, para que um mob
+     * que nasceu sozinho dentro do anel se comporte como os outros que estao
+     * ali. Reduza para que mobs naturais longe do bloco sigam a vida deles.
      */
-    public int attractionChunkRadius = 4;
+    public int attractionChunkRadius = 6;
     // A rampa de dificuldade mora nestes seis valores. Eles foram bem
     // reduzidos no inicio: com os numeros antigos a onda 1 ja saturava um teto
     // de 35 invasores vivos nos primeiros segundos, o que fazia a primeira

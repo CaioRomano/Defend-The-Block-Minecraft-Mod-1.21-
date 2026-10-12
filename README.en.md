@@ -139,8 +139,8 @@ an eye of ender. Take your time — the next step is permanent.
 
 **Pick the spot carefully and place the Nexus.** After this it never comes back
 out. Prefer flat ground with room to build around it. Remember that everything
-within 1 chunk becomes **free of natural spawning** — your yard is safe by
-default.
+closer than 4 chunks becomes **free of aggressive mob spawning** — your yard is
+safe by default.
 
 </td></tr>
 <tr><td><h3 align="center">3</h3></td><td>
@@ -383,13 +383,20 @@ not repeat the message.
 
 Two concentric regions around the Nexus, with different rules:
 
-- **No-spawn zone** — the Nexus chunk **plus every adjacent one** (3x3 by
-  default). **No hostile mob spawns there**, neither the invasion nor vanilla
-  natural spawning. Anything near the Nexus marched in from outside. This does
-  **not** affect players or passive mobs — animals spawn normally.
-- **Invasion ring** — a circular band starting where the safe square ends,
-  extending 3 chunks out. With the defaults, invaders spawn between chunk 2 and
-  chunk 4 from the Nexus.
+- **No-spawn zone** — everything closer than **4 chunks** to the Nexus
+  (`minSpawnChunkDistance`), a 7x7 chunk square, or 112x112 blocks. **No
+  aggressive mob spawns there**, neither the invasion nor the usual night
+  spawning. Anything near the Nexus marched in from outside. This does **not**
+  affect players or passive mobs — animals spawn normally. From the fourth
+  chunk outwards, natural spawning is back to vanilla.
+- **Invasion ring** — a circular band starting exactly at the minimum distance
+  and extending 3 chunks out. With the defaults, invaders spawn between chunk 4
+  and chunk 6 from the Nexus, and march in from there.
+
+> [!NOTE]
+> The whole ring is **always loaded** (see `forcedChunkRadius`): were it outside
+> the loaded area, the wave would come up empty whenever you walked away. That
+> is why the loaded radius is never smaller than the ring's outer edge.
 
 ### 🧠 They are not stupid
 
@@ -493,7 +500,7 @@ is plain JSON: edit, save and restart the world/server.
 | `nexusHitCooldown` | `20` | Ticks between two hits from the same mob (20 = 1s) |
 | `deleteWorldOnNexusDestroyed` | `true` | **Deletes the world on defeat.** Set `false` to only show the message |
 | `keepNexusChunksLoaded` | `true` | Keeps the Nexus chunks loaded (invasions run offline) |
-| `forcedChunkRadius` | `4` | Loaded radius, in chunks (9x9) |
+| `forcedChunkRadius` | `6` | Loaded radius, in chunks (13x13). Never smaller than the invasion ring's edge |
 
 </details>
 
@@ -535,9 +542,9 @@ is plain JSON: edit, save and restart the world/server.
 
 | Key | Default | What it does |
 |---|---|---|
-| `noSpawnChunkRadius` | `1` | Radius (chunks) of the no-spawn square. `1` = the 3x3 |
-| `spawnRingChunks` | `3` | Width (chunks) of the circular invasion ring |
-| `attractionChunkRadius` | `4` | Recruitment radius for mobs that spawned on their own |
+| `minSpawnChunkDistance` | `4` | Minimum distance (chunks) for an aggressive mob to spawn. `4` = a clean 7x7 square |
+| `spawnRingChunks` | `3` | Width (chunks) of the circular invasion ring (chunks 4 to 6) |
+| `attractionChunkRadius` | `6` | Recruitment radius for mobs that spawned on their own |
 
 </details>
 

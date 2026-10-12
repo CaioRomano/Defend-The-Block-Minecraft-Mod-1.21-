@@ -300,10 +300,10 @@ public final class InvasionManager {
     }
 
     /**
-     * Um lugar valido dentro do <b>anel de invasao</b>: fora do quadrado livre
-     * de spawn em volta do Nexus e dentro do circulo externo. A geometria toda
-     * mora em {@link NexusZones}, compartilhada com a checagem que impede o
-     * spawn natural perto do bloco.
+     * Um lugar valido dentro do <b>anel de invasao</b>: a partir da distancia
+     * minima de spawn em volta do Nexus e dentro do circulo externo. A
+     * geometria toda mora em {@link NexusZones}, compartilhada com a checagem
+     * que impede o spawn natural perto do bloco.
      *
      * <p>Fora desse anel o mundo segue com o spawn normal do vanilla.
      */
@@ -394,8 +394,9 @@ public final class InvasionManager {
 
         ChunkPos mobChunk = new ChunkPos(mob.getBlockPos());
 
-        // Zona livre de spawn: o quintal em volta do Nexus fica limpo. Vale
-        // ate para o enderman, que e excecao so na hora de ser recrutado.
+        // Distancia minima de spawn: o quintal em volta do Nexus fica limpo,
+        // seja o mob da invasao ou o spawn natural da noite. Vale ate para o
+        // enderman, que e excecao so na hora de ser recrutado.
         // Nao e um escudo que apaga mob por perto: isto so roda quando a
         // entidade entra no mundo, entao quem VEIO andando de fora continua
         // valendo — some so o que tentar nascer aqui dentro.

@@ -139,8 +139,8 @@ diamante e um olho do ender. Nao tenha pressa — o proximo passo e definitivo.
 
 **Escolha o lugar com cuidado e coloque o Nexus.** Depois disso ele nao sai
 mais. Prefira terreno plano, com espaco em volta para construir. Lembre que a
-area a 1 chunk de distancia fica **livre de spawn natural** — o seu quintal e
-seguro por padrao.
+area a menos de 4 chunks de distancia fica **livre de spawn de mob agressivo**
+— o seu quintal e seguro por padrao.
 
 </td></tr>
 <tr><td><h3 align="center">3</h3></td><td>
@@ -384,13 +384,20 @@ repete a mensagem.
 
 Sao duas regioes concentricas em volta do Nexus, com regras diferentes:
 
-- **Zona livre de spawn** — o chunk do Nexus **mais todos os adjacentes** (3x3
-  por padrao). **Nenhum mob hostil nasce ali**, nem a invasao nem o spawn
-  natural do vanilla. O que aparecer perto do Nexus veio marchando de fora.
-  Isso **nao afeta** jogadores nem mobs pacificos — animais nascem normalmente.
-- **Anel de invasao** — uma coroa circular que comeca onde o quadrado seguro
-  termina e se estende por 3 chunks. Com os padroes, os invasores nascem entre
-  o chunk 2 e o chunk 4 a partir do Nexus.
+- **Zona livre de spawn** — tudo a menos de **4 chunks** do Nexus
+  (`minSpawnChunkDistance`), um quadrado de 7x7 chunks, ou 112x112 blocos.
+  **Nenhum mob agressivo nasce ali**, nem a invasao nem o spawn natural da
+  noite. O que aparecer perto do Nexus veio marchando de fora. Isso **nao
+  afeta** jogadores nem mobs pacificos — animais nascem normalmente. A partir
+  do quarto chunk o spawn natural volta ao normal do vanilla.
+- **Anel de invasao** — uma coroa circular que comeca exatamente na distancia
+  minima e se estende por 3 chunks. Com os padroes, os invasores nascem entre
+  o chunk 4 e o chunk 6 a partir do Nexus, e marcham de la ate o bloco.
+
+> [!NOTE]
+> O anel inteiro fica **sempre carregado** (veja `forcedChunkRadius`): se ele
+> ficasse fora da area carregada, a onda nasceria vazia sempre que voce se
+> afastasse. Por isso o raio carregado nunca e menor que a borda do anel.
 
 ### 🧠 Eles nao sao burros
 
@@ -496,7 +503,7 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 | `nexusHitCooldown` | `20` | Ticks entre dois golpes do mesmo mob (20 = 1s) |
 | `deleteWorldOnNexusDestroyed` | `true` | **Apaga o mundo na derrota.** Ponha `false` para so mostrar a mensagem |
 | `keepNexusChunksLoaded` | `true` | Mantem os chunks do Nexus carregados (a invasao roda offline) |
-| `forcedChunkRadius` | `4` | Raio carregado, em chunks (9x9) |
+| `forcedChunkRadius` | `6` | Raio carregado, em chunks (13x13). Nunca menor que a borda do anel de invasao |
 
 </details>
 
@@ -538,9 +545,9 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 
 | Chave | Padrao | O que faz |
 |---|---|---|
-| `noSpawnChunkRadius` | `1` | Raio (chunks) do quadrado livre de spawn. `1` = o 3x3 |
-| `spawnRingChunks` | `3` | Largura (chunks) do anel circular onde a invasao nasce |
-| `attractionChunkRadius` | `4` | Raio de recrutamento de mobs que nasceram sozinhos |
+| `minSpawnChunkDistance` | `4` | Distancia minima (chunks) para um mob agressivo nascer. `4` = quadrado limpo de 7x7 |
+| `spawnRingChunks` | `3` | Largura (chunks) do anel circular onde a invasao nasce (chunks 4 a 6) |
+| `attractionChunkRadius` | `6` | Raio de recrutamento de mobs que nasceram sozinhos |
 
 </details>
 

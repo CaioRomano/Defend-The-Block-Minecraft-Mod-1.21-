@@ -18,6 +18,8 @@ import net.minecraft.util.math.ChunkPos;
  *
  * <p>O raio efetivamente aplicado fica salvo em {@link InvasionData} para que
  * uma mudanca de config libere exatamente a area antiga antes de forcar a nova.
+ * Ele nunca fica menor que o anel de invasao de {@link NexusZones} — veja
+ * {@link #forcedRadius(DtbConfig)}.
  */
 public final class NexusChunkLoader {
 
@@ -33,7 +35,7 @@ public final class NexusChunkLoader {
             return;
         }
         DtbConfig config = DtbConfig.get();
-        int desired = config.keepNexusChunksLoaded ? Math.max(0, config.forcedChunkRadius) : -1;
+        int desired = config.keepNexusChunksLoaded ? forcedRadius(config) : -1;
         int previous = data.getForcedRadius();
 
         // Se o raio mudou, solta a area antiga antes de marcar a nova.
@@ -59,6 +61,20 @@ public final class NexusChunkLoader {
         setForced(world, data.getNexusPos(), previous, false);
         data.setForcedRadius(-1);
         DefendTheBlock.LOGGER.info("Chunks do Nexus liberados.");
+    }
+
+    /**
+     * O raio realmente carregado: o da config, mas <b>nunca menor que o anel de
+     * invasao</b>.
+     *
+     * <p>Sem esse piso a invasao quebra de um jeito silencioso: {@code
+     * findSpawnPos} descarta chunk descarregado, entao com o jogador longe o
+     * sorteio falharia todas as tentativas e a noite passaria sem nenhum
+     * invasor — sem erro no log, so uma onda vazia. Carregar menos se faz
+     * encurtando o anel ({@code spawnRingChunks}), nao este numero.
+     */
+    private static int forcedRadius(DtbConfig config) {
+        return Math.max(Math.max(0, config.forcedChunkRadius), NexusZones.outerRadius());
     }
 
     private static int setForced(ServerWorld world, BlockPos center, int radius, boolean forced) {

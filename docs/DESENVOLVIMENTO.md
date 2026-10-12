@@ -833,3 +833,35 @@ codigo.
 Verificacao: `javac` estrutural nas duas versoes sem erro, sem import orfao,
 `en_us` e `pt_br` identicas em conjunto de chaves. **Continua sem `buildAll` e
 sem teste em jogo.**
+
+**Decima oitava rodada — a distancia minima de spawn.** O pedido foi afastar o
+nascimento dos mobs: 4 chunks de distancia minima do Nexus, configuravel, e
+nada agressivo nascendo entre o bloco e esse limite — nem a invasao nem o spawn
+natural da noite — deixando o spawn normal do vanilla intacto a partir dali.
+
+A geometria de `NexusZones` ja existia desde a nona rodada, so estava expressa
+ao contrario: `noSpawnChunkRadius = 1` era o *raio do quadrado seguro*, e o anel
+somava em cima dele. Como o pedido fala em distancia minima, a chave virou
+`minSpawnChunkDistance = 4` e a comparacao virou `dist < minimo` em vez de
+`dist <= raio`. O anel passou a ser contado a partir dela
+(`outer = minimo + largura - 1`), entao com os padroes os invasores nascem entre
+o chunk 4 e o chunk 6 — antes era entre 2 e 4. O barramento do spawn natural nao
+mudou de mecanismo: continua sendo o `discard()` no `ENTITY_LOAD`, que ja lia a
+mesma funcao.
+
+O detalhe que quase passou: **o anel saiu de dentro da area carregada.**
+`forcedChunkRadius` era 4 e cobria exatamente o anel antigo. Com o anel indo ate
+o chunk 6, as tentativas de spawn cairiam em chunk descarregado sempre que o
+jogador estivesse longe, e `findSpawnPos` descarta chunk descarregado em
+silencio — a noite passaria sem nenhum invasor, sem nada no log. O raio
+carregado agora tem piso automatico em `NexusZones.outerRadius()`
+(`NexusChunkLoader.forcedRadius`), e o padrao subiu para 6 para o arquivo de
+config refletir a realidade: 13x13 chunks em vez de 9x9. Quem quiser carregar
+menos encurta o anel, nao o raio. `attractionChunkRadius` acompanhou para 6,
+mantendo o invariante de que o anel inteiro se comporta igual.
+
+Verificacao: `javac` estrutural nas duas versoes sem erro, 62/62 chaves de
+config documentadas nos dois READMEs sem faltar nem sobrar, e nenhuma referencia
+sobrando ao nome antigo da chave. **Continua sem `buildAll` e sem teste em
+jogo.** Bases subterraneas seguem como questao aberta, junto com o ponto de
+spawn em telhado.
