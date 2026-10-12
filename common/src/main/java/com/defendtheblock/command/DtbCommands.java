@@ -49,7 +49,13 @@ public final class DtbCommands {
                 .then(CommandManager.literal("spawnwave")
                         .requires(source -> source.hasPermissionLevel(2))
                         .then(CommandManager.argument("mob", StringArgumentType.word())
-                                .executes(DtbCommands::spawnWave))));
+                                .executes(DtbCommands::spawnWave)))
+                .then(CommandManager.literal("healnexus")
+                        .requires(source -> source.hasPermissionLevel(2))
+                        .executes(context -> healNexus(context, Integer.MAX_VALUE))
+                        .then(CommandManager.argument("amount", IntegerArgumentType.integer(1, 100000))
+                                .executes(context -> healNexus(context,
+                                        IntegerArgumentType.getInteger(context, "amount"))))));
     }
 
     /**
@@ -79,6 +85,29 @@ public final class DtbCommands {
         }
         source.sendFeedback(() -> Text.translatable("commands.defendtheblock.wave_set", wave)
                 .formatted(Formatting.AQUA), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dtb healnexus [quantidade]} — devolve vida ao Nexus. Sem
+     * argumento, enche.
+     *
+     * <p>Atalho de teste para o reparo com diamante ({@code NexusRepair}), que
+     * e o caminho normal em jogo: aqui nao custa material, nao precisa estar
+     * perto do bloco e ignora a regra de nao reparar durante a invasao.
+     */
+    private static int healNexus(CommandContext<ServerCommandSource> context, int amount) {
+        ServerCommandSource source = context.getSource();
+        InvasionData data = NexusManager.getData(source.getServer());
+        if (!data.hasNexus()) {
+            source.sendFeedback(() -> Text.translatable("commands.defendtheblock.no_nexus")
+                    .formatted(Formatting.RED), false);
+            return 0;
+        }
+        int healed = data.healNexus(amount);
+        source.sendFeedback(() -> Text.translatable("commands.defendtheblock.nexus_healed",
+                healed, data.getNexusHealth(), data.getNexusMaxHealth()).formatted(Formatting.AQUA), true);
+        InvasionManager.sync(source.getServer(), data);
         return 1;
     }
 

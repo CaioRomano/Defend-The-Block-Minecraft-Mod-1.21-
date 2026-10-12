@@ -2,7 +2,7 @@
 
 # 🛡️ Defend The Block
 
-**Place the Nexus. Survive every night.**
+**Place the Nexus. Survive every third night.**
 **If it falls, the world ends — literally.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1%20%7C%201.21.1-62B47A?style=for-the-badge)](#-supported-versions)
@@ -36,7 +36,7 @@
 you out of the open world you already know.
 
 You craft and place a single block — the **Nexus**. From that moment on,
-**every night** a horde of hostile mobs spawns around it and marches in with one
+**every 3 days** a horde of hostile mobs spawns around it and marches in with one
 goal: tearing it down. These are not the usual dumb mobs. They **mine** through
 your wall, **blow up** whatever blocks the way, **build ladders** to climb what
 you built, and **bridge** across gaps if you hide the Nexus up high.
@@ -53,13 +53,14 @@ message.
 | | Feature |
 |---|---|
 | 🔷 | **The Nexus** — an indestructible block only invaders can hurt. Once placed, it stays. |
-| 🌙 | **An invasion every night**, with no fixed mob count: as long as night lasts, one dies, another spawns. |
+| 🌙 | **An invasion every 3 days**, with no fixed mob count: as long as night lasts, one dies, another spawns. |
 | 📈 | **Difficulty that actually grows** — more mobs alive, more health, more damage, better gear. |
 | 🏹 | **Automatic arrow turret** with 5 material tiers. |
 | 📚 | **9 turret modules** to customise attributes — but only 2 per turret. |
 | 🧠 | **Siege AI**: mining, blowing up, climbing, bridging, breaking doors, setting fires. |
 | 🛡️ | **Walling in the Nexus works** — real cover genuinely blocks damage. |
-| 🕐 | **A 3-day grace period** before the first invasion, with an on-screen warning. |
+| 🕐 | **Day counters** on screen: days alive, invasions survived, and days left until the next one. |
+| 💠 | **A repairable Nexus** — diamonds, during the peaceful days between invasions. |
 | 🧹 | **The terrain resets at dawn**: everything the horde built is cleaned up. |
 | 💎 | **Loot** scattered around the Nexus for every night survived. |
 | ⚙️ | **62 configuration options** — from Nexus health to every ability chance. |
@@ -369,15 +370,37 @@ out.
 > 🖼️ **`docs/images/horda.png`** — a late-game night arriving in force, showing
 > the mob density at the high cap.
 
-### 🕐 The 3-day grace period
+### 🕐 The 3-day cycle
 
-Placing the Nexus does **not** throw an invasion at you that same night. You get
-3 in-game days to prepare. Each dawn an on-screen warning tells you how many days
-remain, and on the debut day it announces the invasion is that very night — raid
-horn included.
+Placing the Nexus does **not** throw an invasion at you that same night: you get
+3 in-game days to prepare (`gracePeriodDays`). And from then on the rhythm is the
+same — **one invasion every 3 days** (`daysBetweenWaves`), with two quiet nights
+in between to rebuild, mine and repair.
+
+Each dawn an on-screen warning tells you how many days remain, and on the day of
+the invasion it announces it is that very night — raid horn included. The side
+panel carries the same countdown at all times, along with **how many days you
+have been alive** and **how many invasions you have survived**.
+
+The dates come from a **grid** anchored on the first allowed day, not from "the
+last invasion plus 3 days". The difference shows when a night passes unused —
+server down, Nexus placed in the small hours: the sequence does not drift, the
+coming dates stay 3 apart from the anchor.
 
 The already-announced day is saved, so reconnecting or restarting the server does
 not repeat the message.
+
+### 💠 Repairing the Nexus
+
+**Diamond in hand, click the Nexus.** Each diamond restores 20 health
+(`nexusRepairPerDiamond`), one unit per click — from empty to full is 20
+diamonds. The loot from every night survived helps foot the bill.
+
+It only works **between** invasions. Mid-siege, repair is off by default
+(`nexusRepairDuringInvasion`), because the horde takes 3 health per hit while a
+single diamond gives back 20: with repair allowed during the night, anyone with
+diamonds stashed has an immortal Nexus. That is what the peaceful days are
+for.
 
 ### 🏡 The safe yard and the invasion ring
 
@@ -503,6 +526,9 @@ invasion, mobs alive and spawned tonight, multiplier, and the Nexus health bar.
 | `/dtb forcewave` | 2 | Starts the next invasion right now — great for testing |
 | `/dtb stopwave` | 2 | Cancels the current invasion |
 | `/dtb removenexus` | 2 | Removes the Nexus **without deleting the world** |
+| `/dtb setwave <n>` | 2 | Moves the campaign to invasion `n` (difficulty follows) |
+| `/dtb spawnwave <mob>` | 2 | Debug wave with a single type. `reset` restores normal |
+| `/dtb healnexus [n]` | 2 | Heals the Nexus by `n` (no argument fills it) |
 
 ---
 
@@ -517,6 +543,8 @@ is plain JSON: edit, save and restart the world/server.
 | Key | Default | What it does |
 |---|---|---|
 | `nexusMaxHealth` | `400` | Nexus health |
+| `nexusRepairPerDiamond` | `20` | Health restored per diamond used on the Nexus. `0` disables repair |
+| `nexusRepairDuringInvasion` | `false` | Allows repairing the Nexus during an invasion |
 | `nexusDamagePerHit` | `3` | Damage per mob hit |
 | `nexusHitCooldown` | `20` | Ticks between two hits from the same mob (20 = 1s) |
 | `deleteWorldOnNexusDestroyed` | `true` | **Deletes the world on defeat.** Set `false` to only show the message |
@@ -531,6 +559,7 @@ is plain JSON: edit, save and restart the world/server.
 | Key | Default | What it does |
 |---|---|---|
 | `gracePeriodDays` | `3` | Grace days before the first invasion. `0` disables it |
+| `daysBetweenWaves` | `3` | Days between one invasion and the next. `1` = every night |
 | `mobMultiplier` | `1.0` | Global spawn rate multiplier |
 | `baseSpawnInterval` | `140` | Ticks between spawn batches on invasion 1 |
 | `spawnIntervalStepPerWave` | `6` | How much the interval shrinks per invasion |

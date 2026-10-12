@@ -892,3 +892,61 @@ Verification: structural `javac` clean on both versions, no unresolved mod
 symbol, no orphaned imports, 65/65 config keys documented in both READMEs, and
 the geometry checked by simulation. **Still without `buildAll` and without an
 in-game test.**
+
+**Round twenty — the 3-day cycle, the counters and repairing the Nexus.**
+
+**The cycle.** Invasions used to happen every night, with the initial grace
+period merely delaying the first one. The dates now come from a **day grid**
+anchored on the first allowed day: `first`, `first + 3`, `first + 6`. The obvious
+alternative — storing "last invasion + 3" — was rejected because it drifts: a
+night that passes unused (server down, Nexus placed in the small hours) would
+shift every later date, and the player would lose track of when they land. With
+the grid, `isWaveNight(day)` is a modulo and there is no new state to persist.
+Checked by simulation: 16 consecutive days, spacing always 3, the countdown
+correct on every day.
+
+The grace period thereby became **just the first of many intervals** —
+`gracePeriodDays` still defines the debut day, but `daysBetweenWaves` runs
+everything after it. `announceCountdown` followed: it was limited to the period
+before the debut (`day > getFirstInvasionDay()` bailed out), because afterwards
+there was nothing left to count. Now there is a countdown at all times and it is
+the same notice, with different wording for "charging" and for "respite".
+
+**The counters.** `wavesCompleted` already existed and was already on the panel.
+Days alive needed no new state: it is `currentDay - nexusPlacedDay`, and
+`nexusPlacedDay` was already persisted for the grace period. One field went into
+the sync packet (`daysAlive`) and one line into the HUD. The packet's
+`daysUntilInvasion` kept its name because only its meaning changed — it was "days
+to the first", it became "days to the next" — and the lang key `grace_days` gave
+way to `days_until_wave`, which serves both cases.
+
+**The repair.** There was no way at all to restore the Nexus's health, which was
+almost coherent with an invasion every night (there was no when to repair) and
+stops being so with a 3-day cycle: a Nexus at 20% would be doomed forever. It is
+now a diamond in hand and a click on the block, mirroring the turret repair —
+material in hand, one unit per click, anvil sound, new health on the action bar.
+
+The technical detail that decided the implementation: **this cannot be a
+`Block#onUse`**. The signature diverged between versions — 1.20.1 takes a
+`Hand`, 1.21 dropped the parameter and split the "with an item in hand" case into
+`onUseWithItem` — so overriding the method would mean one copy of `NexusBlock`
+per version. Fabric's `UseBlockCallback` has the same signature in both and lives
+in the same module as the `PlayerBlockBreakEvents` the mod already uses, so there
+is no new dependency: registration and logic stayed single, in common code.
+
+Two balance choices. `nexusRepairDuringInvasion = false`: the horde takes 3
+health per hit and one diamond gives back 20, so repairing mid-siege makes the
+block immortal for anyone with diamonds stashed — repair is what you do on the
+peaceful days, and that is what they are for. And the handler returns
+`ActionResult.SUCCESS` **even when it healed nothing** (full Nexus): with `PASS`
+the click would fall through to the diamond's normal behaviour and the player
+would keep trying to repair without understanding why nothing happens.
+
+`/dtb healnexus [n]` came along too, as the test shortcut for the same effect: no
+material cost, no need to stand near the block, and none of the invasion rule.
+
+Verification: structural `javac` clean on both versions, no unresolved mod
+symbol, no orphaned imports, `en_us` and `pt_br` with 121 identical keys and no
+key used in code missing from the lang files, 68/68 config keys documented in
+both READMEs, and the day grid checked by simulation. **Still without `buildAll`
+and without an in-game test.**

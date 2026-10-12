@@ -63,7 +63,6 @@
   "commands.defendtheblock.nexus_removed": "The Nexus was safely removed (no world deletion).",
   "tooltip.defendtheblock.invader_egg.1": "Summons an invader with this ability already guaranteed.",
   "tooltip.defendtheblock.invader_egg.2": "It marches on the Nexus, but does not count toward the wave.",
-  "hud.defendtheblock.grace_days": "First invasion in %s day(s)",
   "message.defendtheblock.grace_title": "The Nexus is charging",
   "message.defendtheblock.grace_subtitle": "First invasion in %s day(s) — build your defenses",
   "message.defendtheblock.invasion_tonight_title": "INVASION TONIGHT",
@@ -112,5 +111,13 @@
   "commands.defendtheblock.spawnwave_started": "Debug wave of %s started (invasion %s).",
   "commands.defendtheblock.spawnwave_reset": "Debug wave cleared: spawning is back to the normal roll.",
   "commands.defendtheblock.spawnwave_unknown": "Unknown entity: %s",
-  "commands.defendtheblock.spawnwave_not_mob": "%s is not a mob and cannot invade."
+  "commands.defendtheblock.spawnwave_not_mob": "%s is not a mob and cannot invade.",
+  "hud.defendtheblock.days_alive": "Days alive: %s",
+  "hud.defendtheblock.days_until_wave": "Next invasion in %s day(s)",
+  "message.defendtheblock.respite_title": "Respite",
+  "message.defendtheblock.respite_subtitle": "Next invasion in %s day(s) — shore up your defences",
+  "message.defendtheblock.repaired": "Nexus repaired: %s / %s",
+  "message.defendtheblock.repair_full": "The Nexus is already at full health",
+  "message.defendtheblock.repair_during_invasion": "The Nexus cannot be repaired during an invasion",
+  "commands.defendtheblock.nexus_healed": "Nexus healed by %s: %s / %s."
 }

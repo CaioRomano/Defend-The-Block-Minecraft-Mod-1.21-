@@ -122,6 +122,26 @@ public class InvasionData {
         return nexusHealth <= 0;
     }
 
+    /**
+     * Devolve vida ao Nexus, sem passar do maximo.
+     *
+     * @return quanto foi curado de fato (0 se ja estava cheio), para o chamador
+     *         decidir se vale consumir o material
+     */
+    public int healNexus(int amount) {
+        if (amount <= 0) {
+            return 0;
+        }
+        int max = getNexusMaxHealth();
+        int healed = Math.min(amount, max - nexusHealth);
+        if (healed <= 0) {
+            return 0;
+        }
+        nexusHealth += healed;
+        markDirty();
+        return healed;
+    }
+
     public boolean isGameOver() {
         return gameOver;
     }
@@ -243,20 +263,66 @@ public class InvasionData {
         return nexusPlacedDay + Math.max(0, DtbConfig.get().gracePeriodDays);
     }
 
-    /** Dias que ainda faltam para a primeira invasao (0 = e hoje a noite). */
-    public long daysUntilFirstInvasion(long currentDay) {
-        if (nexusPlacedDay < 0L) {
-            // Mundo salvo antes desta feature existir: nao ha data de
-            // colocacao para contar, entao a carencia simplesmente nao se
-            // aplica e a campanha segue como ja estava.
-            return 0L;
+    /** Dias entre uma invasao e a seguinte. Minimo 1 (uma por noite). */
+    public static int waveIntervalDays() {
+        return Math.max(1, DtbConfig.get().daysBetweenWaves);
+    }
+
+    /**
+     * Mundo salvo antes de existir data de colocacao do Nexus. Nesse caso nao
+     * ha de onde contar a grade de dias, e a campanha segue como ja estava:
+     * invasao em toda noite.
+     */
+    private boolean hasDayGrid() {
+        return nexusPlacedDay >= 0L;
+    }
+
+    /**
+     * Esta noite e noite de invasao?
+     *
+     * <p>As invasoes caem numa <b>grade de dias</b> ancorada no primeiro dia
+     * liberado: {@code primeiro}, {@code primeiro + intervalo},
+     * {@code primeiro + 2 * intervalo}... Derivar da grade, e nao de "a ultima
+     * invasao mais tres dias", e o que impede a sequencia de escorregar: uma
+     * noite que passe em branco (servidor desligado, Nexus colocado no meio da
+     * noite) nao desloca todas as proximas.
+     */
+    public boolean isWaveNight(long day) {
+        if (!hasDayGrid()) {
+            return true;
         }
-        return Math.max(0L, getFirstInvasionDay() - currentDay);
+        long first = getFirstInvasionDay();
+        return day >= first && (day - first) % waveIntervalDays() == 0L;
+    }
+
+    /** O proximo dia de invasao a partir de hoje (hoje mesmo, se for noite de invasao). */
+    public long nextWaveDay(long currentDay) {
+        if (!hasDayGrid()) {
+            return currentDay;
+        }
+        long first = getFirstInvasionDay();
+        if (currentDay <= first) {
+            return first;
+        }
+        long interval = waveIntervalDays();
+        long elapsed = currentDay - first;
+        // Divisao para cima: o proximo ponto da grade em ou depois de hoje.
+        return first + ((elapsed + interval - 1) / interval) * interval;
+    }
+
+    /** Dias que ainda faltam para a proxima invasao (0 = e hoje a noite). */
+    public long daysUntilNextWave(long currentDay) {
+        return Math.max(0L, nextWaveDay(currentDay) - currentDay);
+    }
+
+    /** Dias que o Nexus ja sobreviveu desde que foi colocado. */
+    public long getDaysAlive(long currentDay) {
+        return hasDayGrid() ? Math.max(0L, currentDay - nexusPlacedDay) : 0L;
     }
 
     /** Ainda esta na carencia inicial, antes da primeira invasao? */
     public boolean isInGracePeriod(long currentDay) {
-        return nexusPlacedDay >= 0L && currentDay < getFirstInvasionDay();
+        return hasDayGrid() && currentDay < getFirstInvasionDay();
     }
 
     public long getLastCountdownDay() {

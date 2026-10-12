@@ -7,6 +7,7 @@ import com.defendtheblock.invasion.InvasionData;
 import com.defendtheblock.invasion.InvasionManager;
 import com.defendtheblock.invasion.NexusChunkLoader;
 import com.defendtheblock.invasion.NexusManager;
+import com.defendtheblock.invasion.NexusRepair;
 import com.defendtheblock.registry.ModBlocks;
 import com.defendtheblock.registry.ModEntities;
 import com.defendtheblock.registry.ModItemGroups;
@@ -17,6 +18,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -60,6 +62,11 @@ public class DefendTheBlock implements ModInitializer {
 
         // O Nexus nao pode ser retirado depois de colocado, nem no criativo.
         PlayerBlockBreakEvents.BEFORE.register(DefendTheBlock::onBeforeBlockBreak);
+
+        // Reparo do Nexus com diamante na mao. Vai por evento em vez de
+        // Block#onUse porque essa assinatura divergiu entre 1.20.1 e 1.21
+        // (ver NexusRepair).
+        UseBlockCallback.EVENT.register(NexusRepair::onUseBlock);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) ->
                 DtbCommands.register(dispatcher));

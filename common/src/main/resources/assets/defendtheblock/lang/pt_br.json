@@ -63,7 +63,6 @@
   "commands.defendtheblock.nexus_removed": "O Nexus foi removido com seguranca (sem apagar o mundo).",
   "tooltip.defendtheblock.invader_egg.1": "Invoca um invasor com essa habilidade ja garantida.",
   "tooltip.defendtheblock.invader_egg.2": "Ele marcha ate o Nexus, mas nao conta na contagem da onda.",
-  "hud.defendtheblock.grace_days": "Primeira invasao em %s dia(s)",
   "message.defendtheblock.grace_title": "O Nexus esta carregando",
   "message.defendtheblock.grace_subtitle": "Primeira invasao em %s dia(s) — levante suas defesas",
   "message.defendtheblock.invasion_tonight_title": "INVASAO ESTA NOITE",
@@ -112,5 +111,13 @@
   "commands.defendtheblock.spawnwave_started": "Onda de debug de %s iniciada (invasao %s).",
   "commands.defendtheblock.spawnwave_reset": "Onda de debug encerrada: o spawn voltou ao sorteio normal.",
   "commands.defendtheblock.spawnwave_unknown": "Entidade desconhecida: %s",
-  "commands.defendtheblock.spawnwave_not_mob": "%s nao e um mob e nao pode invadir."
+  "commands.defendtheblock.spawnwave_not_mob": "%s nao e um mob e nao pode invadir.",
+  "hud.defendtheblock.days_alive": "Dias vivo: %s",
+  "hud.defendtheblock.days_until_wave": "Proxima invasao em %s dia(s)",
+  "message.defendtheblock.respite_title": "Tregua",
+  "message.defendtheblock.respite_subtitle": "Proxima invasao em %s dia(s) — reforce as defesas",
+  "message.defendtheblock.repaired": "Nexus reparado: %s / %s",
+  "message.defendtheblock.repair_full": "O Nexus ja esta com a vida cheia",
+  "message.defendtheblock.repair_during_invasion": "Nao da para reparar o Nexus durante a invasao",
+  "commands.defendtheblock.nexus_healed": "Nexus curado em %s: %s / %s."
 }

@@ -48,7 +48,10 @@ public final class InvasionHud {
         TextRenderer font = client.textRenderer;
         int x = client.getWindow().getScaledWidth() - PANEL_WIDTH - MARGIN;
         int y = MARGIN;
-        int lines = 5;
+        // titulo, dias vivos, invasoes sobrevividas, duas linhas de estado e a
+        // barra de vida. Contado em vez de fixo para o painel acompanhar quando
+        // uma linha entrar ou sair.
+        int lines = 6;
         int height = 8 + LINE_HEIGHT * lines + 12;
 
         context.fill(x, y, x + PANEL_WIDTH, y + height, BACKGROUND);
@@ -67,6 +70,11 @@ public final class InvasionHud {
         textY += LINE_HEIGHT + 2;
 
         context.drawTextWithShadow(font,
+                Text.translatable("hud.defendtheblock.days_alive", data.daysAlive),
+                textX, textY, TEXT_COLOR);
+        textY += LINE_HEIGHT;
+
+        context.drawTextWithShadow(font,
                 Text.translatable("hud.defendtheblock.waves_completed", data.wavesCompleted),
                 textX, textY, TEXT_COLOR);
         textY += LINE_HEIGHT;
@@ -81,16 +89,20 @@ public final class InvasionHud {
                     textX, textY, 0xFFFF7A6B);
         } else {
             Text idle;
+            int idleColor = TEXT_COLOR;
             if (data.gameOver) {
                 idle = Text.translatable("hud.defendtheblock.idle");
             } else if (data.daysUntilInvasion > 0) {
-                // Carencia inicial: o painel mostra a contagem em vez de
+                // Entre duas invasoes: o painel conta os dias em vez de
                 // prometer invasao para esta noite.
-                idle = Text.translatable("hud.defendtheblock.grace_days", data.daysUntilInvasion);
+                idle = Text.translatable("hud.defendtheblock.days_until_wave", data.daysUntilInvasion);
             } else {
+                // E hoje: destacado, porque e a unica linha do painel que pede
+                // uma decisao do jogador ainda hoje.
                 idle = Text.translatable("hud.defendtheblock.next_wave");
+                idleColor = 0xFFFF7A6B;
             }
-            context.drawTextWithShadow(font, idle, textX, textY, TEXT_COLOR);
+            context.drawTextWithShadow(font, idle, textX, textY, idleColor);
             textY += LINE_HEIGHT;
             context.drawTextWithShadow(font,
                     Text.translatable("hud.defendtheblock.multiplier", String.format("%.2f", data.multiplier)),

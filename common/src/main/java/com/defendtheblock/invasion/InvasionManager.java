@@ -101,9 +101,10 @@ public final class InvasionManager {
             // spawnar: quem ja nasceu termina a briga, ninguem novo aparece.
         } else {
             announceCountdown(server, data, day);
-            // Carencia inicial: as primeiras noites passam em paz para o
-            // jogador levantar defesa antes da estreia.
-            if (night && day != data.getLastWaveDay() && !data.isInGracePeriod(day)) {
+            // As invasoes caem numa grade de dias (ver InvasionData#isWaveNight):
+            // a carencia inicial atrasa a primeira, e dai em diante elas vem de
+            // tantos em tantos dias. As noites fora da grade passam em paz.
+            if (night && day != data.getLastWaveDay() && data.isWaveNight(day)) {
                 data.setLastWaveDay(day);
                 startWave(server, data, data.getWavesCompleted() + 1);
             }
@@ -111,30 +112,37 @@ public final class InvasionManager {
     }
 
     /**
-     * Aviso na tela, uma vez por dia, enquanto a carencia inicial corre.
+     * Aviso na tela, uma vez por dia, com quantos dias faltam para a proxima
+     * invasao — e, no dia dela, que e naquela noite.
      *
-     * <p>Nos dias anteriores mostra quantos faltam; no dia da estreia avisa que
-     * a invasao e naquela noite. O dia ja anunciado fica guardado no estado
-     * persistente, entao reconectar ou reiniciar o servidor nao repete o aviso.
+     * <p>Antes isto so corria durante a carencia inicial, porque depois dela
+     * havia invasao em toda noite e nao sobrava nada para contar. Com as
+     * invasoes numa grade de dias existe contagem o tempo todo, e e o mesmo
+     * aviso: a carencia virou so o primeiro intervalo de muitos.
+     *
+     * <p>O dia ja anunciado fica guardado no estado persistente, entao
+     * reconectar ou reiniciar o servidor nao repete o aviso.
      */
     private static void announceCountdown(MinecraftServer server, InvasionData data, long day) {
         if (data.getNexusPlacedDay() < 0L || day == data.getLastCountdownDay()) {
             return;
         }
-        // Depois da estreia nao ha mais contagem para mostrar. As duas outras
-        // condicoes que estavam aqui (remaining <= 0 e nao estar na carencia)
-        // sao consequencia desta: passado o dia da estreia, a carencia acabou e
-        // daysUntilFirstInvasion ja e zero por definicao.
-        if (day > data.getFirstInvasionDay()) {
-            return;
-        }
-        long remaining = data.daysUntilFirstInvasion(day);
+        long remaining = data.daysUntilNextWave(day);
         data.setLastCountdownDay(day);
 
         if (remaining > 0L) {
+            // O texto da espera muda uma vez: antes da estreia o Nexus esta
+            // "carregando", depois ele esta entre duas invasoes.
+            boolean grace = data.isInGracePeriod(day);
             NexusManager.broadcastTitle(server,
-                    Text.translatable("message.defendtheblock.grace_title").formatted(Formatting.AQUA),
-                    Text.translatable("message.defendtheblock.grace_subtitle", remaining).formatted(Formatting.WHITE));
+                    Text.translatable(grace
+                                    ? "message.defendtheblock.grace_title"
+                                    : "message.defendtheblock.respite_title")
+                            .formatted(Formatting.AQUA),
+                    Text.translatable(grace
+                                    ? "message.defendtheblock.grace_subtitle"
+                                    : "message.defendtheblock.respite_subtitle", remaining)
+                            .formatted(Formatting.WHITE));
             return;
         }
         NexusManager.broadcastTitle(server,

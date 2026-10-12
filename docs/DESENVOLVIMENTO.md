@@ -924,3 +924,63 @@ Verificacao: `javac` estrutural limpo nas duas versoes, nenhum simbolo do mod
 sem resolver, sem import orfao, 65/65 chaves de config documentadas nos dois
 READMEs, e a geometria conferida por simulacao. **Continua sem `buildAll` e sem
 teste em jogo.**
+
+**Vigesima rodada — o ciclo de 3 dias, os contadores e o reparo do Nexus.**
+
+**O ciclo.** A invasao era em toda noite, com a carencia inicial atrasando so a
+primeira. Agora as datas saem de uma **grade de dias** ancorada no primeiro dia
+liberado: `primeiro`, `primeiro + 3`, `primeiro + 6`. A alternativa obvia —
+guardar "ultima invasao + 3" — foi descartada porque escorrega: uma noite que
+passe em branco (servidor desligado, Nexus colocado de madrugada) deslocaria
+todas as proximas, e o jogador perderia a referencia de quando elas caem. Com a
+grade, `isWaveNight(day)` e uma conta de modulo e nao ha estado novo para
+persistir. Conferido por simulacao: 16 dias seguidos, separacao sempre 3,
+contagem regressiva correta em todos os dias.
+
+A carencia virou, com isso, **so o primeiro intervalo de muitos** —
+`gracePeriodDays` continua sendo o que define o dia da estreia, mas
+`daysBetweenWaves` manda do resto. O `announceCountdown` acompanhou: ele era
+limitado ao periodo anterior a estreia (`day > getFirstInvasionDay()` saia
+fora), porque depois dela nao havia nada para contar. Agora existe contagem o
+tempo todo e e o mesmo aviso, com um texto diferente para "carregando" e para
+"tregua".
+
+**Os contadores.** `wavesCompleted` ja existia e ja estava no painel. Os dias
+vivos nao precisaram de estado novo: sao `currentDay - nexusPlacedDay`, e
+`nexusPlacedDay` ja era persistido para a carencia. Entrou um campo no pacote de
+sync (`daysAlive`) e uma linha no HUD. O `daysUntilInvasion` do pacote nao
+mudou de nome porque mudou so de significado — era "dias para a primeira", virou
+"dias para a proxima" —, e a chave de lang `grace_days` deu lugar a
+`days_until_wave`, que serve para os dois casos.
+
+**O reparo.** Nao existia nenhuma forma de recuperar vida do Nexus, o que com
+invasao em toda noite era quase coerente (nao havia quando reparar) e com o
+ciclo de 3 dias deixa de ser: um Nexus a 20% ficaria condenado para sempre.
+Agora e diamante na mao e clique no bloco, espelhando o reparo da torreta —
+material na mao, uma unidade por clique, som de bigorna, vida nova na action
+bar.
+
+O detalhe tecnico que decidiu a implementacao: **isto nao da para ser um
+`Block#onUse`**. A assinatura divergiu entre as versoes — o 1.20.1 recebe
+`Hand`, o 1.21 tirou o parametro e separou o caso "com item na mao" em
+`onUseWithItem` —, entao sobrescrever o metodo exigiria uma copia do
+`NexusBlock` por versao. O `UseBlockCallback` do Fabric tem a mesma assinatura
+nas duas e vive no mesmo modulo do `PlayerBlockBreakEvents` que o mod ja usa,
+entao nao ha dependencia nova: registro e logica ficaram um so, no codigo comum.
+
+Duas escolhas de balanceamento. `nexusRepairDuringInvasion = false`: a horda
+tira 3 de vida por golpe e um diamante devolve 20, entao reparo no meio do cerco
+faz do bloco um imortal para quem tem diamante guardado — o reparo e o que se faz
+nos dias de paz, e e para isso que eles existem. E o handler devolve
+`ActionResult.SUCCESS` **tambem quando nao curou nada** (Nexus cheio): com
+`PASS` o clique cairia no comportamento normal do diamante e o jogador ficaria
+tentando reparar sem entender por que nada acontece.
+
+Entrou tambem `/dtb healnexus [n]`, que e o atalho de teste do mesmo efeito: sem
+custo de material, sem precisar estar perto do bloco e sem a regra da invasao.
+
+Verificacao: `javac` estrutural limpo nas duas versoes, nenhum simbolo do mod
+sem resolver, sem import orfao, `en_us` e `pt_br` com 121 chaves identicas e
+nenhuma chave usada no codigo faltando no lang, 68/68 chaves de config
+documentadas nos dois READMEs, e a grade de dias conferida por simulacao.
+**Continua sem `buildAll` e sem teste em jogo.**

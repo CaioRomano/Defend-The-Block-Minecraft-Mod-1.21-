@@ -36,8 +36,8 @@
 **Defend The Block** transforma o Minecraft num modo de sobrevivencia por ondas,
 sem tirar voce do mundo aberto de sempre.
 
-Voce fabrica e coloca um bloco — o **Nexus**. A partir daquele momento, **toda
-noite** uma horda de mobs hostis nasce ao redor e marcha ate ele com um unico
+Voce fabrica e coloca um bloco — o **Nexus**. A partir daquele momento, **a cada
+3 dias** uma horda de mobs hostis nasce ao redor e marcha ate ele com um unico
 objetivo: destrui-lo. Eles nao sao os mobs burros de sempre. Eles **cavam** a
 sua parede, **explodem** o que trava a passagem, **montam escadas** para subir
 no que voce construiu e **constroem pontes** se voce esconder o Nexus no alto.
@@ -54,13 +54,14 @@ embora isso seja desligavel na config, se voce preferir so a mensagem de derrota
 | | Recurso |
 |---|---|
 | 🔷 | **O Nexus** — um bloco indestrutivel que so os invasores ferem. Colocou, nao sai mais. |
-| 🌙 | **Invasao toda noite**, sem numero fixo de mobs: enquanto a noite durar, morreu um, nasce outro. |
+| 🌙 | **Uma invasao a cada 3 dias**, sem numero fixo de mobs: enquanto a noite durar, morreu um, nasce outro. |
 | 📈 | **Dificuldade que cresce de verdade** — mais mobs vivos, mais vida, mais dano, melhor equipamento. |
 | 🏹 | **Torreta de flechas** automatica, com 5 niveis de material. |
 | 📚 | **9 modulos de torreta** para personalizar atributos — mas so 2 por torreta. |
 | 🧠 | **IA de cerco**: minerar, explodir, escalar, construir ponte, arrombar porta, atear fogo. |
 | 🛡️ | **Emparedar o Nexus funciona** — cobertura de verdade bloqueia o dano. |
-| 🕐 | **3 dias de carencia** antes da primeira invasao, com aviso na tela. |
+| 🕐 | **Contador de dias** na tela: dias vivo, invasoes sobrevividas e quantos dias faltam para a proxima. |
+| 💠 | **Nexus reparavel** com diamante, nos dias de paz entre duas invasoes. |
 | 🧹 | **O terreno volta ao normal** ao amanhecer: o entulho que a horda construiu some. |
 | 💎 | **Saque** espalhado em volta do Nexus a cada noite sobrevivida. |
 | ⚙️ | **62 opcoes de configuracao** — da vida do Nexus a cada chance de habilidade. |
@@ -370,15 +371,36 @@ proposito.
 > 🖼️ **`docs/images/horda.png`** — a horda de uma noite avancada chegando em
 > massa, mostrando a densidade de mobs no teto alto.
 
-### 🕐 Os 3 dias de carencia
+### 🕐 O ciclo de 3 dias
 
-Colocar o Nexus **nao** joga uma invasao na sua cabeca naquela mesma noite. Voce
-tem 3 dias de mundo para se preparar. A cada amanhecer aparece um aviso na tela
-com quantos dias faltam, e no dia da estreia o aviso diz que a invasao e naquela
-noite — com direito a trompa de raide.
+Colocar o Nexus **nao** joga uma invasao na sua cabeca naquela mesma noite: voce
+tem 3 dias de mundo para se preparar (`gracePeriodDays`). E dai em diante o
+ritmo e o mesmo — **uma invasao a cada 3 dias** (`daysBetweenWaves`), com duas
+noites tranquilas entre elas para reconstruir, minerar e reparar.
+
+A cada amanhecer aparece um aviso na tela com quantos dias faltam, e no dia da
+invasao o aviso diz que ela e naquela noite — com direito a trompa de raide. O
+painel lateral mostra a mesma contagem o tempo todo, junto com **quantos dias
+voce esta vivo** e **quantas invasoes ja sobreviveu**.
+
+As datas saem de uma **grade** ancorada no primeiro dia liberado, nao de "a
+ultima invasao mais 3 dias". A diferenca aparece quando uma noite passa em
+branco — servidor desligado, Nexus colocado de madrugada: a sequencia nao
+escorrega, as proximas datas continuam de 3 em 3 a partir da ancora.
 
 O dia ja anunciado fica salvo, entao reconectar ou reiniciar o servidor nao
 repete a mensagem.
+
+### 💠 Reparar o Nexus
+
+**Diamante na mao, clique no Nexus.** Cada diamante devolve 20 de vida
+(`nexusRepairPerDiamond`), uma unidade por clique — do zero ao cheio sao 20
+diamantes. O saque de cada noite sobrevivida ajuda a pagar a conta.
+
+So funciona **entre** invasoes. No meio do cerco o reparo esta desligado por
+padrao (`nexusRepairDuringInvasion`), porque a horda tira 3 de vida por golpe e
+um unico diamante devolve 20: com reparo durante a noite, quem tem diamante
+guardado tem um Nexus imortal. E por isso que os dias de paz existem.
 
 ### 🏡 O quintal seguro e o anel de invasao
 
@@ -506,6 +528,9 @@ do Nexus.
 | `/dtb forcewave` | 2 | Comeca a proxima invasao agora — otimo para testar |
 | `/dtb stopwave` | 2 | Cancela a invasao atual |
 | `/dtb removenexus` | 2 | Remove o Nexus **sem apagar o mundo** |
+| `/dtb setwave <n>` | 2 | Move a campanha para a invasao `n` (dificuldade acompanha) |
+| `/dtb spawnwave <mob>` | 2 | Onda de debug com um tipo so. `reset` volta ao normal |
+| `/dtb healnexus [n]` | 2 | Cura o Nexus em `n` (sem argumento, enche) |
 
 ---
 
@@ -520,6 +545,8 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 | Chave | Padrao | O que faz |
 |---|---|---|
 | `nexusMaxHealth` | `400` | Vida do Nexus |
+| `nexusRepairPerDiamond` | `20` | Vida devolvida por diamante usado no Nexus. `0` desliga o reparo |
+| `nexusRepairDuringInvasion` | `false` | Permite reparar o Nexus durante a invasao |
 | `nexusDamagePerHit` | `3` | Dano por golpe de mob |
 | `nexusHitCooldown` | `20` | Ticks entre dois golpes do mesmo mob (20 = 1s) |
 | `deleteWorldOnNexusDestroyed` | `true` | **Apaga o mundo na derrota.** Ponha `false` para so mostrar a mensagem |
@@ -534,6 +561,7 @@ JSON simples: edite, salve e reinicie o servidor/mundo.
 | Chave | Padrao | O que faz |
 |---|---|---|
 | `gracePeriodDays` | `3` | Dias de carencia antes da primeira invasao. `0` desliga |
+| `daysBetweenWaves` | `3` | Dias entre uma invasao e a seguinte. `1` = toda noite |
 | `mobMultiplier` | `1.0` | Multiplicador global do ritmo de spawn |
 | `baseSpawnInterval` | `140` | Ticks entre lotes de spawn na invasao 1 |
 | `spawnIntervalStepPerWave` | `6` | Quanto o intervalo encolhe por invasao |

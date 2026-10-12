@@ -26,6 +26,25 @@ public final class DtbConfig {
     // ------------------------------------------------------------ o Nexus
     /** Vida do bloco Nexus. Cada golpe de mob tira uma fracao disso. */
     public int nexusMaxHealth = 400;
+    /**
+     * Vida devolvida ao Nexus por <b>diamante</b> usado nele (clique com o
+     * diamante na mao). 0 desliga o reparo.
+     *
+     * <p>O diamante e o material dominante da receita do bloco, e o custo e de
+     * proposito alto: com os padroes, recuperar o Nexus do zero custa 20
+     * diamantes. O saque de cada noite sobrevivida ajuda a pagar.
+     */
+    public int nexusRepairPerDiamond = 20;
+    /**
+     * Permite reparar o Nexus <b>durante</b> uma invasao.
+     *
+     * <p>Fica em {@code false} porque o reparo no meio do cerco torna o bloco
+     * praticamente imortal para quem tem diamante guardado: a horda tira 3 de
+     * vida por golpe e um unico diamante devolve 20. Com {@code false}, o
+     * reparo e o que se faz nos dias de paz — e e justamente por isso que os
+     * dias de paz existem.
+     */
+    public boolean nexusRepairDuringInvasion = false;
     /** Dano que um mob comum causa por golpe no Nexus. */
     public int nexusDamagePerHit = 3;
     /** Intervalo (ticks) entre golpes de um mesmo mob no Nexus. */
@@ -66,6 +85,18 @@ public final class DtbConfig {
      * 0 desliga a carencia (invasao ja na primeira noite).
      */
     public int gracePeriodDays = 3;
+    /**
+     * Dias entre uma invasao e a seguinte. O padrao e 3: duas noites em paz
+     * para reconstruir, e na terceira a horda volta.
+     *
+     * <p>1 devolve o comportamento antigo, de invasao em toda noite.
+     *
+     * <p>As datas saem de uma <b>grade</b> ancorada no primeiro dia liberado
+     * (dia da colocacao + {@link #gracePeriodDays}), nao de "a ultima invasao
+     * mais N dias": uma noite que passe em branco — servidor desligado, Nexus
+     * colocado de madrugada — nao desloca todas as proximas.
+     */
+    public int daysBetweenWaves = 3;
     /** Multiplicador global do ritmo de spawn da invasao. */
     public double mobMultiplier = 1.0D;
     /**
